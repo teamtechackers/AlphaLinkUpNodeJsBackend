@@ -189,17 +189,14 @@ class AuthController {
       };
 
       await UserService.updateUser(decodedUserId, updateData);
-
-      // Generate JWT token
-      const jwtToken = await UserService.generateAuthToken(decodedUserId);
       
       logger.info(`OTP verified successfully for user: ${mobile}`);
       return phpResponse(res, 'OTP verified successfully', {
         user_id: idEncode(decodedUserId),
         unique_token: token,
-        profile_updated: user.profile_updated || false,
+        profile_updated: user.profile_updated ? "1" : "0",
         country_id: user.country_id,
-        jwtToken
+        country_name: user.country_name || ""
       });
     } catch (error) {
       logger.error('Verify OTP error:', error.message, error.stack);
