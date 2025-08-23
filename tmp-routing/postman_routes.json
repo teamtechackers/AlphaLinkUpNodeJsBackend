@@ -1,0 +1,417 @@
+[
+  {
+    "method": "POST",
+    "path": "/{{api-url}}Api-Send-Otp",
+    "name": "Api-Send-Otp"
+  },
+  {
+    "method": "POST",
+    "path": "/{{api-url}}Api-Verify-Otp",
+    "name": "Api-Verify-Otp"
+  },
+  {
+    "method": "POST",
+    "path": "/{{api-url}}Api-Logout",
+    "name": "Api-Logout"
+  },
+  {
+    "method": "GET",
+    "path": "/hrms/api/leaattendanceve/attendance_type",
+    "name": "Api-Country-List"
+  },
+  {
+    "method": "GET",
+    "path": "/{{api-url}}Api-State-List?user_id=4d513d3d&token=ab13ed462ce71db55a56a2f5c0685541&country_id=101",
+    "name": "Api-State-List"
+  },
+  {
+    "method": "GET",
+    "path": "/{{api-url}}Api-City-List?user_id=4d513d3d&token=ab13ed462ce71db55a56a2f5c0685541&state_id=17",
+    "name": "Api-City-List"
+  },
+  {
+    "method": "GET",
+    "path": "/{{api-url}}Api-Interests-List?user_id=4d513d3d&token=ab13ed462ce71db55a56a2f5c0685541",
+    "name": "Api-Interests-List"
+  },
+  {
+    "method": "GET",
+    "path": "/{{api-url}}Api-Employment-Type-List?user_id=4d513d3d&token=ab13ed462ce71db55a56a2f5c0685541",
+    "name": "Api-Employment-Type-List"
+  },
+  {
+    "method": "GET",
+    "path": "/{{api-url}}Api-Job-Type-List?user_id=4d513d3d&token=ab13ed462ce71db55a56a2f5c0685541",
+    "name": "Api-Job-Type-List"
+  },
+  {
+    "method": "GET",
+    "path": "/{{api-url}}Api-Pay-List?user_id=4d513d3d&token=ab13ed462ce71db55a56a2f5c0685541",
+    "name": "Api-Pay-List"
+  },
+  {
+    "method": "GET",
+    "path": "/{{api-url}}Api-Event-Mode-List?user_id=4d513d3d&token=ab13ed462ce71db55a56a2f5c0685541",
+    "name": "Api-Event-Mode-List"
+  },
+  {
+    "method": "GET",
+    "path": "/{{api-url}}Api-Event-Type-List?user_id=4d513d3d&token=ab13ed462ce71db55a56a2f5c0685541",
+    "name": "Api-Event-Type-List"
+  },
+  {
+    "method": "GET",
+    "path": "/{{api-url}}Api-View-Profile?user_id=4e673d3d&token=e53bc3f9d6ef3f7e5b6943d0c3b526f1",
+    "name": "Api-View-Profile"
+  },
+  {
+    "method": "POST",
+    "path": "/{{api-url}}Api-Update-Profile",
+    "name": "Api-Update-Profile"
+  },
+  {
+    "method": "POST",
+    "path": "/{{api-url}}Api-Save-Job-Information",
+    "name": "Api-Save-Job-Information"
+  },
+  {
+    "method": "GET",
+    "path": "/{{api-url}}Api-View-Job-Information?user_id=4d513d3d&token=3b61d959b56a5d93f7fc83e1b5da8b8e&keyword=caption&job_type=Accountant&skill=flutter&location=Punjab&pay=75000",
+    "name": "Api-View-Job-Information"
+  },
+  {
+    "method": "POST",
+    "path": "/{{api-url}}Api-Save-Event-Information?user_id=4e673d3d&token=e53bc3f9d6ef3f7e5b6943d0c3b526f1",
+    "name": "Api-Save-Event-Information"
+  },
+  {
+    "method": "GET",
+    "path": "/{{api-url}}Api-View-Event-Information?user_id=4d513d3d&token=3b61d959b56a5d93f7fc83e1b5da8b8e",
+    "name": "Api-View-Event-Information"
+  },
+  {
+    "method": "GET",
+    "path": "/{{api-url}}Api-View-Event-Details?user_id=4d513d3d&token=3b61d959b56a5d93f7fc83e1b5da8b8e&event_id=33",
+    "name": "Api-View-Event-Details"
+  },
+  {
+    "method": "GET",
+    "path": "/{{api-url}}Api-View-Resumes?user_id=4d513d3d&token=ab13ed462ce71db55a56a2f5c0685541",
+    "name": "Api-View-Resumes"
+  },
+  {
+    "method": "GET",
+    "path": "/{{api-url}}Api-View-Job-Details?user_id=4d513d3d&token=3b61d959b56a5d93f7fc83e1b5da8b8e&job_id=9",
+    "name": "Api-View-Job-Details"
+  },
+  {
+    "method": "GET",
+    "path": "/{{api-url}}Api-View-User-Detail-By-Mobile?user_id=4e673d3d&token=e53bc3f9d6ef3f7e5b6943d0c3b526f1&mobile_no=923078775479",
+    "name": "Api-View-User-Detail-By-Mobile"
+  },
+  {
+    "method": "GET",
+    "path": "/{{api-url}}Api-View-Profile-By-Mobile?user_id=4e673d3d&token=e53bc3f9d6ef3f7e5b6943d0c3b526f1&mobile_no=923016805577",
+    "name": "Api-View-Profile-By-Mobile"
+  },
+  {
+    "method": "POST",
+    "path": "/{{api-url}}Api-Save-Work-Details",
+    "name": "Api-Save-Work-Details"
+  },
+  {
+    "method": "GET",
+    "path": "/{{api-url}}Api-View-Work-Details?user_id=4d513d3d&token=ab13ed462ce71db55a56a2f5c0685541",
+    "name": "Api-View-Work-Details"
+  },
+  {
+    "method": "POST",
+    "path": "/{{api-url}}Api-Delete-Work-Detail",
+    "name": "Api-Delete-Work-Detail"
+  },
+  {
+    "method": "POST",
+    "path": "/{{api-url}}Api-Save-Project-Details",
+    "name": "Api-Save-Project-Details"
+  },
+  {
+    "method": "GET",
+    "path": "/{{api-url}}Api-View-Project-Details?user_id=4d513d3d&token=ab13ed462ce71db55a56a2f5c0685541",
+    "name": "Api-View-Project-Details"
+  },
+  {
+    "method": "POST",
+    "path": "/{{api-url}}Api-Delete-Project-Detail",
+    "name": "Api-Delete-Project-Detail"
+  },
+  {
+    "method": "POST",
+    "path": "/{{api-url}}Api-Save-Education-Details",
+    "name": "Api-Save-Education-Details"
+  },
+  {
+    "method": "GET",
+    "path": "/{{api-url}}Api-View-Education-Details?user_id=4d513d3d&token=ab13ed462ce71db55a56a2f5c0685541",
+    "name": "Api-View-Education-Details"
+  },
+  {
+    "method": "POST",
+    "path": "/{{api-url}}Api-Delete-Education-Detail",
+    "name": "Api-Delete-Education-Detail"
+  },
+  {
+    "method": "POST",
+    "path": "/{{api-url}}Api-Save-Event-Organiser",
+    "name": "Api-Save-Event-Organiser"
+  },
+  {
+    "method": "GET",
+    "path": "/{{api-url}}Api-Event-Organisers-List?user_id=4e673d3d&token=0d39cbf7387ac005f59a799f544ed80c&event_id=33",
+    "name": "Api-Event-Organisers-List"
+  },
+  {
+    "method": "POST",
+    "path": "/{{api-url}}Api-Delete-Event-Organiser",
+    "name": "Api-Delete-Event-Organiser"
+  },
+  {
+    "method": "GET",
+    "path": "/{{api-url}}Api-Event-Attendees-List?user_id=4e673d3d&token=0d39cbf7387ac005f59a799f544ed80c&event_id=1",
+    "name": "Api-Event-Attendees-List"
+  },
+  {
+    "method": "POST",
+    "path": "/{{api-url}}Api-Save-Event-Attendee",
+    "name": "Api-Save-Event-Attendee"
+  },
+  {
+    "method": "POST",
+    "path": "/{{api-url}}Api-Delete-Event-Attendee",
+    "name": "Api-Delete-Event-Attendee"
+  },
+  {
+    "method": "POST",
+    "path": "/{{api-url}}Api-Delete-Resume",
+    "name": "Api-Delete-Resume"
+  },
+  {
+    "method": "GET",
+    "path": "/{{api-url}}Api-Dashboard?user_id=4d513d3d&token=3b61d959b56a5d93f7fc83e1b5da8b8e&location=pakistan&lat=29.8995282&long=69.5246342&limit=0&filter_type=tomorrow",
+    "name": "Api-Dashboard"
+  },
+  {
+    "method": "GET",
+    "path": "/{{api-url}}Api-Legal-Terms?user_id=4d513d3d&token=ab13ed462ce71db55a56a2f5c0685541",
+    "name": "Api-Legal-Terms"
+  },
+  {
+    "method": "POST",
+    "path": "/{{api-url}}Api-Apply-Job",
+    "name": "Api-Apply-Job"
+  },
+  {
+    "method": "GET",
+    "path": "/{{api-url}}Api-Folders-List-By-Type?user_id=4e673d3d&token=e53bc3f9d6ef3f7e5b6943d0c3b526f1&type=network",
+    "name": "Api-Folders-List-By-Type"
+  },
+  {
+    "method": "POST",
+    "path": "/{{api-url}}Api-Add-Folder-By-Type",
+    "name": "Api-Add-Folder-By-Type"
+  },
+  {
+    "method": "GET",
+    "path": "/{{api-url}}Api-Sub-Folders-List?user_id=4e673d3d&token=e53bc3f9d6ef3f7e5b6943d0c3b526f1&user_folder_id=22",
+    "name": "Api-Sub-Folders-List"
+  },
+  {
+    "method": "POST",
+    "path": "/{{api-url}}Api-Add-Sub-Folder",
+    "name": "Api-Add-Sub-Folder"
+  },
+  {
+    "method": "GET",
+    "path": "/{{api-url}}Api-View-User-Detail-By-Qrcode?user_id=4e673d3d&token=0d39cbf7387ac005f59a799f544ed80c&contact_token=da8c6d5f90f52c68fb3b80fd4a4cb862",
+    "name": "Api-View-User-Detail-By-Qrcode"
+  },
+  {
+    "method": "GET",
+    "path": "/{{api-url}}Api-Contacts-List?user_id=4d513d3d&token=ab13ed462ce71db55a56a2f5c0685541&user_folder_id=8&user_sub_folder_id=1",
+    "name": "Api-Contacts-List"
+  },
+  {
+    "method": "POST",
+    "path": "/{{api-url}}Api-Add-Contact",
+    "name": "Api-Add-Contact"
+  },
+  {
+    "method": "POST",
+    "path": "/{{api-url}}Api-Add-Contact-Visiting-Card",
+    "name": "Api-Add-Contact-Visiting-Card"
+  },
+  {
+    "method": "POST",
+    "path": "/{{api-url}}Api-Activate-Card",
+    "name": "Api-Activate-Card"
+  },
+  {
+    "method": "GET",
+    "path": "/{{api-url}}Api-Promotions-List?user_id=4d513d3d&token=ab13ed462ce71db55a56a2f5c0685541",
+    "name": "Api-Promotions-List"
+  },
+  {
+    "method": "GET",
+    "path": "/{{api-url}}Api-Service-Master-List?user_id=4d513d3d&token=ab13ed462ce71db55a56a2f5c0685541",
+    "name": "Api-Service-Master-List"
+  },
+  {
+    "method": "GET",
+    "path": "/{{api-url}}Api-Services-List?user_id=4d513d3d&token=ab13ed462ce71db55a56a2f5c0685541",
+    "name": "Api-Services-List"
+  },
+  {
+    "method": "POST",
+    "path": "/{{api-url}}Api-Save-Service-Provider",
+    "name": "Api-Save-Service-Provider"
+  },
+  {
+    "method": "POST",
+    "path": "/{{api-url}}Api-Add-Review-Rating",
+    "name": "Api-Add-Review-Rating"
+  },
+  {
+    "method": "POST",
+    "path": "/{{api-url}}Api-Save-Service-Details",
+    "name": "Api-Save-Service-Details"
+  },
+  {
+    "method": "GET",
+    "path": "/{{api-url}}Api-View-Business-Card?user_id=4e673d3d&token=e53bc3f9d6ef3f7e5b6943d0c3b526f1&",
+    "name": "Api-View-Business-Card"
+  },
+  {
+    "method": "GET",
+    "path": "/{{api-url}}Api-View-Contact-Visiting-Card?user_id=4d513d3d&token=3b61d959b56a5d93f7fc83e1b5da8b8e&user_sub_folder_id=1",
+    "name": "Api-View-Contact-Visiting-Card"
+  },
+  {
+    "method": "POST",
+    "path": "/Api-Verify-Otp",
+    "name": "Api-Verify-Otp"
+  },
+  {
+    "method": "GET",
+    "path": "/{{api-url}}Api-All-Services-List?user_id=4d513d3d&token=ab13ed462ce71db55a56a2f5c0685541&service_id=1",
+    "name": "Api-All-Services-List"
+  },
+  {
+    "method": "GET",
+    "path": "/{{api-url}}Api-View-Service-Details?user_id=4d513d3d&token=cb28a886fa1802bb98441a69d0566909&usps_id=14",
+    "name": "Api-View-Service-Details"
+  },
+  {
+    "method": "GET",
+    "path": "/{{api-url}}Api-Service-Unlock?user_id=4d513d3d&token=ab13ed462ce71db55a56a2f5c0685541&sp_id=3&service_id=1",
+    "name": "Api-Service-Unlock"
+  },
+  {
+    "method": "GET",
+    "path": "/{{api-url}}Api-All-Service-Unlock-List?user_id=4d513d3d&token=3b61d959b56a5d93f7fc83e1b5da8b8e&filter_date=2024-11-09",
+    "name": "Api-All-Service-Unlock-List"
+  },
+  {
+    "method": "GET",
+    "path": "/{{api-url}}Api-View-Events-Attended?user_id=4d513d3d&token=3b61d959b56a5d93f7fc83e1b5da8b8e",
+    "name": "Api-View-Events-Attended"
+  },
+  {
+    "method": "GET",
+    "path": "/{{api-url}}Api-View-Events-Organised?user_id=4d513d3d&token=3b61d959b56a5d93f7fc83e1b5da8b8e",
+    "name": "Api-View-Events-Organised"
+  },
+  {
+    "method": "GET",
+    "path": "/{{api-url}}Api-Fund-Size-List?user_id=4e673d3d&token=e53bc3f9d6ef3f7e5b6943d0c3b526f1",
+    "name": "Api-Fund-Size-List"
+  },
+  {
+    "method": "POST",
+    "path": "/{{api-url}}Api-Save-Investor",
+    "name": "Api-Save-Investor"
+  },
+  {
+    "method": "GET",
+    "path": "/{{api-url}}Api-View-Investor-Details?user_id=4d513d3d&token=cb28a886fa1802bb98441a69d0566909&investor_id=4",
+    "name": "Api-View-Investor-Details"
+  },
+  {
+    "method": "GET",
+    "path": "/{{api-url}}Api-All-Investors-List?user_id=4d513d3d&token=3b61d959b56a5d93f7fc83e1b5da8b8e",
+    "name": "Api-All-Investors-List"
+  },
+  {
+    "method": "POST",
+    "path": "/{{api-url}}Api-Save-Chat",
+    "name": "Api-Save-Chat"
+  },
+  {
+    "method": "GET",
+    "path": "/{{api-url}}Api-View-Chat?user_id=4e673d3d&token=e53bc3f9d6ef3f7e5b6943d0c3b526f1&current_user_id=1",
+    "name": "Api-View-Chat"
+  },
+  {
+    "method": "GET",
+    "path": "/{{api-url}}Api-Chat-Users-List?user_id=4e673d3d&token=e53bc3f9d6ef3f7e5b6943d0c3b526f1",
+    "name": "Api-Chat-Users-List"
+  },
+  {
+    "method": "GET",
+    "path": "/{{api-url}}Api-Investor-Unlock?user_id=4d513d3d&token=3b61d959b56a5d93f7fc83e1b5da8b8e&investor_id=5&meeting_id=2&meeting_date=2024-12-31&meeting_time=10:00:00",
+    "name": "Api-Investor-Unlock"
+  },
+  {
+    "method": "POST",
+    "path": "/{{api-url}}Api-Add-Investor-Review-Rating",
+    "name": "Api-Add-Investor-Review-Rating"
+  },
+  {
+    "method": "GET",
+    "path": "/{{api-url}}Api-My-Investor-Profile?user_id=4d513d3d&token=3b61d959b56a5d93f7fc83e1b5da8b8e",
+    "name": "Api-My-Investor-Profile"
+  },
+  {
+    "method": "GET",
+    "path": "/{{api-url}}Api-My-Investor-Meets?user_id=4d513d3d&token=3b61d959b56a5d93f7fc83e1b5da8b8e&filter_type=pending",
+    "name": "Api-My-Investor-Meets"
+  },
+  {
+    "method": "GET",
+    "path": "/{{api-url}}Api-Investor-Desk?user_id=4d54633d&token=bcd7c63400b0c805467d1527a9bce365&filter_type=completed",
+    "name": "Api-Investor-Desk"
+  },
+  {
+    "method": "POST",
+    "path": "/wa/api/v1/msg",
+    "name": "https://api.gupshup.io/wa/api/v1/msg"
+  },
+  {
+    "method": "POST",
+    "path": "/partner/account/login",
+    "name": "https://partner.gupshup.io/partner/account/login"
+  },
+  {
+    "method": "GET",
+    "path": "/records",
+    "name": "https://anxiety-depression1.p.rapidapi.com/records?orderBy=dataListIndex_asc&index=0&limit=500"
+  },
+  {
+    "method": "GET",
+    "path": "/dataListIndex",
+    "name": "https://medicare-claims-data.p.rapidapi.com/dataListIndex?index=0&limit=500&orderBy=asc&value=0"
+  },
+  {
+    "method": "GET",
+    "path": "/fhir/4.0/HealthcareService",
+    "name": "https://developer-solution/fhir/4.0/HealthcareService?specialty=http://snomed.info/sctCode%7C408467006"
+  }
+]
