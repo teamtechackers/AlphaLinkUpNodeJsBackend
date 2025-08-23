@@ -1,6 +1,7 @@
 'use strict';
 
 const express = require('express');
+const path = require('path');
 const router = express.Router();
 
 // Import controllers
@@ -13,6 +14,10 @@ const adminAuth = require('../middlewares/adminAuth');
 const validate = require('../middlewares/validation');
 const rateLimiter = require('../middlewares/rateLimiter');
 const { checkUser } = require('../middlewares/checkUser');
+const { uploadProfilePhoto, uploadFormData, uploadEvents } = require('../middlewares/upload');
+
+// Serve static files (images, uploads)
+router.use('/uploads', express.static(path.join(__dirname, '../../uploads')));
 
 // Health check endpoint
 router.get('/health', (req, res) => {
@@ -69,8 +74,8 @@ router.get('/api/getEventTypeList', ApiController.getEventTypeList);
 router.get('/api/getFundSizeList', ApiController.getFundSizeList);
 
 // Profile Routes
-router.post('/api/updateProfile', checkUser, ApiController.updateProfile);
-router.get('/api/getProfile', checkUser, ApiController.getProfile);
+router.post('/api/updateProfile', uploadProfilePhoto.single('profile_photo'), ApiController.updateProfile);
+router.get('/api/getProfile', ApiController.getProfile);
 router.get('/api/getUserDetailByMobile', checkUser, ApiController.getUserDetailByMobile);
 router.get('/api/getUserDetailByQrCode', checkUser, ApiController.getUserDetailByQrCode);
 router.get('/api/getUserProfileByMobile', checkUser, ApiController.getUserProfileByMobile);
@@ -92,8 +97,8 @@ router.post('/api/deleteWorkDetail', checkUser, ApiController.genericHandler);
 router.get('/api/dashboard', checkUser, ApiController.dashboard);
 
 // Job Routes
-router.post('/api/saveJobInformation', checkUser, ApiController.genericHandler);
-router.get('/api/getJobInformation', checkUser, ApiController.getJobInformation);
+router.post('/api/saveJobInformation', uploadFormData.none(), ApiController.saveJobInformation);
+router.get('/api/getJobInformation', ApiController.getJobInformation);
 router.post('/api/saveJobApplication', checkUser, ApiController.genericHandler);
 router.get('/api/getJobDetail', checkUser, ApiController.getJobDetail);
 router.get('/api/getJobApplicantsList', checkUser, ApiController.getJobApplicantsList);
@@ -101,8 +106,8 @@ router.get('/api/getResumes', checkUser, ApiController.getResumes);
 router.post('/api/deleteResume', checkUser, ApiController.genericHandler);
 
 // Event Routes
-router.post('/api/saveEventInformation', checkUser, ApiController.saveEventInformation);
-router.get('/api/getEventInformation', checkUser, ApiController.getEventInformation);
+router.post('/api/saveEventInformation', uploadEvents.single('event_banner_file'), ApiController.saveEventInformation);
+router.get('/api/getEventInformation', ApiController.getEventInformation);
 router.get('/api/getEventDetail', checkUser, ApiController.getEventDetail);
 router.get('/api/getEventOrganisersList', checkUser, ApiController.getEventOrganisersList);
 router.post('/api/saveEventOrganiser', checkUser, ApiController.genericHandler);

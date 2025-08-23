@@ -9,7 +9,7 @@ function ensureDirSync(dir) {
 }
 
 function storageFor(subdir) {
-  const base = path.join(process.cwd(), 'AlphaLinkup_PHP_Backend', 'uploads', subdir);
+  const base = path.join(process.cwd(), 'uploads', subdir);
   ensureDirSync(base);
   return multer.diskStorage({
     destination: function (req, file, cb) {
@@ -27,7 +27,9 @@ const uploadProjectLogo = multer({ storage: storageFor('project_logo') });
 const uploadEvents = multer({ storage: storageFor('events') });
 const uploadServices = multer({ storage: storageFor('services') });
 const uploadVisitingCards = multer({ storage: storageFor('visting_cards') });
+const uploadProfilePhoto = multer({ storage: storageFor('profiles') });
+const uploadFormData = multer();
 
-module.exports = { uploadProjectLogo, uploadEvents, uploadServices, uploadVisitingCards };
+module.exports = { uploadProjectLogo, uploadEvents, uploadServices, uploadVisitingCards, uploadProfilePhoto, uploadFormData };
 
 
