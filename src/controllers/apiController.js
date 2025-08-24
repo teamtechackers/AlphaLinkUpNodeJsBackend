@@ -559,9 +559,243 @@ const ApiController = {
   },
 
   async getUserDetailByMobile(req, res) {
-    const { mobile } = req.body;
-    const rows = await query('SELECT * FROM users WHERE mobile LIKE ?', [`%${mobile}%`]);
-    return ok(res, { data: toArray(rows) });
+    try {
+      const { user_id, token, mobile_no } = req.query;
+      
+      // Check if user_id, token, and mobile_no are provided
+      if (!user_id || !token || !mobile_no) {
+        return fail(res, 500, 'user_id, token, and mobile_no are required');
+      }
+      
+      // Decode user ID
+      const decodedUserId = idDecode(user_id);
+      if (!decodedUserId) {
+        return fail(res, 500, 'Invalid user ID');
+      }
+      
+      // Get user details and validate
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      if (!userRows.length) {
+        return fail(res, 500, 'Not A Valid User');
+      }
+      
+      const user = userRows[0];
+      
+      // Validate token
+      if (user.unique_token !== token) {
+        return fail(res, 500, 'Token Mismatch Exception');
+      }
+      
+      // Get user profile by mobile (matching PHP implementation)
+      const baseUrl = `${req.protocol}://${req.get('host')}`;
+      const profilePhotoPath = `${baseUrl}/uploads/profiles/`;
+      const qrCodePath = `${baseUrl}/uploads/qr_codes/`;
+      
+      const userProfileRows = await query(
+        `SELECT user_id, 
+                COALESCE(full_name, '') as full_name,
+                COALESCE(email, '') as email,
+                mobile,
+                COALESCE(address, '') as address,
+                COALESCE(users.city_id, '') as city_id,
+                COALESCE(cities.name, '') as city,
+                COALESCE(users.state_id, '') as state_id,
+                COALESCE(states.name, '') as state,
+                COALESCE(users.country_id, '') as country_id,
+                COALESCE(countries.name, '') as country,
+                COALESCE(interests, '') as interests,
+                COALESCE(linkedin_url, '') as linkedin_url,
+                COALESCE(summary, '') as summary,
+                IF(profile_photo != '', CONCAT(?, profile_photo), '') AS profile_photo,
+                IF(qr_image != '', CONCAT(?, qr_image), '') AS qr_image,
+                profile_updated,
+                card_requested,
+                is_service_provider,
+                is_investor
+         FROM users
+         LEFT JOIN countries ON countries.id = users.country_id
+         LEFT JOIN states ON states.id = users.state_id
+         LEFT JOIN cities ON cities.id = users.city_id
+         WHERE mobile LIKE ?`,
+        [profilePhotoPath, qrCodePath, `%${mobile_no}%`]
+      );
+      
+      console.log('User profile rows found:', userProfileRows.length);
+      console.log('First row:', userProfileRows[0]);
+      
+      if (!userProfileRows.length) {
+        return fail(res, 500, 'User not found with this mobile number');
+      }
+      
+      // Return response in PHP format
+      return res.json({
+        status: true,
+        rcode: 200,
+        user_id: idEncode(decodedUserId),
+        unique_token: token,
+        user_details: toArray(userProfileRows)
+      });
+      
+    } catch (error) {
+      console.error('getUserDetailByMobile error:', error);
+      return fail(res, 500, 'Failed to get user detail by mobile');
+    }
+  },
+
+  async getUserProfileByMobile(req, res) {
+    try {
+      const { user_id, token, mobile_no } = req.query;
+      
+      // Check if user_id, token, and mobile_no are provided
+      if (!user_id || !token || !mobile_no) {
+        return fail(res, 500, 'user_id, token, and mobile_no are required');
+      }
+      
+      // Decode user ID
+      const decodedUserId = idDecode(user_id);
+      if (!decodedUserId) {
+        return fail(res, 500, 'Invalid user ID');
+      }
+      
+      // Get user details and validate
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      if (!userRows.length) {
+        return fail(res, 500, 'Not A Valid User');
+      }
+      
+      const user = userRows[0];
+      
+      // Validate token
+      if (user.unique_token !== token) {
+        return fail(res, 500, 'Token Mismatch Exception');
+      }
+
+      // Get interests list for processing
+      const interestsList = await query('SELECT id as interest_id, name as interest FROM interests WHERE status = 1 AND deleted = 0');
+      const interestsMap = {};
+      if (interestsList.length > 0) {
+        interestsList.forEach(row => {
+          interestsMap[row.interest_id] = row.interest;
+        });
+      }
+
+      // Get user profile by mobile number
+      const baseUrl = `${req.protocol}://${req.get('host')}`;
+      const profilePhotoPath = `${baseUrl}/uploads/profiles/`;
+      const qrCodePath = `${baseUrl}/uploads/qr_codes/`;
+      
+      const userProfileRows = await query(
+        `SELECT user_id, 
+                COALESCE(full_name, '') as full_name,
+                COALESCE(email, '') as email,
+                mobile,
+                COALESCE(address, '') as address,
+                COALESCE(users.city_id, '') as city_id,
+                COALESCE(cities.name, '') as city,
+                COALESCE(users.state_id, '') as state_id,
+                COALESCE(states.name, '') as state,
+                COALESCE(users.country_id, '') as country_id,
+                COALESCE(countries.name, '') as country,
+                COALESCE(interests, '') as interests,
+                COALESCE(linkedin_url, '') as linkedin_url,
+                COALESCE(summary, '') as summary,
+                IF(profile_photo != '', CONCAT(?, profile_photo), '') AS profile_photo,
+                IF(qr_image != '', CONCAT(?, qr_image), '') AS qr_image,
+                profile_updated,
+                card_requested,
+                is_service_provider,
+                is_investor
+         FROM users
+         LEFT JOIN countries ON countries.id = users.country_id
+         LEFT JOIN states ON states.id = users.state_id
+         LEFT JOIN cities ON cities.id = users.city_id
+         WHERE mobile LIKE ?`,
+        [profilePhotoPath, qrCodePath, `%${mobile_no}%`]
+      );
+      
+      if (!userProfileRows.length) {
+        return fail(res, 500, 'User not found with this mobile number');
+      }
+
+      // Process interests (convert IDs to names)
+      const userData = userProfileRows[0];
+      if (userData.interests && userData.interests !== '') {
+        const interestIds = userData.interests.split(',');
+        const interestNames = [];
+        if (interestIds.length > 0) {
+          interestIds.forEach(interestId => {
+            if (interestsMap[interestId.trim()]) {
+              interestNames.push(interestsMap[interestId.trim()]);
+            }
+          });
+          userData.interests = interestNames.join(',');
+        }
+      }
+
+      const searchUserId = userData.user_id;
+      
+      // Get Educational Details
+      let educationDetails = [];
+      if (searchUserId > 0) {
+        const educationRows = await query(
+          `SELECT *, 
+                  DATE_FORMAT(start_date, '%d-%m-%Y') AS start_date,
+                  DATE_FORMAT(end_date, '%d-%m-%Y') AS end_date
+           FROM user_education_details 
+           WHERE user_id = ? 
+           ORDER BY education_detail_id`,
+          [searchUserId]
+        );
+        educationDetails = toArray(educationRows);
+      }
+      
+      // Get Work Details
+      let workDetails = [];
+      if (searchUserId > 0) {
+        const workRows = await query(
+          `SELECT user_work_details.*,
+                  DATE_FORMAT(start_date, '%d-%m-%Y') AS start_date,
+                  DATE_FORMAT(end_date, '%d-%m-%Y') AS end_date,
+                  employment_type.name as employment_type
+           FROM user_work_details
+           JOIN employment_type ON employment_type.id = user_work_details.employment_type_id
+           WHERE user_id = ? 
+           ORDER BY work_detail_id`,
+          [searchUserId]
+        );
+        workDetails = toArray(workRows);
+      }
+      
+      // Get Project Details
+      let projectDetails = [];
+      if (searchUserId > 0) {
+        const projectRows = await query(
+          `SELECT *, 
+                  IF(project_logo != '', CONCAT(?, project_logo), '') AS project_logo
+           FROM user_project_details 
+           WHERE user_id = ? 
+           ORDER BY project_detail_id`,
+          [`${baseUrl}/uploads/projects/`, searchUserId]
+        );
+        projectDetails = toArray(projectRows);
+      }
+      
+      // Return response in PHP format
+      return res.json({
+        status: true,
+        rcode: 200,
+        user_id: idEncode(decodedUserId),
+        unique_token: token,
+        user_details: userProfileRows.length > 0 ? userProfileRows : [],
+        education_details: educationDetails,
+        work_details: workDetails,
+        project_details: projectDetails
+      });
+      
+    } catch (error) {
+      console.error('getUserProfileByMobile error:', error);
+      return fail(res, 500, 'Failed to get user profile by mobile');
+    }
   },
   async getUserDetailByQrCode(req, res) {
     const { qr_code_token } = req.body;
@@ -676,18 +910,110 @@ const ApiController = {
     }
   },
   async getJobDetail(req, res) {
-    const { job_id } = req.body;
-    const rows = await query(
-      `SELECT user_job_details.*, job_type.name AS job_type, pay.name AS pay, countries.name AS country, states.name AS state, cities.name AS city
-       FROM user_job_details
-       JOIN job_type ON job_type.id = user_job_details.job_type_id
-       JOIN pay ON pay.id = user_job_details.pay_id
-       JOIN countries ON countries.id = user_job_details.country_id
-       JOIN states ON states.id = user_job_details.state_id
-       JOIN cities ON cities.id = user_job_details.city_id
-       WHERE job_id = ?`, [job_id]
-    );
-    return ok(res, { data: toArray(rows) });
+    try {
+      const { user_id, token, job_id } = req.query;
+      
+      // Check if user_id, token, and job_id are provided
+      if (!user_id || !token || !job_id) {
+        return fail(res, 500, 'user_id, token, and job_id are required');
+      }
+      
+      // Decode user ID
+      const decodedUserId = idDecode(user_id);
+      if (!decodedUserId) {
+        return fail(res, 500, 'Invalid user ID');
+      }
+      
+      // Get user details and validate
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      if (!userRows.length) {
+        return fail(res, 500, 'Not A Valid User');
+      }
+      
+      const user = userRows[0];
+      
+      // Validate token
+      if (user.unique_token !== token) {
+        return fail(res, 500, 'Token Mismatch Exception');
+      }
+      
+      // Get job detail with joins (matching PHP implementation)
+      const jobRows = await query(
+        `SELECT user_job_details.*, 
+                job_type.name as job_type,
+                pay.name as pay,
+                countries.name as country,
+                states.name as state,
+                cities.name as city,
+                GROUP_CONCAT(skills.name) AS skills
+         FROM user_job_details
+         JOIN job_type ON job_type.id = user_job_details.job_type_id
+         JOIN pay ON pay.id = user_job_details.pay_id
+         JOIN countries ON countries.id = user_job_details.country_id
+         JOIN states ON states.id = user_job_details.state_id
+         JOIN cities ON cities.id = user_job_details.city_id
+         JOIN skills ON FIND_IN_SET(skills.id, user_job_details.skill_ids)
+         WHERE user_job_details.job_id = ?
+         GROUP BY user_job_details.job_id`,
+        [job_id]
+      );
+      
+      if (!jobRows.length) {
+        return fail(res, 500, 'Job not found');
+      }
+      
+      // Process skills mapping (matching PHP implementation)
+      const jobData = jobRows[0];
+      if (jobData.skills && jobData.skill_ids) {
+        const skillIds = jobData.skill_ids.split(',');
+        const skills = jobData.skills.split(',');
+        
+        const mappedSkills = [];
+        for (let i = 0; i < skillIds.length; i++) {
+          mappedSkills.push({
+            id: skillIds[i],
+            skill: skills[i] || null
+          });
+        }
+        
+        jobData.mapped_skills = mappedSkills;
+      }
+      
+      // Get job applicants list
+      const applicantsRows = await query(
+        `SELECT user_job_applications.user_id AS applicant_id, 
+                COALESCE(user_job_applications.first_name,'') AS first_name, 
+                COALESCE(user_job_applications.last_name,'') AS last_name, 
+                COALESCE(user_job_applications.email,'') AS email, 
+                user_job_applications.mobile,
+                COALESCE(user_job_applications.skills,'') AS skills,
+                IF(users.profile_photo != '', CONCAT(?, users.profile_photo), '') AS profile_photo,
+                IF(user_resumes.resume_file != '', CONCAT(?, user_resumes.resume_file), '') AS resume_file
+         FROM user_job_applications
+         LEFT JOIN users ON users.user_id = user_job_applications.user_id
+         LEFT JOIN user_resumes ON user_resumes.resume_id = user_job_applications.resume_id
+         WHERE user_job_applications.job_id = ?`,
+        [`${req.protocol}://${req.get('host')}/uploads/profiles/`, `${req.protocol}://${req.get('host')}/uploads/resumes/`, job_id]
+      );
+      
+      // Check if user has applied for this job
+      const hasApplied = applicantsRows.some(applicant => applicant.applicant_id === decodedUserId);
+      
+      // Return response in PHP format
+      return res.json({
+        status: true,
+        rcode: 200,
+        user_id: idEncode(decodedUserId),
+        unique_token: token,
+        job_detail: [jobData],
+        job_applicants: toArray(applicantsRows),
+        has_applied: hasApplied
+      });
+      
+    } catch (error) {
+      console.error('getJobDetail error:', error);
+      return fail(res, 500, 'Failed to get job detail');
+    }
   },
   async getJobApplicantsList(req, res) {
     const { job_id } = req.body;
@@ -706,31 +1032,146 @@ const ApiController = {
     return ok(res, { data: toArray(rows) });
   },
   async getResumes(req, res) {
-    const rows = await query('SELECT * FROM user_resumes WHERE user_id = ? AND status=1', [req.user.id]);
-    return ok(res, { data: toArray(rows) });
+    try {
+      const { user_id, token } = req.query;
+      
+      // Check if user_id and token are provided
+      if (!user_id || !token) {
+        return fail(res, 500, 'user_id and token are required');
+      }
+      
+      // Decode user ID
+      const decodedUserId = idDecode(user_id);
+      if (!decodedUserId) {
+        return fail(res, 500, 'Invalid user ID');
+      }
+      
+      // Get user details and validate
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      if (!userRows.length) {
+        return fail(res, 500, 'Not A Valid User');
+      }
+      
+      const user = userRows[0];
+      
+      // Validate token
+      if (user.unique_token !== token) {
+        return fail(res, 500, 'Token Mismatch Exception');
+      }
+      
+      // Get resumes with file path and extension (matching PHP implementation)
+      const baseUrl = `${req.protocol}://${req.get('host')}`;
+      const resumeFilePath = `${baseUrl}/uploads/resumes/`;
+      
+      const rows = await query(
+        `SELECT *, 
+                IF(resume_file != '', CONCAT(?, resume_file), '') AS resume_file,
+                IF(resume_file != '', SUBSTRING_INDEX(resume_file, '.', -1), '') AS resume_file_extension
+         FROM user_resumes 
+         WHERE user_id = ? AND status = 1`,
+        [resumeFilePath, decodedUserId]
+      );
+      
+      // Return response in PHP format
+      return res.json({
+        status: true,
+        rcode: 200,
+        user_id: idEncode(decodedUserId),
+        unique_token: token,
+        resumes_list: toArray(rows)
+      });
+      
+    } catch (error) {
+      console.error('getResumes error:', error);
+      return fail(res, 500, 'Failed to get resumes');
+    }
   },
 
   // Save project details (with optional project_logo)
   async saveProjectDetails(req, res) {
-    const {
-      project_detail_id = 0,
-      project_title,
-      project_description
-    } = req.body;
-    const file = req.file;
-    const project_logo = file ? file.filename : '';
-    if (Number(project_detail_id) > 0) {
-      await query(
-        'UPDATE user_project_details SET project_title=?, project_description=?, project_logo=? WHERE project_detail_id=? AND user_id=?',
-        [project_title, project_description, project_logo, project_detail_id, req.user.id]
-      );
-    } else {
-      await query(
-        'INSERT INTO user_project_details (user_id, project_title, project_description, project_logo) VALUES (?, ?, ?, ?)',
-        [req.user.id, project_title, project_description, project_logo]
-      );
+    try {
+      const { user_id, token, project_detail_id, project_name, description, project_url, start_month, start_year, closed_month, closed_year } = req.body;
+      
+      // Check if user_id and token are provided
+      if (!user_id || !token) {
+        return fail(res, 500, 'user_id and token are required');
+      }
+      
+      // Decode user ID
+      const decodedUserId = idDecode(user_id);
+      if (!decodedUserId) {
+        return fail(res, 500, 'Invalid user ID');
+      }
+      
+      // Get user details and validate
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      if (!userRows.length) {
+        return fail(res, 500, 'Not A Valid User');
+      }
+      
+      const user = userRows[0];
+      
+      // Validate token
+      if (user.unique_token !== token) {
+        return fail(res, 500, 'Token Mismatch Exception');
+      }
+
+      // Check mandatory fields
+      if (!project_name || !description || !start_month || !start_year || !closed_month || !closed_year) {
+        return fail(res, 500, 'Please enter mandatory fields');
+      }
+
+      let finalProjectDetailId = project_detail_id || 0;
+
+      // Handle project logo upload if provided
+      let projectLogo = null;
+      if (req.file && req.file.filename) {
+        projectLogo = req.file.filename;
+      }
+
+      if (finalProjectDetailId == 0) {
+        // Insert new project detail
+        const result = await query(
+          `INSERT INTO user_project_details (user_id, project_name, description, project_url, start_month, start_year, closed_month, closed_year, project_logo) 
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [decodedUserId, project_name, description, project_url || '', start_month, start_year, closed_month, closed_year, projectLogo]
+        );
+        finalProjectDetailId = result.insertId;
+      } else {
+        // Update existing project detail
+        const updateFields = ['project_name = ?', 'description = ?', 'project_url = ?', 'start_month = ?', 'start_year = ?', 'closed_month = ?', 'closed_year = ?'];
+        const updateValues = [project_name, description, project_url || '', start_month, start_year, closed_month, closed_year];
+        
+        // Add project_logo to update if provided
+        if (projectLogo) {
+          updateFields.push('project_logo = ?');
+          updateValues.push(projectLogo);
+        }
+        
+        updateValues.push(finalProjectDetailId, decodedUserId);
+        
+        await query(
+          `UPDATE user_project_details 
+           SET ${updateFields.join(', ')}
+           WHERE project_detail_id = ? AND user_id = ?`,
+          updateValues
+        );
+      }
+      
+      // Return response in PHP format
+      return res.json({
+        status: true,
+        rcode: 200,
+        user_id: idEncode(decodedUserId),
+        unique_token: token,
+        project_detail_id: finalProjectDetailId,
+        message: 'Project Details saved successfully'
+      });
+      
+    } catch (error) {
+      console.error('saveProjectDetails error:', error);
+      return fail(res, 500, 'Failed to save project details');
     }
-    return ok(res, { message: 'Project details saved' });
   },
 
   // Events (read-only parity)
@@ -801,9 +1242,111 @@ const ApiController = {
     }
   },
   async getEventDetail(req, res) {
-    const { event_id } = req.body;
-    const rows = await query('SELECT * FROM user_event_details WHERE event_id = ?', [event_id]);
-    return ok(res, { data: toArray(rows) });
+    try {
+      const { user_id, token, event_id } = req.query;
+      
+      // Check if user_id, token, and event_id are provided
+      if (!user_id || !token || !event_id) {
+        return fail(res, 500, 'user_id, token, and event_id are required');
+      }
+      
+      // Decode user ID
+      const decodedUserId = idDecode(user_id);
+      if (!decodedUserId) {
+        return fail(res, 500, 'Invalid user ID');
+      }
+      
+      // Get user details and validate
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      if (!userRows.length) {
+        return fail(res, 500, 'Not A Valid User');
+      }
+      
+      const user = userRows[0];
+      
+      // Validate token
+      if (user.unique_token !== token) {
+        return fail(res, 500, 'Token Mismatch Exception');
+      }
+      
+      // Get event detail with joins (matching PHP implementation)
+      const baseUrl = `${req.protocol}://${req.get('host')}`;
+      const eventBannerPath = `${baseUrl}/uploads/events/`;
+      
+      const eventRows = await query(
+        `SELECT user_event_details.*, 
+                COALESCE(full_name, '') as host_name,
+                event_mode.name as event_mode,
+                event_type.name as event_type,
+                IF(event_banner != '', CONCAT(?, event_banner), '') AS event_banner
+         FROM user_event_details
+         LEFT JOIN event_mode ON event_mode.id = user_event_details.event_mode_id
+         LEFT JOIN event_type ON event_type.id = user_event_details.event_type_id
+         LEFT JOIN users ON users.user_id = user_event_details.user_id
+         WHERE user_event_details.event_id = ?
+         ORDER BY event_id`,
+        [eventBannerPath, event_id]
+      );
+      
+      if (!eventRows.length) {
+        return fail(res, 500, 'Event not found');
+      }
+      
+      // Get event organisers list
+      const organisersRows = await query(
+        `SELECT users.user_id AS organiser_id, COALESCE(full_name,'') AS full_name, COALESCE(email,'') AS email, mobile,
+                IF(profile_photo != '', CONCAT(?, profile_photo), '') AS profile_photo
+         FROM event_organisers
+         JOIN users ON users.user_id = event_organisers.user_id
+         WHERE event_organisers.event_id = ?`,
+        [`${baseUrl}/uploads/profiles/`, event_id]
+      );
+      
+      // Get event attendees list
+      const attendeesRows = await query(
+        `SELECT users.user_id AS attendee_id, COALESCE(full_name,'') AS full_name, COALESCE(email,'') AS email, mobile,
+                IF(profile_photo != '', CONCAT(?, profile_photo), '') AS profile_photo
+         FROM event_attendees
+         JOIN users ON users.user_id = event_attendees.user_id
+         WHERE event_attendees.event_id = ?`,
+        [`${baseUrl}/uploads/profiles/`, event_id]
+      );
+      
+      // Check if user has attended or organised this event
+      let has_attended = false;
+      let has_organised = false;
+      
+      if (organisersRows.length > 0) {
+        const organiserUserIds = organisersRows.map(row => row.organiser_id);
+        if (organiserUserIds.includes(decodedUserId)) {
+          has_organised = true;
+        }
+      }
+      
+      if (attendeesRows.length > 0) {
+        const attendeeUserIds = attendeesRows.map(row => row.attendee_id);
+        if (attendeeUserIds.includes(decodedUserId)) {
+          has_attended = true;
+        }
+      }
+      
+      // Return response in PHP format
+      return res.json({
+        status: true,
+        rcode: 200,
+        user_id: idEncode(decodedUserId),
+        unique_token: token,
+        event_detail: toArray(eventRows),
+        event_organisers: toArray(organisersRows),
+        event_attendees: toArray(attendeesRows),
+        has_attended: has_attended,
+        has_organised: has_organised
+      });
+      
+    } catch (error) {
+      console.error('getEventDetail error:', error);
+      return fail(res, 500, 'Failed to get event detail');
+    }
   },
   async saveEventInformation(req, res) {
     try {
@@ -1451,11 +1994,191 @@ const ApiController = {
   },
 
   async getWorkDetails(req, res) {
-    return ok(res, { message: 'Work details retrieved successfully' });
+    try {
+      const { user_id, token } = req.query;
+      
+      // Check if user_id and token are provided
+      if (!user_id || !token) {
+        return fail(res, 500, 'user_id and token are required');
+      }
+      
+      // Decode user ID
+      const decodedUserId = idDecode(user_id);
+      if (!decodedUserId) {
+        return fail(res, 500, 'Invalid user ID');
+      }
+      
+      // Get user details and validate
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      if (!userRows.length) {
+        return fail(res, 500, 'Not A Valid User');
+      }
+      
+      const user = userRows[0];
+      
+      // Validate token
+      if (user.unique_token !== token) {
+        return fail(res, 500, 'Token Mismatch Exception');
+      }
+
+      // Get work details with employment type and formatted dates
+      const workDetailsRows = await query(
+        `SELECT user_work_details.*,
+                DATE_FORMAT(start_date, '%d-%m-%Y') AS start_date,
+                DATE_FORMAT(end_date, '%d-%m-%Y') AS end_date,
+                employment_type.name as employment_type
+         FROM user_work_details
+         JOIN employment_type ON employment_type.id = user_work_details.employment_type_id
+         WHERE user_id = ? 
+         ORDER BY work_detail_id`,
+        [decodedUserId]
+      );
+      
+      // Return response in PHP format
+      return res.json({
+        status: true,
+        rcode: 200,
+        user_id: idEncode(decodedUserId),
+        unique_token: token,
+        work_details: workDetailsRows.length > 0 ? toArray(workDetailsRows) : []
+      });
+      
+    } catch (error) {
+      console.error('getWorkDetails error:', error);
+      return fail(res, 500, 'Failed to get work details');
+    }
   },
 
   async deleteWorkDetail(req, res) {
-    return ok(res, { message: 'Work detail deleted successfully' });
+    try {
+      const { user_id, token, work_detail_id } = req.body;
+      
+      // Check if user_id, token, and work_detail_id are provided
+      if (!user_id || !token || !work_detail_id) {
+        return fail(res, 500, 'user_id, token, and work_detail_id are required');
+      }
+      
+      // Decode user ID
+      const decodedUserId = idDecode(user_id);
+      if (!decodedUserId) {
+        return fail(res, 500, 'Invalid user ID');
+      }
+      
+      // Get user details and validate
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      if (!userRows.length) {
+        return fail(res, 500, 'Not A Valid User');
+      }
+      
+      const user = userRows[0];
+      
+      // Validate token
+      if (user.unique_token !== token) {
+        return fail(res, 500, 'Token Mismatch Exception');
+      }
+
+      // Check if work_detail_id is valid
+      if (work_detail_id <= 0) {
+        return fail(res, 500, 'Please enter mandatory fields');
+      }
+
+      // Delete the work detail (ensure it belongs to the authenticated user)
+      const result = await query(
+        'DELETE FROM user_work_details WHERE work_detail_id = ? AND user_id = ?',
+        [work_detail_id, decodedUserId]
+      );
+      
+      // Check if any row was affected
+      if (result.affectedRows === 0) {
+        return fail(res, 500, 'Work detail not found or access denied');
+      }
+      
+      // Return response in PHP format
+      return res.json({
+        status: true,
+        rcode: 200,
+        user_id: idEncode(decodedUserId),
+        unique_token: token,
+        message: 'Work Detail deleted successfully'
+      });
+      
+    } catch (error) {
+      console.error('deleteWorkDetail error:', error);
+      return fail(res, 500, 'Failed to delete work detail');
+    }
+  },
+
+  async saveWorkDetails(req, res) {
+    try {
+      const { user_id, token, work_detail_id, company_name, designation, start_date, end_date, currently_working, employment_type_id } = req.body;
+      
+      // Check if user_id and token are provided
+      if (!user_id || !token) {
+        return fail(res, 500, 'user_id and token are required');
+      }
+      
+      // Decode user ID
+      const decodedUserId = idDecode(user_id);
+      if (!decodedUserId) {
+        return fail(res, 500, 'Invalid user ID');
+      }
+      
+      // Get user details and validate
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      if (!userRows.length) {
+        return fail(res, 500, 'Not A Valid User');
+      }
+      
+      const user = userRows[0];
+      
+      // Validate token
+      if (user.unique_token !== token) {
+        return fail(res, 500, 'Token Mismatch Exception');
+      }
+
+      // Check mandatory fields
+      if (!company_name || !designation || !start_date || !employment_type_id) {
+        return fail(res, 500, 'Please enter mandatory fields');
+      }
+
+      // Format dates to Y-m-d format
+      const formattedStartDate = new Date(start_date).toISOString().split('T')[0];
+      const formattedEndDate = end_date ? new Date(end_date).toISOString().split('T')[0] : null;
+
+      let finalWorkDetailId = work_detail_id || 0;
+
+      if (finalWorkDetailId == 0) {
+        // Insert new work detail
+        const result = await query(
+          `INSERT INTO user_work_details (user_id, company_name, designation, start_date, end_date, currently_working, employment_type_id) 
+           VALUES (?, ?, ?, ?, ?, ?, ?)`,
+          [decodedUserId, company_name, designation, formattedStartDate, formattedEndDate, currently_working || 0, employment_type_id]
+        );
+        finalWorkDetailId = result.insertId;
+      } else {
+        // Update existing work detail
+        await query(
+          `UPDATE user_work_details 
+           SET company_name = ?, designation = ?, start_date = ?, end_date = ?, currently_working = ?, employment_type_id = ?
+           WHERE work_detail_id = ? AND user_id = ?`,
+          [company_name, designation, formattedStartDate, formattedEndDate, currently_working || 0, employment_type_id, finalWorkDetailId, decodedUserId]
+        );
+      }
+      
+      // Return response in PHP format
+      return res.json({
+        status: true,
+        rcode: 200,
+        user_id: idEncode(decodedUserId),
+        unique_token: token,
+        work_detail_id: finalWorkDetailId,
+        message: 'Work Details saved successfully'
+      });
+      
+    } catch (error) {
+      console.error('saveWorkDetails error:', error);
+      return fail(res, 500, 'Failed to save work details');
+    }
   },
 
   // Generic handler for missing methods

@@ -76,9 +76,14 @@ router.get('/api/getFundSizeList', ApiController.getFundSizeList);
 // Profile Routes
 router.post('/api/updateProfile', uploadProfilePhoto.single('profile_photo'), ApiController.updateProfile);
 router.get('/api/getProfile', ApiController.getProfile);
-router.get('/api/getUserDetailByMobile', checkUser, ApiController.getUserDetailByMobile);
+router.get('/api/getUserDetailByMobile', ApiController.getUserDetailByMobile);
+router.get('/api/getUserProfileByMobile', ApiController.getUserProfileByMobile);
+router.post('/api/saveWorkDetails', uploadFormData.none(), ApiController.saveWorkDetails);
+router.get('/api/getWorkDetails', ApiController.getWorkDetails);
+router.post('/api/deleteWorkDetail', uploadFormData.none(), ApiController.deleteWorkDetail);
+router.post('/api/saveProjectDetails', uploadFormData.single('project_logo'), ApiController.saveProjectDetails);
 router.get('/api/getUserDetailByQrCode', checkUser, ApiController.getUserDetailByQrCode);
-router.get('/api/getUserProfileByMobile', checkUser, ApiController.getUserProfileByMobile);
+
 
 // Education/Project/Work Routes
 router.post('/api/saveEducationDetails', checkUser, ApiController.genericHandler);
@@ -100,15 +105,15 @@ router.get('/api/dashboard', checkUser, ApiController.dashboard);
 router.post('/api/saveJobInformation', uploadFormData.none(), ApiController.saveJobInformation);
 router.get('/api/getJobInformation', ApiController.getJobInformation);
 router.post('/api/saveJobApplication', checkUser, ApiController.genericHandler);
-router.get('/api/getJobDetail', checkUser, ApiController.getJobDetail);
+router.get('/api/getJobDetail', ApiController.getJobDetail);
 router.get('/api/getJobApplicantsList', checkUser, ApiController.getJobApplicantsList);
-router.get('/api/getResumes', checkUser, ApiController.getResumes);
+router.get('/api/getResumes', ApiController.getResumes);
 router.post('/api/deleteResume', checkUser, ApiController.genericHandler);
 
 // Event Routes
 router.post('/api/saveEventInformation', uploadEvents.single('event_banner_file'), ApiController.saveEventInformation);
 router.get('/api/getEventInformation', ApiController.getEventInformation);
-router.get('/api/getEventDetail', checkUser, ApiController.getEventDetail);
+router.get('/api/getEventDetail', ApiController.getEventDetail);
 router.get('/api/getEventOrganisersList', checkUser, ApiController.getEventOrganisersList);
 router.post('/api/saveEventOrganiser', checkUser, ApiController.genericHandler);
 router.post('/api/deleteEventOrganiser', checkUser, ApiController.genericHandler);
