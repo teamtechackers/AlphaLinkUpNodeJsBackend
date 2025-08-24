@@ -798,9 +798,92 @@ const ApiController = {
     }
   },
   async getUserDetailByQrCode(req, res) {
-    const { qr_code_token } = req.body;
-    const rows = await query('SELECT * FROM users WHERE unique_token = ?', [qr_code_token]);
-    return ok(res, { data: toArray(rows) });
+    try {
+      // Support both query parameters and form data
+      const { user_id, token, contact_token } = {
+        ...req.query,
+        ...req.body
+      };
+      
+      console.log('getUserDetailByQrCode - Parameters:', { user_id, token, contact_token });
+      
+      // Check if user_id and token are provided
+      if (!user_id || !token) {
+        return fail(res, 500, 'user_id and token are required');
+      }
+      
+      if (!contact_token) {
+        return fail(res, 500, 'contact_token is required');
+      }
+      
+      // Decode user ID
+      const decodedUserId = idDecode(user_id);
+      if (!decodedUserId) {
+        return fail(res, 500, 'Invalid user ID');
+      }
+      
+      // Get user details and validate
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      if (!userRows.length) {
+        return fail(res, 500, 'Not A Valid User');
+      }
+      
+      const user = userRows[0];
+      
+      // Validate token
+      if (user.unique_token !== token) {
+        return fail(res, 500, 'Token Mismatch Exception');
+      }
+
+      // Get user profile by QR code token (unique_token)
+      const userProfileRows = await query(`
+        SELECT 
+          u.user_id,
+          COALESCE(u.full_name, '') as full_name,
+          COALESCE(u.email, '') as email,
+          u.mobile,
+          COALESCE(u.address, '') as address,
+          COALESCE(u.city_id, '') as city_id,
+          COALESCE(c.name, '') as city,
+          COALESCE(u.state_id, '') as state_id,
+          COALESCE(s.name, '') as state,
+          COALESCE(u.country_id, '') as country_id,
+          COALESCE(co.name, '') as country,
+          COALESCE(u.interests, '') as interests,
+          COALESCE(u.linkedin_url, '') as linkedin_url,
+          COALESCE(u.summary, '') as summary,
+          CASE 
+            WHEN u.profile_photo != '' THEN CONCAT('${process.env.BASE_URL || 'http://localhost:3000'}/uploads/profiles/', u.profile_photo)
+            ELSE ''
+          END AS profile_photo
+        FROM users u
+        LEFT JOIN countries co ON co.id = u.country_id
+        LEFT JOIN states s ON s.id = u.state_id
+        LEFT JOIN cities c ON c.id = u.city_id
+        LEFT JOIN interests i ON i.id = u.interests
+        WHERE u.unique_token = ? AND u.status = 1
+        LIMIT 1
+      `, [contact_token]);
+      
+      if (!userProfileRows.length) {
+        return fail(res, 500, 'User not found with this QR code token');
+      }
+
+      const userDetails = userProfileRows[0];
+
+      // Return response in PHP format (matching exactly)
+      return res.json({
+        status: true,
+        rcode: 200,
+        user_id: idEncode(decodedUserId),
+        unique_token: token,
+        user_details: userDetails
+      });
+      
+    } catch (error) {
+      console.error('getUserDetailByQrCode error:', error);
+      return fail(res, 500, 'Failed to get user details by QR code');
+    }
   },
   async getUserProfileByMobile(req, res) {
     const { mobile } = req.body;
@@ -2808,6 +2891,216 @@ const ApiController = {
     } catch (error) {
       console.error('saveFolderByType error:', error);
       return fail(res, 500, 'Failed to save folder');
+    }
+  },
+
+  async getSubFoldersList(req, res) {
+    try {
+      // Support both query parameters and form data
+      const { user_id, token, user_folder_id } = {
+        ...req.query,
+        ...req.body
+      };
+      
+      console.log('getSubFoldersList - Parameters:', { user_id, token, user_folder_id });
+      
+      // Check if user_id and token are provided
+      if (!user_id || !token) {
+        return fail(res, 500, 'user_id and token are required');
+      }
+      
+      if (!user_folder_id) {
+        return fail(res, 500, 'user_folder_id is required');
+      }
+      
+      // Decode user ID
+      const decodedUserId = idDecode(user_id);
+      if (!decodedUserId) {
+        return fail(res, 500, 'Invalid user ID');
+      }
+      
+      // Get user details and validate
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      if (!userRows.length) {
+        return fail(res, 500, 'Not A Valid User');
+      }
+      
+      const user = userRows[0];
+      
+      // Validate token
+      if (user.unique_token !== token) {
+        return fail(res, 500, 'Token Mismatch Exception');
+      }
+
+      // Get visiting cards count for each sub folder
+      const visitingCardsCount = {};
+      try {
+        const visitingCardsList = await query(
+          `SELECT user_sub_folder_id, COUNT(*) as visiting_cards_count 
+           FROM user_visiting_cards 
+           WHERE user_id = ? AND status = 1 
+           GROUP BY user_sub_folder_id`,
+          [decodedUserId]
+        );
+        
+        if (visitingCardsList.length > 0) {
+          visitingCardsList.forEach(row => {
+            visitingCardsCount[row.user_sub_folder_id] = row.visiting_cards_count;
+          });
+        }
+        
+        console.log('getSubFoldersList - Visiting cards count:', visitingCardsCount);
+      } catch (error) {
+        console.error('getSubFoldersList - Error getting visiting cards count:', error);
+        // Continue without visiting cards count
+      }
+
+      // Get sub folders list with contacts count
+      let subFoldersList = [];
+      try {
+        subFoldersList = await query(
+          `SELECT usf.user_sub_folder_id, usf.folder_name, usf.user_folder_id,
+                  COALESCE(COUNT(uc.contact_id), 0) as contacts_count
+           FROM user_sub_folders usf
+           LEFT JOIN user_contacts uc ON usf.user_sub_folder_id = uc.user_sub_folder_id AND uc.status = 1
+           WHERE usf.user_id = ? AND usf.user_folder_id = ? AND usf.status = 1
+           GROUP BY usf.user_sub_folder_id, usf.folder_name, usf.user_folder_id
+           ORDER BY usf.user_sub_folder_id ASC`,
+          [decodedUserId, user_folder_id]
+        );
+        
+        console.log('getSubFoldersList - Sub folders with contacts found:', subFoldersList.length);
+      } catch (error) {
+        console.error('getSubFoldersList - Error getting sub folders with contacts:', error);
+        
+        // Fallback: try to get just the sub folders without contacts
+        try {
+          subFoldersList = await query(
+            `SELECT user_sub_folder_id, folder_name, user_folder_id
+             FROM user_sub_folders 
+             WHERE user_id = ? AND user_folder_id = ? AND status = 1
+             ORDER BY user_sub_folder_id ASC`,
+            [decodedUserId, user_folder_id]
+          );
+          
+          // Add default contacts_count
+          subFoldersList.forEach(folder => {
+            folder.contacts_count = 0;
+          });
+          
+          console.log('getSubFoldersList - Basic sub folders found:', subFoldersList.length);
+        } catch (fallbackError) {
+          console.error('getSubFoldersList - Fallback query also failed:', fallbackError);
+          subFoldersList = [];
+        }
+      }
+
+      // Add visiting cards count to sub folders list
+      if (subFoldersList.length > 0) {
+        subFoldersList.forEach(folder => {
+          folder.visiting_cards_count = visitingCardsCount[folder.user_sub_folder_id] || "0";
+        });
+      }
+
+      console.log('getSubFoldersList - Final sub folders list:', subFoldersList);
+      
+      // Return response in PHP format
+      return res.json({
+        status: true,
+        rcode: 200,
+        user_id: idEncode(decodedUserId),
+        unique_token: token,
+        sub_folders_list: subFoldersList || []
+      });
+      
+    } catch (error) {
+      console.error('getSubFoldersList error:', error);
+      return fail(res, 500, 'Failed to get sub folders list');
+    }
+  },
+
+  async saveSubFolder(req, res) {
+    try {
+      // Support both query parameters and form data
+      const { user_id, token, folder_name, user_folder_id, user_sub_folder_id } = {
+        ...req.query,
+        ...req.body
+      };
+      
+      console.log('saveSubFolder - Parameters:', { user_id, token, folder_name, user_folder_id, user_sub_folder_id });
+      
+      // Check if user_id and token are provided
+      if (!user_id || !token) {
+        return fail(res, 500, 'user_id and token are required');
+      }
+      
+      if (!user_folder_id || user_folder_id <= 0 || !folder_name) {
+        return fail(res, 500, 'Please enter mandatory fields');
+      }
+      
+      // Decode user ID
+      const decodedUserId = idDecode(user_id);
+      if (!decodedUserId) {
+        return fail(res, 500, 'Invalid user ID');
+      }
+      
+      // Get user details and validate
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      if (!userRows.length) {
+        return fail(res, 500, 'Not A Valid User');
+      }
+      
+      const user = userRows[0];
+      
+      // Validate token
+      if (user.unique_token !== token) {
+        return fail(res, 500, 'Token Mismatch Exception');
+      }
+
+      let finalUserSubFolderId = user_sub_folder_id || 0;
+
+      if (finalUserSubFolderId == 0) {
+        // Insert new sub folder
+        const subFolderData = {
+          user_id: decodedUserId,
+          user_folder_id: user_folder_id,
+          folder_name: folder_name,
+          status: 1
+        };
+        
+        const result = await query(
+          `INSERT INTO user_sub_folders (user_id, user_folder_id, folder_name, status, created_dts) 
+           VALUES (?, ?, ?, ?, NOW())`,
+          [subFolderData.user_id, subFolderData.user_folder_id, subFolderData.folder_name, subFolderData.status]
+        );
+        
+        finalUserSubFolderId = result.insertId;
+        console.log('saveSubFolder - New sub folder created with ID:', finalUserSubFolderId);
+      } else {
+        // Update existing sub folder
+        await query(
+          `UPDATE user_sub_folders SET user_folder_id = ?, folder_name = ?, status = ? 
+           WHERE user_sub_folder_id = ? AND user_id = ?`,
+          [user_folder_id, folder_name, 1, finalUserSubFolderId, decodedUserId]
+        );
+        
+        console.log('saveSubFolder - Existing sub folder updated:', finalUserSubFolderId);
+      }
+
+      // Return response in PHP format (matching exactly)
+      return res.json({
+        status: true,
+        rcode: 200,
+        user_id: idEncode(decodedUserId),
+        unique_token: token,
+        user_folder_id: user_folder_id,
+        user_sub_folder_id: finalUserSubFolderId,
+        message: 'Sub Folder saved successfully'
+      });
+      
+    } catch (error) {
+      console.error('saveSubFolder error:', error);
+      return fail(res, 500, 'Failed to save sub folder');
     }
   },
 

@@ -124,6 +124,8 @@ router.post('/api/deleteEventAttendee', uploadFormData.none(), ApiController.del
 // Folder Management Routes
 router.get('/api/getFoldersListByType', ApiController.getFoldersListByType);
 router.post('/api/saveFolderByType', uploadFormData.none(), ApiController.saveFolderByType);
+router.get('/api/getSubFoldersList', ApiController.getSubFoldersList);
+router.post('/api/saveSubFolder', uploadFormData.none(), ApiController.saveSubFolder);
 
 // Note: Additional event management, folder, contact, business card, service, investor, and chat routes
 // will be implemented as needed to match PHP backend functionality
