@@ -82,8 +82,8 @@ src/
 
 2. **Install dependencies**
    ```bash
-   npm install
-   ```
+npm install
+```
 
 3. **Environment setup**
    ```bash
@@ -100,7 +100,7 @@ src/
 5. **Start the server**
    ```bash
    # Development mode
-   npm run dev
+npm run dev
    
    # Production mode
    npm start

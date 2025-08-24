@@ -14,7 +14,7 @@ const adminAuth = require('../middlewares/adminAuth');
 const validate = require('../middlewares/validation');
 const rateLimiter = require('../middlewares/rateLimiter');
 const { checkUser } = require('../middlewares/checkUser');
-const { uploadProfilePhoto, uploadFormData, uploadEvents } = require('../middlewares/upload');
+const { uploadProfilePhoto, uploadFormData, uploadEvents, uploadResume } = require('../middlewares/upload');
 
 // Serve static files (images, uploads)
 router.use('/uploads', express.static(path.join(__dirname, '../../uploads')));
@@ -82,103 +82,51 @@ router.post('/api/saveWorkDetails', uploadFormData.none(), ApiController.saveWor
 router.get('/api/getWorkDetails', ApiController.getWorkDetails);
 router.post('/api/deleteWorkDetail', uploadFormData.none(), ApiController.deleteWorkDetail);
 router.post('/api/saveProjectDetails', uploadFormData.single('project_logo'), ApiController.saveProjectDetails);
+router.get('/api/getProjectDetails', ApiController.getProjectDetails);
+router.post('/api/deleteProjectDetail', uploadFormData.none(), ApiController.deleteProjectDetail);
+router.post('/api/saveEducationDetails', uploadFormData.none(), ApiController.saveEducationDetails);
+router.get('/api/getEducationDetails', ApiController.getEducationDetails);
+router.post('/api/deleteEducationDetail', uploadFormData.none(), ApiController.deleteEducationDetail);
+router.post('/api/saveEventOrganiser', uploadFormData.none(), ApiController.saveEventOrganiser);
+router.get('/api/getEventOrganisersList', ApiController.getEventOrganisersList);
+router.post('/api/deleteEventOrganiser', uploadFormData.none(), ApiController.deleteEventOrganiser);
+router.get('/api/getEventAttendeesList', ApiController.getEventAttendeesList);
+router.post('/api/saveEventAttendee', uploadFormData.none(), ApiController.saveEventAttendee);
+router.post('/api/deleteEventAttendee', uploadFormData.none(), ApiController.deleteEventAttendee);
 router.get('/api/getUserDetailByQrCode', checkUser, ApiController.getUserDetailByQrCode);
 
 
-// Education/Project/Work Routes
-router.post('/api/saveEducationDetails', checkUser, ApiController.genericHandler);
-router.get('/api/getEducationDetails', checkUser, ApiController.genericHandler);
-router.post('/api/deleteEducationDetail', checkUser, ApiController.genericHandler);
-
-router.post('/api/saveProjectDetails', checkUser, ApiController.saveProjectDetails);
-router.get('/api/getProjectDetails', checkUser, ApiController.genericHandler);
-router.post('/api/deleteProjectDetail', checkUser, ApiController.genericHandler);
-
-router.post('/api/saveWorkDetails', checkUser, ApiController.genericHandler);
-router.get('/api/getWorkDetails', checkUser, ApiController.genericHandler);
-router.post('/api/deleteWorkDetail', checkUser, ApiController.genericHandler);
-
-// Dashboard Route
-router.get('/api/dashboard', checkUser, ApiController.dashboard);
+// Dashboard Route - Support both GET and POST for form data
+router.get('/api/dashboard', ApiController.dashboard);
+router.post('/api/dashboard', ApiController.dashboard);
+router.get('/api/legalTerms', ApiController.legalTerms);
 
 // Job Routes
 router.post('/api/saveJobInformation', uploadFormData.none(), ApiController.saveJobInformation);
 router.get('/api/getJobInformation', ApiController.getJobInformation);
-router.post('/api/saveJobApplication', checkUser, ApiController.genericHandler);
+router.post('/api/saveJobApplication', uploadResume.single('resume_file'), ApiController.saveJobApplication);
 router.get('/api/getJobDetail', ApiController.getJobDetail);
 router.get('/api/getJobApplicantsList', checkUser, ApiController.getJobApplicantsList);
 router.get('/api/getResumes', ApiController.getResumes);
-router.post('/api/deleteResume', checkUser, ApiController.genericHandler);
+router.post('/api/deleteResume', uploadFormData.none(), ApiController.deleteResume);
 
 // Event Routes
 router.post('/api/saveEventInformation', uploadEvents.single('event_banner_file'), ApiController.saveEventInformation);
 router.get('/api/getEventInformation', ApiController.getEventInformation);
 router.get('/api/getEventDetail', ApiController.getEventDetail);
-router.get('/api/getEventOrganisersList', checkUser, ApiController.getEventOrganisersList);
-router.post('/api/saveEventOrganiser', checkUser, ApiController.genericHandler);
-router.post('/api/deleteEventOrganiser', checkUser, ApiController.genericHandler);
-router.get('/api/getEventAttendeesList', checkUser, ApiController.getEventAttendeesList);
-router.post('/api/saveEventAttendee', checkUser, ApiController.genericHandler);
-router.post('/api/deleteEventAttendee', checkUser, ApiController.genericHandler);
+router.get('/api/getEventOrganisersList', ApiController.getEventOrganisersList);
+router.post('/api/saveEventOrganiser', uploadFormData.none(), ApiController.saveEventOrganiser);
+router.post('/api/deleteEventOrganiser', uploadFormData.none(), ApiController.deleteEventOrganiser);
+router.get('/api/getEventAttendeesList', ApiController.getEventAttendeesList);
+router.post('/api/saveEventAttendee', uploadFormData.none(), ApiController.saveEventAttendee);
+router.post('/api/deleteEventAttendee', uploadFormData.none(), ApiController.deleteEventAttendee);
 
-router.get('/api/getEventsAttendedList', checkUser, ApiController.getEventsAttendedList);
-router.get('/api/getEventsOrganisedList', checkUser, ApiController.getEventsOrganisedList);
+// Folder Management Routes
+router.get('/api/getFoldersListByType', ApiController.getFoldersListByType);
+router.post('/api/saveFolderByType', uploadFormData.none(), ApiController.saveFolderByType);
 
-// Folder Routes
-router.get('/api/getFoldersListByType', checkUser, ApiController.getFoldersListByType);
-router.post('/api/saveFolderByType', checkUser, ApiController.genericHandler);
-
-router.get('/api/getSubFoldersList', checkUser, ApiController.getSubFoldersList);
-router.post('/api/saveSubFolder', checkUser, ApiController.genericHandler);
-router.post('/api/editSubFolder', checkUser, ApiController.genericHandler);
-router.post('/api/deleteSubFolder', checkUser, ApiController.genericHandler);
-
-// Contact Routes
-router.post('/api/saveContact', checkUser, ApiController.genericHandler);
-router.get('/api/getContactsList', checkUser, ApiController.getContactsList);
-
-router.post('/api/saveContactVisitingCard', checkUser, ApiController.saveContactVisitingCard);
-router.get('/api/getContactVisitingCardInformation', checkUser, ApiController.getContactVisitingCardInformation);
-
-// Legal Terms Route
-router.get('/api/legalTerms', checkUser, ApiController.legalTerms);
-
-// Business Card Routes
-router.post('/api/activateCard', checkUser, ApiController.activateCard);
-router.get('/api/getBusinessCardInformation', checkUser, ApiController.getBusinessCardInformation);
-
-// Promotions Route
-router.get('/api/getPromotionsList', checkUser, ApiController.getPromotionsList);
-
-// Service Routes
-router.get('/api/getServicesMasterList', checkUser, ApiController.getServicesMasterList);
-router.post('/api/saveServiceProvider', checkUser, ApiController.genericHandler);
-router.get('/api/getServicesList', checkUser, ApiController.getServicesList);
-router.post('/api/saveServiceDetails', checkUser, ApiController.saveServiceDetails);
-router.get('/api/getServiceDetail', checkUser, ApiController.getServiceDetail);
-router.get('/api/getAllServicesList', checkUser, ApiController.getAllServicesList);
-
-// Unlock Routes
-router.post('/api/serviceUnlock', checkUser, ApiController.serviceUnlock);
-router.get('/api/getAllServiceUnlockList', checkUser, ApiController.getAllServiceUnlockList);
-
-// Review/Rating Routes
-router.post('/api/saveReviewRating', checkUser, ApiController.genericHandler);
-
-// Investor Routes
-router.post('/api/saveInvestor', checkUser, ApiController.genericHandler);
-router.get('/api/getAllInvestorsList', checkUser, ApiController.getAllInvestorsList);
-router.get('/api/getInvestorDetail', checkUser, ApiController.getInvestorDetail);
-router.post('/api/investorUnlock', checkUser, ApiController.investorUnlock);
-router.post('/api/saveInvestorReviewRating', checkUser, ApiController.genericHandler);
-router.get('/api/getInvestorProfile', checkUser, ApiController.getInvestorProfile);
-router.get('/api/getInvestorMeets', checkUser, ApiController.getInvestorMeets);
-router.get('/api/getInvestorDesk', checkUser, ApiController.getInvestorDesk);
-
-// Chat Routes
-router.get('/api/getChatUsersList', checkUser, ApiController.getChatUsersList);
-router.post('/api/saveChat', checkUser, ApiController.saveChat);
-router.get('/api/getChat', checkUser, ApiController.getChat);
+// Note: Additional event management, folder, contact, business card, service, investor, and chat routes
+// will be implemented as needed to match PHP backend functionality
 
 // 404 handler for undefined routes
 router.use('*', (req, res) => {

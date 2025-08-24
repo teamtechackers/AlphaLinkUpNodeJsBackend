@@ -65,6 +65,8 @@ app.use(express.urlencoded({
   limit: process.env.MAX_PAYLOAD_SIZE || '10mb' 
 }));
 
+// Multipart form data middleware - removed global multer().none() to allow specific file uploads
+
 // Logging middleware
 if (process.env.NODE_ENV === 'production') {
   app.use(morgan('combined', {
