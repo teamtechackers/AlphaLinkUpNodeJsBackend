@@ -2340,8 +2340,8 @@ const ApiController = {
         return fail(res, 500, 'Token Mismatch Exception');
       }
       
-      // Check mandatory fields
-      if (!event_name || !industry_type || !event_date || !event_start_time || !event_end_time || !event_mode_id || !event_type_id || !event_details || !organiser_ids || !event_lat || !event_lng || !event_geo_address) {
+      // Check mandatory fields - match PHP validation exactly
+      if (event_name === "" || industry_type === "" || event_date === "" || event_start_time === "" || event_end_time === "" || event_mode_id === "" || event_type_id === "" || event_details === "" || organiser_ids === "" || event_lat === "" || event_lng === "" || event_geo_address === "") {
         return fail(res, 500, 'Please enter mandatory fields');
       }
       
@@ -2355,15 +2355,15 @@ const ApiController = {
       const eventData = {
         event_name,
         industry_type,
-        event_date: new Date(event_date).toISOString().split('T')[0], // Convert to YYYY-MM-DD format
+        event_date: event_date, // Keep as is, don't parse with Date constructor
         event_start_time,
         event_end_time,
-      event_mode_id,
-      event_type_id,
+        event_mode_id,
+        event_type_id,
         event_details,
-        country_id: country_id || null,
-        state_id: state_id || null,
-        city_id: city_id || null,
+        country_id: country_id || 1, // Default to country_id 1 if not provided
+        state_id: state_id || 1, // Default to state_id 1 if not provided
+        city_id: city_id || 1, // Default to city_id 1 if not provided
         event_venue: event_venue || '',
         event_link: event_link || '',
         event_lat,
@@ -2382,7 +2382,7 @@ const ApiController = {
         
         const result = await query(
           'INSERT INTO user_event_details (user_id, event_name, industry_type, country_id, state_id, city_id, event_venue, event_link, event_lat, event_lng, event_geo_address, event_date, event_start_time, event_end_time, event_mode_id, event_type_id, event_details, event_banner, deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-          [eventData.user_id, eventData.event_name, eventData.industry_type, eventData.country_id || null, eventData.state_id || null, eventData.city_id || null, eventData.event_venue || null, eventData.event_link || null, eventData.event_lat, eventData.event_lng, eventData.event_geo_address, eventData.event_date, eventData.event_start_time, eventData.event_end_time, eventData.event_mode_id, eventData.event_type_id, eventData.event_details, eventBanner || 'default_event_banner.jpg', 0]
+          [eventData.user_id, eventData.event_name, eventData.industry_type, eventData.country_id, eventData.state_id, eventData.city_id, eventData.event_venue || null, eventData.event_link || null, eventData.event_lat, eventData.event_lng, eventData.event_geo_address, eventData.event_date, eventData.event_start_time, eventData.event_end_time, eventData.event_mode_id, eventData.event_type_id, eventData.event_details, eventBanner || 'default_event_banner.jpg', 0]
         );
         finalEventId = result.insertId;
         
@@ -4512,8 +4512,8 @@ const ApiController = {
         return fail(res, 500, 'Token Mismatch Exception');
       }
       
-      // Check mandatory fields
-      if (!job_title || !company_name || !country_id || !state_id || !city_id || !address || !job_type_id || !pay_id || !job_description || !skills || !job_lat || !job_lng) {
+      // Check mandatory fields - match PHP validation exactly
+      if (job_title === "" || company_name === "" || country_id === "" || state_id === "" || city_id === "" || address === "" || job_type_id === "" || pay_id === "" || job_description === "" || skills === "" || job_lat === "" || job_lng === "") {
         return fail(res, 500, 'Please enter mandatory fields');
       }
       
@@ -4576,7 +4576,7 @@ const ApiController = {
         );
       }
       
-      // Return response in PHP format
+      // Return response in PHP format - exact match
       return res.json({
         status: true,
         rcode: 200,

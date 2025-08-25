@@ -87,7 +87,7 @@ router.post('/Api-Fund-Size-List', uploadFormData.none(), ApiController.getFundS
 router.post('/Api-Update-Profile', uploadProfilePhoto.single('profile_photo'), ApiController.updateProfile);
 router.get('/Api-View-Profile', ApiController.getProfile);
 router.get('/Api-View-User-Detail-By-Mobile', ApiController.getUserDetailByMobile);
-router.get('/Api-View-User-Profile-By-Mobile', ApiController.getUserProfileByMobile);
+router.get('/Api-View-Profile-By-Mobile', ApiController.getUserProfileByMobile);
 router.post('/Api-Save-Work-Details', uploadFormData.none(), ApiController.saveWorkDetails);
 router.get('/Api-View-Work-Details', ApiController.getWorkDetails);
 router.post('/Api-Delete-Work-Detail', uploadFormData.none(), ApiController.deleteWorkDetail);

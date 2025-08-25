@@ -33,7 +33,7 @@ All NodeJS routes have been updated to match the exact PHP route format. Instead
 | `/api/updateProfile` | `/Api-Update-Profile` | POST | ApiController.updateProfile |
 | `/api/getProfile` | `/Api-View-Profile` | GET | ApiController.getProfile |
 | `/api/getUserDetailByMobile` | `/Api-View-User-Detail-By-Mobile` | GET | ApiController.getUserDetailByMobile |
-| `/api/getUserProfileByMobile` | `/Api-View-User-Profile-By-Mobile` | GET | ApiController.getUserProfileByMobile |
+| `/api/getUserProfileByMobile` | `/Api-View-Profile-By-Mobile` | GET | ApiController.getUserProfileByMobile |
 | `/api/saveWorkDetails` | `/Api-Save-Work-Details` | POST | ApiController.saveWorkDetails |
 | `/api/getWorkDetails` | `/Api-View-Work-Details` | GET | ApiController.getWorkDetails |
 | `/api/deleteWorkDetail` | `/Api-Delete-Work-Detail` | POST | ApiController.deleteWorkDetail |
