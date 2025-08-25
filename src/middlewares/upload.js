@@ -29,8 +29,9 @@ const uploadServices = multer({ storage: storageFor('services') });
 const uploadVisitingCards = multer({ storage: storageFor('visting_cards') });
 const uploadProfilePhoto = multer({ storage: storageFor('profiles') });
 const uploadResume = multer({ storage: storageFor('resumes') });
+const uploadInvestor = multer({ storage: storageFor('investors') });
 const uploadFormData = multer();
 
-module.exports = { uploadProjectLogo, uploadEvents, uploadServices, uploadVisitingCards, uploadProfilePhoto, uploadResume, uploadFormData };
+module.exports = { uploadProjectLogo, uploadEvents, uploadServices, uploadVisitingCards, uploadProfilePhoto, uploadResume, uploadInvestor, uploadFormData };
 
 

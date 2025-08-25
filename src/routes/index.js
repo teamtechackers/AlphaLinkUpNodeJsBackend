@@ -14,7 +14,7 @@ const adminAuth = require('../middlewares/adminAuth');
 const validate = require('../middlewares/validation');
 const rateLimiter = require('../middlewares/rateLimiter');
 const { checkUser } = require('../middlewares/checkUser');
-const { uploadProfilePhoto, uploadFormData, uploadEvents, uploadResume } = require('../middlewares/upload');
+const { uploadProfilePhoto, uploadFormData, uploadEvents, uploadResume, uploadInvestor } = require('../middlewares/upload');
 
 // Serve static files (images, uploads)
 router.use('/uploads', express.static(path.join(__dirname, '../../uploads')));
@@ -118,6 +118,8 @@ router.get('/api/getEventOrganisersList', ApiController.getEventOrganisersList);
 router.post('/api/saveEventOrganiser', uploadFormData.none(), ApiController.saveEventOrganiser);
 router.post('/api/deleteEventOrganiser', uploadFormData.none(), ApiController.deleteEventOrganiser);
 router.get('/api/getEventAttendeesList', ApiController.getEventAttendeesList);
+router.get('/api/getEventsAttendedList', ApiController.getEventsAttendedList);
+router.get('/api/getEventsOrganisedList', ApiController.getEventsOrganisedList);
 router.post('/api/saveEventAttendee', uploadFormData.none(), ApiController.saveEventAttendee);
 router.post('/api/deleteEventAttendee', uploadFormData.none(), ApiController.deleteEventAttendee);
 
@@ -126,6 +128,59 @@ router.get('/api/getFoldersListByType', ApiController.getFoldersListByType);
 router.post('/api/saveFolderByType', uploadFormData.none(), ApiController.saveFolderByType);
 router.get('/api/getSubFoldersList', ApiController.getSubFoldersList);
 router.post('/api/saveSubFolder', uploadFormData.none(), ApiController.saveSubFolder);
+
+// Contact Management Routes
+router.get('/api/getContactsList', ApiController.getContactsList);
+router.post('/api/saveContact', uploadFormData.none(), ApiController.saveContact);
+router.post('/api/saveContactVisitingCard', uploadFormData.fields([
+  { name: 'visiting_card_front', maxCount: 1 },
+  { name: 'visiting_card_back', maxCount: 1 }
+]), ApiController.saveContactVisitingCard);
+router.get('/api/getContactVisitingCardInformation', ApiController.getContactVisitingCardInformation);
+
+// Business Card Routes
+router.post('/api/activateCard', uploadFormData.array('business_documents_file[]', 10), ApiController.activateCard);
+
+// Promotions Routes
+router.get('/api/getPromotionsList', ApiController.getPromotionsList);
+
+// Services Master Routes
+router.get('/api/getServicesMasterList', ApiController.getServicesMasterList);
+
+// Services List Routes
+router.get('/api/getServicesList', ApiController.getServicesList);
+router.get('/api/getAllServicesList', ApiController.getAllServicesList);
+
+// Service Provider Routes
+router.post('/api/saveServiceProvider', uploadFormData.none(), ApiController.saveServiceProvider);
+
+// Review Rating Routes
+router.post('/api/saveReviewRating', uploadFormData.none(), ApiController.saveReviewRating);
+
+// Service Details Routes
+router.post('/api/saveServiceDetails', uploadFormData.fields([{ name: 'service_image', maxCount: 1 }]), ApiController.saveServiceDetails);
+router.get('/api/getServiceDetail', ApiController.getServiceDetail);
+
+// Service Unlock Routes
+router.post('/api/serviceUnlock', uploadFormData.none(), ApiController.serviceUnlock);
+router.get('/api/getAllServiceUnlockList', ApiController.getAllServiceUnlockList);
+
+// Investor Routes
+router.post('/api/saveInvestor', uploadInvestor.single('image'), ApiController.saveInvestor);
+router.get('/api/getAllInvestorsList', ApiController.getAllInvestorsList);
+router.get('/api/getInvestorDetail', ApiController.getInvestorDetail);
+router.post('/api/investorUnlock', uploadFormData.none(), ApiController.investorUnlock);
+router.post('/api/saveInvestorReviewRating', uploadFormData.none(), ApiController.saveInvestorReviewRating);
+router.get('/api/getInvestorProfile', ApiController.getMyInvestorProfile);
+router.get('/api/getInvestorMeets', ApiController.getInvestorMeets);
+
+// Chat Routes
+router.post('/api/saveChat', uploadFormData.none(), ApiController.saveChat);
+router.get('/api/getChat', ApiController.getChat);
+router.get('/api/getChatUsersList', ApiController.getChatUsersList);
+
+// Business Card Routes
+router.get('/api/getBusinessCardInformation', ApiController.getBusinessCardInformation);
 
 // Note: Additional event management, folder, contact, business card, service, investor, and chat routes
 // will be implemented as needed to match PHP backend functionality
