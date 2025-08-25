@@ -18,16 +18,19 @@ class InvestorUnlockController {
         return errorResponse(res, 'Investor ID and unlock type are required', 400);
       }
 
-      // Decode investor ID if it's encoded
-      const decodedInvestorId = idDecode(investor_id) || investor_id;
+      // investor_id is a regular integer, not base64 encoded
+      const investorId = parseInt(investor_id);
+      if (isNaN(investorId) || investorId <= 0) {
+        return errorResponse(res, 'Invalid investor ID', 400);
+      }
       
-      const unlockResult = await InvestorUnlockService.unlockInvestor(userId, decodedInvestorId, {
+      const unlockResult = await InvestorUnlockService.unlockInvestor(userId, investorId, {
         unlock_type,
         payment_method,
         unlocked_at: new Date()
       });
 
-      logger.info(`Investor unlocked for user ${userId}: ${decodedInvestorId}`);
+      logger.info(`Investor unlocked for user ${userId}: ${investorId}`);
       return successResponse(res, 'Investor unlocked successfully', { unlock: unlockResult });
     } catch (error) {
       logger.error('Unlock investor error:', error);
@@ -99,9 +102,13 @@ class InvestorUnlockController {
       const { investor_id } = req.params;
       const { start_date, end_date } = req.query;
       
-      const decodedInvestorId = idDecode(investor_id) || investor_id;
+      // investor_id is a regular integer, not base64 encoded
+      const investorId = parseInt(investor_id);
+      if (isNaN(investorId) || investorId <= 0) {
+        return errorResponse(res, 'Invalid investor ID', 400);
+      }
       
-      const stats = await InvestorUnlockService.getInvestorUnlockStats(decodedInvestorId, {
+      const stats = await InvestorUnlockService.getInvestorUnlockStats(investorId, {
         start_date: start_date ? new Date(start_date) : null,
         end_date: end_date ? new Date(end_date) : null
       });

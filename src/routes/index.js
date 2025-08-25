@@ -56,131 +56,142 @@ router.get('/version', (req, res) => {
 
 // PHP Aligned API Routes - Exact match with routes.php
 // Authentication Routes
-router.post('/api/sendOtp', AuthController.sendOtp);
-router.post('/api/verifyOtp', AuthController.verifyOtp);
-router.post('/api/login', ApiController.login);
-router.post('/api/logout', checkUser, ApiController.logout);
+router.post('/Api-Send-Otp', AuthController.sendOtp);
+router.post('/Api-Verify-Otp', AuthController.verifyOtp);
+router.post('/Api-Login', ApiController.login);
+router.post('/Api-Logout', checkUser, ApiController.logout);
 
 // Master Data Routes
-router.get('/api/getCountryList', ApiController.getCountryList);
-router.get('/api/getStateList', ApiController.getStateList);
-router.get('/api/getCityList', ApiController.getCityList);
-router.get('/api/getInterestsList', ApiController.getInterestsList);
-router.get('/api/getEmploymentTypeList', ApiController.getEmploymentTypeList);
-router.get('/api/getJobTypeList', ApiController.getJobTypeList);
-router.get('/api/getPayList', ApiController.getPayList);
-router.get('/api/getEventModeList', ApiController.getEventModeList);
-router.get('/api/getEventTypeList', ApiController.getEventTypeList);
-router.get('/api/getFundSizeList', ApiController.getFundSizeList);
+router.get('/Api-Country-List', ApiController.getCountryList);
+router.post('/Api-Country-List', uploadFormData.none(), ApiController.getCountryList);
+router.get('/Api-State-List', ApiController.getStateList);
+router.post('/Api-State-List', uploadFormData.none(), ApiController.getStateList);
+router.get('/Api-City-List', ApiController.getCityList);
+router.post('/Api-City-List', uploadFormData.none(), ApiController.getCityList);
+router.get('/Api-Interests-List', ApiController.getInterestsList);
+router.post('/Api-Interests-List', uploadFormData.none(), ApiController.getInterestsList);
+router.get('/Api-Employment-Type-List', ApiController.getEmploymentTypeList);
+router.post('/Api-Employment-Type-List', uploadFormData.none(), ApiController.getEmploymentTypeList);
+router.get('/Api-Job-Type-List', ApiController.getJobTypeList);
+router.post('/Api-Job-Type-List', uploadFormData.none(), ApiController.getJobTypeList);
+router.get('/Api-Pay-List', ApiController.getPayList);
+router.post('/Api-Pay-List', uploadFormData.none(), ApiController.getPayList);
+router.get('/Api-Event-Mode-List', ApiController.getEventModeList);
+router.post('/Api-Event-Mode-List', uploadFormData.none(), ApiController.getEventModeList);
+router.get('/Api-Event-Type-List', ApiController.getEventTypeList);
+router.post('/Api-Event-Type-List', uploadFormData.none(), ApiController.getEventTypeList);
+router.get('/Api-Fund-Size-List', ApiController.getFundSizeList);
+router.post('/Api-Fund-Size-List', uploadFormData.none(), ApiController.getFundSizeList);
 
 // Profile Routes
-router.post('/api/updateProfile', uploadProfilePhoto.single('profile_photo'), ApiController.updateProfile);
-router.get('/api/getProfile', ApiController.getProfile);
-router.get('/api/getUserDetailByMobile', ApiController.getUserDetailByMobile);
-router.get('/api/getUserProfileByMobile', ApiController.getUserProfileByMobile);
-router.post('/api/saveWorkDetails', uploadFormData.none(), ApiController.saveWorkDetails);
-router.get('/api/getWorkDetails', ApiController.getWorkDetails);
-router.post('/api/deleteWorkDetail', uploadFormData.none(), ApiController.deleteWorkDetail);
-router.post('/api/saveProjectDetails', uploadFormData.single('project_logo'), ApiController.saveProjectDetails);
-router.get('/api/getProjectDetails', ApiController.getProjectDetails);
-router.post('/api/deleteProjectDetail', uploadFormData.none(), ApiController.deleteProjectDetail);
-router.post('/api/saveEducationDetails', uploadFormData.none(), ApiController.saveEducationDetails);
-router.get('/api/getEducationDetails', ApiController.getEducationDetails);
-router.post('/api/deleteEducationDetail', uploadFormData.none(), ApiController.deleteEducationDetail);
-router.post('/api/saveEventOrganiser', uploadFormData.none(), ApiController.saveEventOrganiser);
-router.get('/api/getEventOrganisersList', ApiController.getEventOrganisersList);
-router.post('/api/deleteEventOrganiser', uploadFormData.none(), ApiController.deleteEventOrganiser);
-router.get('/api/getEventAttendeesList', ApiController.getEventAttendeesList);
-router.post('/api/saveEventAttendee', uploadFormData.none(), ApiController.saveEventAttendee);
-router.post('/api/deleteEventAttendee', uploadFormData.none(), ApiController.deleteEventAttendee);
-router.get('/api/getUserDetailByQrCode', checkUser, ApiController.getUserDetailByQrCode);
+router.post('/Api-Update-Profile', uploadProfilePhoto.single('profile_photo'), ApiController.updateProfile);
+router.get('/Api-View-Profile', ApiController.getProfile);
+router.get('/Api-View-User-Detail-By-Mobile', ApiController.getUserDetailByMobile);
+router.get('/Api-View-User-Profile-By-Mobile', ApiController.getUserProfileByMobile);
+router.post('/Api-Save-Work-Details', uploadFormData.none(), ApiController.saveWorkDetails);
+router.get('/Api-View-Work-Details', ApiController.getWorkDetails);
+router.post('/Api-Delete-Work-Detail', uploadFormData.none(), ApiController.deleteWorkDetail);
+router.post('/Api-Save-Project-Details', uploadFormData.single('project_logo'), ApiController.saveProjectDetails);
+router.get('/Api-View-Project-Details', ApiController.getProjectDetails);
+router.post('/Api-Delete-Project-Detail', uploadFormData.none(), ApiController.deleteProjectDetail);
+router.post('/Api-Save-Education-Details', uploadFormData.none(), ApiController.saveEducationDetails);
+router.get('/Api-View-Education-Details', ApiController.getEducationDetails);
+router.post('/Api-Delete-Education-Detail', uploadFormData.none(), ApiController.deleteEducationDetail);
+router.post('/Api-Save-Event-Organiser', uploadFormData.none(), ApiController.saveEventOrganiser);
+router.get('/Api-Event-Organisers-List', ApiController.getEventOrganisersList);
+router.post('/Api-Delete-Event-Organiser', uploadFormData.none(), ApiController.deleteEventOrganiser);
+router.get('/Api-Event-Attendees-List', ApiController.getEventAttendeesList);
+router.post('/Api-Save-Event-Attendee', uploadFormData.none(), ApiController.saveEventAttendee);
+router.post('/Api-Delete-Event-Attendee', uploadFormData.none(), ApiController.deleteEventAttendee);
+router.get('/Api-View-User-Detail-By-Qrcode', checkUser, ApiController.getUserDetailByQrCode);
 
 
 // Dashboard Route - Support both GET and POST for form data
-router.get('/api/dashboard', ApiController.dashboard);
-router.post('/api/dashboard', ApiController.dashboard);
-router.get('/api/legalTerms', ApiController.legalTerms);
+router.get('/Api-Dashboard', ApiController.dashboard);
+router.post('/Api-Dashboard', ApiController.dashboard);
+router.get('/Api-Legal-Terms', ApiController.legalTerms);
 
 // Job Routes
-router.post('/api/saveJobInformation', uploadFormData.none(), ApiController.saveJobInformation);
-router.get('/api/getJobInformation', ApiController.getJobInformation);
-router.post('/api/saveJobApplication', uploadResume.single('resume_file'), ApiController.saveJobApplication);
-router.get('/api/getJobDetail', ApiController.getJobDetail);
-router.get('/api/getJobApplicantsList', checkUser, ApiController.getJobApplicantsList);
-router.get('/api/getResumes', ApiController.getResumes);
-router.post('/api/deleteResume', uploadFormData.none(), ApiController.deleteResume);
+router.post('/Api-Save-Job-Information', uploadFormData.none(), ApiController.saveJobInformation);
+router.get('/Api-View-Job-Information', ApiController.getJobInformation);
+router.post('/Api-Save-Job-Application', uploadResume.single('resume_file'), ApiController.saveJobApplication);
+router.get('/Api-View-Job-Details', ApiController.getJobDetail);
+router.get('/Api-Get-Job-Applicants-List', checkUser, ApiController.getJobApplicantsList);
+router.get('/Api-View-Resumes', ApiController.getResumes);
+router.post('/Api-Delete-Resume', uploadFormData.none(), ApiController.deleteResume);
 
 // Event Routes
-router.post('/api/saveEventInformation', uploadEvents.single('event_banner_file'), ApiController.saveEventInformation);
-router.get('/api/getEventInformation', ApiController.getEventInformation);
-router.get('/api/getEventDetail', ApiController.getEventDetail);
-router.get('/api/getEventOrganisersList', ApiController.getEventOrganisersList);
-router.post('/api/saveEventOrganiser', uploadFormData.none(), ApiController.saveEventOrganiser);
-router.post('/api/deleteEventOrganiser', uploadFormData.none(), ApiController.deleteEventOrganiser);
-router.get('/api/getEventAttendeesList', ApiController.getEventAttendeesList);
-router.get('/api/getEventsAttendedList', ApiController.getEventsAttendedList);
-router.get('/api/getEventsOrganisedList', ApiController.getEventsOrganisedList);
-router.post('/api/saveEventAttendee', uploadFormData.none(), ApiController.saveEventAttendee);
-router.post('/api/deleteEventAttendee', uploadFormData.none(), ApiController.deleteEventAttendee);
+router.post('/Api-Save-Event-Information', uploadEvents.single('event_banner_file'), ApiController.saveEventInformation);
+router.get('/Api-View-Event-Information', ApiController.getEventInformation);
+router.get('/Api-View-Event-Details', ApiController.getEventDetail);
+router.get('/Api-Event-Organisers-List', ApiController.getEventOrganisersList);
+router.post('/Api-Save-Event-Organiser', uploadFormData.none(), ApiController.saveEventOrganiser);
+router.post('/Api-Delete-Event-Organiser', uploadFormData.none(), ApiController.deleteEventOrganiser);
+router.get('/Api-Event-Attendees-List', ApiController.getEventAttendeesList);
+router.get('/Api-View-Events-Attended', ApiController.getEventsAttendedList);
+router.get('/Api-View-Events-Organised', ApiController.getEventsOrganisedList);
+router.post('/Api-Save-Event-Attendee', uploadFormData.none(), ApiController.saveEventAttendee);
+router.post('/Api-Delete-Event-Attendee', uploadFormData.none(), ApiController.deleteEventAttendee);
 
 // Folder Management Routes
-router.get('/api/getFoldersListByType', ApiController.getFoldersListByType);
-router.post('/api/saveFolderByType', uploadFormData.none(), ApiController.saveFolderByType);
-router.get('/api/getSubFoldersList', ApiController.getSubFoldersList);
-router.post('/api/saveSubFolder', uploadFormData.none(), ApiController.saveSubFolder);
+router.get('/Api-Folders-List-By-Type', ApiController.getFoldersListByType);
+router.post('/Api-Add-Folder-By-Type', uploadFormData.none(), ApiController.saveFolderByType);
+router.get('/Api-Sub-Folders-List', ApiController.getSubFoldersList);
+router.post('/Api-Add-Sub-Folder', uploadFormData.none(), ApiController.saveSubFolder);
 
 // Contact Management Routes
-router.get('/api/getContactsList', ApiController.getContactsList);
-router.post('/api/saveContact', uploadFormData.none(), ApiController.saveContact);
-router.post('/api/saveContactVisitingCard', uploadFormData.fields([
+router.get('/Api-Contacts-List', ApiController.getContactsList);
+router.post('/Api-Add-Contact', uploadFormData.none(), ApiController.saveContact);
+router.post('/Api-Add-Contact-Visiting-Card', uploadFormData.fields([
   { name: 'visiting_card_front', maxCount: 1 },
   { name: 'visiting_card_back', maxCount: 1 }
 ]), ApiController.saveContactVisitingCard);
-router.get('/api/getContactVisitingCardInformation', ApiController.getContactVisitingCardInformation);
+router.get('/Api-View-Contact-Visiting-Card', ApiController.getContactVisitingCardInformation);
 
 // Business Card Routes
-router.post('/api/activateCard', uploadFormData.array('business_documents_file[]', 10), ApiController.activateCard);
+router.post('/Api-Activate-Card', uploadFormData.array('business_documents_file[]', 10), ApiController.activateCard);
 
 // Promotions Routes
-router.get('/api/getPromotionsList', ApiController.getPromotionsList);
+router.get('/Api-Promotions-List', ApiController.getPromotionsList);
 
 // Services Master Routes
-router.get('/api/getServicesMasterList', ApiController.getServicesMasterList);
+router.get('/Api-Service-Master-List', ApiController.getServicesMasterList);
 
 // Services List Routes
-router.get('/api/getServicesList', ApiController.getServicesList);
-router.get('/api/getAllServicesList', ApiController.getAllServicesList);
+router.get('/Api-Services-List', ApiController.getServicesList);
+router.get('/Api-All-Services-List', ApiController.getAllServicesList);
 
 // Service Provider Routes
-router.post('/api/saveServiceProvider', uploadFormData.none(), ApiController.saveServiceProvider);
+router.post('/Api-Save-Service-Provider', uploadFormData.none(), ApiController.saveServiceProvider);
 
 // Review Rating Routes
-router.post('/api/saveReviewRating', uploadFormData.none(), ApiController.saveReviewRating);
+router.post('/Api-Add-Review-Rating', uploadFormData.none(), ApiController.saveReviewRating);
 
 // Service Details Routes
-router.post('/api/saveServiceDetails', uploadFormData.fields([{ name: 'service_image', maxCount: 1 }]), ApiController.saveServiceDetails);
-router.get('/api/getServiceDetail', ApiController.getServiceDetail);
+router.post('/Api-Save-Service-Details', uploadFormData.fields([{ name: 'service_image', maxCount: 1 }]), ApiController.saveServiceDetails);
+router.get('/Api-View-Service-Details', ApiController.getServiceDetail);
 
 // Service Unlock Routes
-router.post('/api/serviceUnlock', uploadFormData.none(), ApiController.serviceUnlock);
-router.get('/api/getAllServiceUnlockList', ApiController.getAllServiceUnlockList);
+router.post('/Api-Service-Unlock', uploadFormData.none(), ApiController.serviceUnlock);
+router.get('/Api-All-Service-Unlock-List', ApiController.getAllServiceUnlockList);
 
 // Investor Routes
-router.post('/api/saveInvestor', uploadInvestor.single('image'), ApiController.saveInvestor);
-router.get('/api/getAllInvestorsList', ApiController.getAllInvestorsList);
-router.get('/api/getInvestorDetail', ApiController.getInvestorDetail);
-router.post('/api/investorUnlock', uploadFormData.none(), ApiController.investorUnlock);
-router.post('/api/saveInvestorReviewRating', uploadFormData.none(), ApiController.saveInvestorReviewRating);
-router.get('/api/getInvestorProfile', ApiController.getMyInvestorProfile);
-router.get('/api/getInvestorMeets', ApiController.getInvestorMeets);
+router.post('/Api-Save-Investor', uploadInvestor.single('image'), ApiController.saveInvestor);
+router.get('/Api-All-Investors-List', ApiController.getAllInvestorsList);
+router.get('/Api-View-Investor-Details', ApiController.getInvestorDetail);
+router.post('/Api-Investor-Unlock', uploadFormData.none(), ApiController.investorUnlock);
+router.post('/Api-Add-Investor-Review-Rating', uploadFormData.none(), ApiController.saveInvestorReviewRating);
+router.get('/Api-My-Investor-Profile', ApiController.getMyInvestorProfile);
+router.get('/Api-My-Investor-Meets', ApiController.getInvestorMeets);
+router.get('/Api-Investor-Desk', ApiController.getInvestorDesk);
 
 // Chat Routes
-router.post('/api/saveChat', uploadFormData.none(), ApiController.saveChat);
-router.get('/api/getChat', ApiController.getChat);
-router.get('/api/getChatUsersList', ApiController.getChatUsersList);
+router.post('/Api-Save-Chat', uploadFormData.none(), ApiController.saveChat);
+router.get('/Api-View-Chat', ApiController.getChat);
+router.get('/Api-Chat-Users-List', ApiController.getChatUsersList);
 
 // Business Card Routes
-router.get('/api/getBusinessCardInformation', ApiController.getBusinessCardInformation);
+router.get('/Api-View-Business-Card', ApiController.getBusinessCardInformation);
 
 // Note: Additional event management, folder, contact, business card, service, investor, and chat routes
 // will be implemented as needed to match PHP backend functionality
@@ -196,8 +207,7 @@ router.use('*', (req, res) => {
     availableEndpoints: {
       health: '/health',
       version: '/version',
-      api: '/api',
-      note: 'All API endpoints are now under /api/ with exact PHP route names'
+      note: 'All API endpoints now use exact PHP route names (e.g., /Api-Country-List)'
     }
   });
 });

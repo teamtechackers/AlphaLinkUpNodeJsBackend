@@ -18,16 +18,19 @@ class ServiceUnlockController {
         return errorResponse(res, 'Service ID and unlock type are required', 400);
       }
 
-      // Decode service ID if it's encoded
-      const decodedServiceId = idDecode(service_id) || service_id;
+      // service_id is a regular integer, not base64 encoded
+      const serviceId = parseInt(service_id);
+      if (isNaN(serviceId) || serviceId <= 0) {
+        return errorResponse(res, 'Invalid service ID', 400);
+      }
       
-      const unlockResult = await ServiceUnlockService.unlockService(userId, decodedServiceId, {
+      const unlockResult = await ServiceUnlockService.unlockService(userId, serviceId, {
         unlock_type,
         payment_method,
         unlocked_at: new Date()
       });
 
-      logger.info(`Service unlocked for user ${userId}: ${decodedServiceId}`);
+      logger.info(`Service unlocked for user ${userId}: ${serviceId}`);
       return successResponse(res, 'Service unlocked successfully', { unlock: unlockResult });
     } catch (error) {
       logger.error('Unlock service error:', error);
@@ -99,9 +102,13 @@ class ServiceUnlockController {
       const { service_id } = req.params;
       const { start_date, end_date } = req.query;
       
-      const decodedServiceId = idDecode(service_id) || service_id;
+      // service_id is a regular integer, not base64 encoded
+      const serviceId = parseInt(service_id);
+      if (isNaN(serviceId) || serviceId <= 0) {
+        return errorResponse(res, 'Invalid service ID', 400);
+      }
       
-      const stats = await ServiceUnlockService.getServiceUnlockStats(decodedServiceId, {
+      const stats = await ServiceUnlockService.getServiceUnlockStats(serviceId, {
         start_date: start_date ? new Date(start_date) : null,
         end_date: end_date ? new Date(end_date) : null
       });

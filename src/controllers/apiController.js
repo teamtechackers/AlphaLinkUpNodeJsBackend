@@ -3867,8 +3867,9 @@ const ApiController = {
       if (!decodedUserId) {
         return fail(res, 500, 'Invalid user ID');
       }
-      const decodedInvestorId = idDecode(investor_id);
-      if (!decodedInvestorId) {
+      // investor_id is a regular integer, not base64 encoded
+      const investorId = parseInt(investor_id);
+      if (isNaN(investorId) || investorId <= 0) {
         return fail(res, 500, 'Invalid investor_id');
       }
       // iu_id is a regular integer, not base64 encoded
@@ -3889,7 +3890,7 @@ const ApiController = {
         `UPDATE user_investors_unlocked 
          SET rating = ?, review = ?, review_dts = NOW()
          WHERE user_id = ? AND investor_id = ? AND iu_id = ?`,
-        [rating || null, review || '', decodedUserId, decodedInvestorId, iuId]
+        [rating || null, review || '', decodedUserId, investorId, iuId]
       );
       if (updateResult.affectedRows > 0) {
         // Calculate and update average rating for the investor
@@ -3897,14 +3898,14 @@ const ApiController = {
           `SELECT AVG(rating) as avg_rating
            FROM user_investors_unlocked
            WHERE investor_id = ? AND rating > 0`,
-          [decodedInvestorId]
+          [investorId]
         );
         const avgRating = avgRatingResult && avgRatingResult.length > 0 ? 
           parseFloat(avgRatingResult[0].avg_rating) : 0;
         if (avgRating > 0) {
           await query(
             'UPDATE user_investor SET avg_rating = ? WHERE investor_id = ?',
-            [avgRating, decodedInvestorId]
+            [avgRating, investorId]
           );
         }
         return res.json({
@@ -3976,6 +3977,7 @@ const ApiController = {
         'SELECT * FROM user_investors_unlocked WHERE investor_id = ? AND user_id = ?',
         [investor_id, decodedUserId]
       );
+      
       // Initialize ratings statistics
       const ratingsStats = {
         '1_star': 0,
@@ -3986,6 +3988,7 @@ const ApiController = {
         'total_ratings': 0,
         'total_reviews': 0
       };
+      
       // Get ratings details by investor ID
       const ratingsData = await query(`
         SELECT rating, COUNT(*) as count
@@ -3993,6 +3996,7 @@ const ApiController = {
         WHERE investor_id = ? AND rating > 0
         GROUP BY rating
       `, [investor_id]);
+      
       if (ratingsData && ratingsData.length > 0) {
         ratingsData.forEach(row => {
           const rating = row.rating;
@@ -4003,22 +4007,46 @@ const ApiController = {
           }
         });
       }
-      // Get total reviews count
+      
+      // Get reviews with user details
       const reviewsData = await query(`
-        SELECT COUNT(*) as total_reviews
-        FROM user_investors_unlocked
-        WHERE investor_id = ? AND review != ''
+        SELECT 
+          COALESCE(u.full_name, '') as name,
+          uiul.review,
+          uiul.rating,
+          uiul.review_dts
+        FROM user_investors_unlocked uiul
+        JOIN users u ON uiul.user_id = u.user_id
+        WHERE uiul.investor_id = ? AND uiul.review IS NOT NULL
       `, [investor_id]);
+      
+      const reviews = [];
       if (reviewsData && reviewsData.length > 0) {
-        ratingsStats.total_reviews = reviewsData[0].total_reviews;
+        ratingsStats.total_reviews = reviewsData.length;
+        reviewsData.forEach(row => {
+          reviews.push({
+            name: row.name,
+            review: row.review,
+            rating: parseInt(row.rating),
+            review_date_time: row.review_dts ? new Date(row.review_dts).getTime() / 1000 : ''
+          });
+        });
+      } else {
+        ratingsStats.total_reviews = 0;
       }
+      
+      // Wrap ratings in array to match PHP format
+      const ratingsArray = [ratingsStats];
+      
       return res.json({
         status: true,
         rcode: 200,
         user_id: idEncode(decodedUserId),
         unique_token: token,
-        investor_details: investorProfileData || [],
-        ratings_statistics: ratingsStats
+        investor_detail: investorProfileData || [],
+        investor_unlocked: investorUnlockedData && investorUnlockedData.length > 0 ? 1 : 0,
+        ratings: ratingsArray,
+        reviews: reviews
       });
     } catch (error) {
       console.error('getMyInvestorProfile error:', error);
@@ -4026,40 +4054,100 @@ const ApiController = {
     }
   },
 
-  async getInvestorMeets(req, res) {
+  async getInvestorDesk(req, res) {
     try {
-      // Support both query parameters and form data
       const { user_id, token, filter_type } = {
         ...req.query,
         ...req.body
       };
-      
-      console.log('getInvestorMeets - Parameters:', { user_id, token, filter_type });
-      
-      // Check if user_id and token are provided
+      console.log('getInvestorDesk - Parameters:', { user_id, token, filter_type });
       if (!user_id || !token) {
         return fail(res, 500, 'user_id and token are required');
       }
-      
-      // Decode user ID
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
         return fail(res, 500, 'Invalid user ID');
       }
-      
-      // Get user details and validate
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return fail(res, 500, 'Not A Valid User');
       }
-      
       const user = userRows[0];
-      
-      // Validate token
       if (user.unique_token !== token) {
         return fail(res, 500, 'Token Mismatch Exception');
       }
+      // Get investor desk - all users who have unlocked this investor's profile
+      let baseQuery = `
+        SELECT 
+          uiu.user_id,
+          uiu.investor_id,
+          COALESCE(u.full_name, '') as user_name,
+          COALESCE(DATE_FORMAT(uiu.meeting_date, '%d-%m-%Y'), '') as meeting_date,
+          COALESCE(uiu.meeting_time, '') as meeting_time,
+          uiu.request_status,
+          COALESCE(uiu.meeting_location, '') as meeting_location,
+          COALESCE(uiu.meeting_lat, '') as meeting_lat,
+          COALESCE(uiu.meeting_lng, '') as meeting_lng,
+          COALESCE(uiu.meeting_url, '') as meeting_url,
+          COALESCE(mt.name, '') as meeting_name,
+          COALESCE(mt.type, '') as meeting_type,
+          COALESCE(mt.mins, '') as mins,
+          CASE 
+            WHEN u.profile_photo != '' THEN CONCAT(?, u.profile_photo)
+            ELSE ''
+          END AS profile_photo
+        FROM user_investor ui
+        JOIN user_investors_unlocked uiu ON ui.investor_id = uiu.investor_id
+        LEFT JOIN meetings_type mt ON mt.id = uiu.meeting_id
+        JOIN users u ON uiu.user_id = u.user_id
+        WHERE ui.user_id = ? AND ui.status = 1 AND ui.approval_status = 2
+      `;
+      const queryParams = [`${req.protocol}://${req.get('host')}/uploads/profiles/`, decodedUserId];
+      // Apply filter if provided
+      if (filter_type === 'ready') {
+        baseQuery += ' AND uiu.request_status = "Ready"';
+      } else if (filter_type === 'scheduled') {
+        baseQuery += ' AND uiu.request_status = "Scheduled"';
+      } else if (filter_type === 'completed') {
+        baseQuery += ' AND uiu.request_status IN ("Completed", "Missed")';
+      }
+      baseQuery += ' ORDER BY uiu.created_dts DESC';
+      const userLists = await query(baseQuery, queryParams);
+      return res.json({
+        status: true,
+        rcode: 200,
+        user_id: idEncode(decodedUserId),
+        unique_token: token,
+        user_lists: userLists || []
+      });
+    } catch (error) {
+      console.error('getInvestorDesk error:', error);
+      return fail(res, 500, 'Failed to get investor desk');
+    }
+  },
 
+  async getInvestorMeets(req, res) {
+    try {
+      const { user_id, token, filter_type } = {
+        ...req.query,
+        ...req.body
+      };
+      console.log('getInvestorMeets - Parameters:', { user_id, token, filter_type });
+      if (!user_id || !token) {
+        return fail(res, 500, 'user_id and token are required');
+      }
+      const decodedUserId = idDecode(user_id);
+      if (!decodedUserId) {
+        return fail(res, 500, 'Invalid user ID');
+      }
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      if (!userRows.length) {
+        return fail(res, 500, 'Not A Valid User');
+      }
+      const user = userRows[0];
+      if (user.unique_token !== token) {
+        return fail(res, 500, 'Token Mismatch Exception');
+      }
       // Get investor meets with comprehensive details
       let queryString = `
         SELECT 
@@ -4087,9 +4175,7 @@ const ApiController = {
         LEFT JOIN cities ON cities.id = ui.city_id
         WHERE uiul.user_id = ?
       `;
-      
       const queryParams = [decodedUserId];
-      
       // Apply filter if provided
       if (filter_type && filter_type !== '') {
         if (filter_type === 'pending') {
@@ -4102,11 +4188,8 @@ const ApiController = {
           queryString += ` AND uiul.request_status = 'Ready'`;
         }
       }
-      
       queryString += ` ORDER BY uiul.created_dts DESC`;
-      
       const investorMeets = await query(queryString, queryParams);
-
       // Return response in PHP format (matching exactly)
       return res.json({
         status: true,
@@ -4115,21 +4198,10 @@ const ApiController = {
         unique_token: token,
         investor_lists: investorMeets || []
       });
-      
     } catch (error) {
       console.error('getInvestorMeets error:', error);
       return fail(res, 500, 'Failed to get investor meets');
     }
-  },
-  async getInvestorDesk(req, res) {
-    const rows = await query(
-      `SELECT uiu.user_id, uiu.investor_id, u.full_name AS user_name
-       FROM user_investor ui
-       JOIN user_investors_unlocked uiu ON uiu.investor_id = ui.investor_id
-       JOIN users u ON u.user_id = uiu.user_id
-       WHERE ui.user_id = ?`, [req.user.id]
-    );
-    return ok(res, { data: toArray(rows) });
   },
 
   // Chat (simplified)
@@ -4269,8 +4341,9 @@ const ApiController = {
       }
       
       // Decode current_user_id
-      const decodedCurrentUserId = idDecode(current_user_id);
-      if (!decodedCurrentUserId) {
+      // current_user_id is a regular integer, not base64 encoded
+      const currentUserId = parseInt(current_user_id);
+      if (isNaN(currentUserId) || currentUserId <= 0) {
         return fail(res, 500, 'Invalid current_user_id');
       }
       
@@ -4307,9 +4380,9 @@ const ApiController = {
         FROM user_chats
         JOIN users AS sender ON user_chats.sender_id = sender.user_id
         JOIN users AS receiver ON user_chats.receiver_id = receiver.user_id
-        WHERE (sender_id = ? AND receiver_id = ?) OR (sender_id = ? AND receiver_id = ?)
-        ORDER BY user_chats.created_dts ASC
-      `, [profilePath, profilePath, decodedCurrentUserId, decodedUserId, decodedUserId, decodedCurrentUserId]);
+                     WHERE (sender_id = ? AND receiver_id = ?) OR (sender_id = ? AND receiver_id = ?)
+             ORDER BY user_chats.created_dts ASC
+           `, [profilePath, profilePath, currentUserId, decodedUserId, decodedUserId, currentUserId]);
 
       return res.json({
         status: true,
@@ -4363,18 +4436,18 @@ const ApiController = {
         return fail(res, 500, 'Token Mismatch Exception');
       }
 
-      // Decode sender and receiver IDs
-      const decodedSenderId = idDecode(sender_id);
-      const decodedReceiverId = idDecode(receiver_id);
+      // sender_id and receiver_id are regular integers, not base64 encoded
+      const senderId = parseInt(sender_id);
+      const receiverId = parseInt(receiver_id);
       
-      if (!decodedSenderId || !decodedReceiverId) {
+      if (isNaN(senderId) || senderId <= 0 || isNaN(receiverId) || receiverId <= 0) {
         return fail(res, 500, 'Invalid sender_id or receiver_id');
       }
 
       // Save chat message
       const chatResult = await query(
         'INSERT INTO user_chats (sender_id, receiver_id, message, created_dts) VALUES (?, ?, ?, NOW())',
-        [decodedSenderId, decodedReceiverId, message]
+        [senderId, receiverId, message]
       );
 
       if (chatResult.insertId > 0) {
