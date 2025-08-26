@@ -114,7 +114,7 @@ router.get('/Api-Legal-Terms', ApiController.legalTerms);
 // Job Routes
 router.post('/Api-Save-Job-Information', uploadFormData.none(), ApiController.saveJobInformation);
 router.get('/Api-View-Job-Information', ApiController.getJobInformation);
-router.post('/Api-Save-Job-Application', uploadResume.single('resume_file'), ApiController.saveJobApplication);
+router.post('/Api-Apply-Job', uploadResume.single('resume_file'), ApiController.saveJobApplication);
 router.get('/Api-View-Job-Details', ApiController.getJobDetail);
 router.get('/Api-Get-Job-Applicants-List', checkUser, ApiController.getJobApplicantsList);
 router.get('/Api-View-Resumes', ApiController.getResumes);
@@ -172,6 +172,7 @@ router.post('/Api-Save-Service-Details', uploadFormData.fields([{ name: 'service
 router.get('/Api-View-Service-Details', ApiController.getServiceDetail);
 
 // Service Unlock Routes
+router.get('/Api-Service-Unlock', ApiController.serviceUnlock);
 router.post('/Api-Service-Unlock', uploadFormData.none(), ApiController.serviceUnlock);
 router.get('/Api-All-Service-Unlock-List', ApiController.getAllServiceUnlockList);
 
@@ -179,6 +180,7 @@ router.get('/Api-All-Service-Unlock-List', ApiController.getAllServiceUnlockList
 router.post('/Api-Save-Investor', uploadInvestor.single('image'), ApiController.saveInvestor);
 router.get('/Api-All-Investors-List', ApiController.getAllInvestorsList);
 router.get('/Api-View-Investor-Details', ApiController.getInvestorDetail);
+router.get('/Api-Investor-Unlock', ApiController.investorUnlock);
 router.post('/Api-Investor-Unlock', uploadFormData.none(), ApiController.investorUnlock);
 router.post('/Api-Add-Investor-Review-Rating', uploadFormData.none(), ApiController.saveInvestorReviewRating);
 router.get('/Api-My-Investor-Profile', ApiController.getMyInvestorProfile);

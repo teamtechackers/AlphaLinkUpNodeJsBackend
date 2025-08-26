@@ -62,7 +62,7 @@ All NodeJS routes have been updated to match the exact PHP route format. Instead
 |-----------|-----------|---------|------------|
 | `/api/saveJobInformation` | `/Api-Save-Job-Information` | POST | ApiController.saveJobInformation |
 | `/api/getJobInformation` | `/Api-View-Job-Information` | GET | ApiController.getJobInformation |
-| `/api/saveJobApplication` | `/Api-Save-Job-Application` | POST | ApiController.saveJobApplication |
+| `/api/saveJobApplication` | `/Api-Apply-Job` | POST | ApiController.saveJobApplication |
 | `/api/getJobDetail` | `/Api-View-Job-Details` | GET | ApiController.getJobDetail |
 | `/api/getJobApplicantsList` | `/Api-Get-Job-Applicants-List` | GET | ApiController.getJobApplicantsList |
 | `/api/getResumes` | `/Api-View-Resumes` | GET | ApiController.getResumes |

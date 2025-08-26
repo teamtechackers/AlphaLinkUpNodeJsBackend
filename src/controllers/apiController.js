@@ -2358,8 +2358,8 @@ const ApiController = {
         event_date: event_date, // Keep as is, don't parse with Date constructor
         event_start_time,
         event_end_time,
-        event_mode_id,
-        event_type_id,
+      event_mode_id,
+      event_type_id,
         event_details,
         country_id: country_id || 1, // Default to country_id 1 if not provided
         state_id: state_id || 1, // Default to state_id 1 if not provided
@@ -2905,20 +2905,16 @@ const ApiController = {
         return fail(res, 500, 'Token Mismatch Exception');
       }
 
-      // Check mandatory fields
-      if (!event_id || event_id <= 0 || !attendee_id || attendee_id <= 0) {
+      // Check mandatory fields - match PHP validation exactly
+      if (event_id <= 0 || attendee_id <= 0) {
         return fail(res, 500, 'Please enter mandatory fields');
       }
 
-      // Delete event attendee
-      const result = await query(
+      // Delete event attendee - match PHP implementation exactly
+      await query(
         'DELETE FROM event_attendees WHERE event_id = ? AND user_id = ?',
         [event_id, attendee_id]
       );
-
-      if (result.affectedRows === 0) {
-        return fail(res, 500, 'Event attendee not found or access denied');
-      }
 
       return res.json({
         status: true,
@@ -3450,8 +3446,8 @@ const ApiController = {
         return fail(res, 500, 'user_id and token are required');
       }
       
-      // Check mandatory fields
-      if (!name || name === "" || !country_id || country_id <= 0 || !state_id || state_id <= 0 || !city_id || city_id <= 0 || !fund_size_id || fund_size_id <= 0 || !bio || bio === "") {
+      // Check mandatory fields - match PHP validation exactly
+      if (name === "" || country_id <= 0 || state_id <= 0 || city_id <= 0 || fund_size_id <= 0 || bio === "") {
         return fail(res, 500, 'Please enter mandatory fields');
       }
       
@@ -3484,18 +3480,17 @@ const ApiController = {
         return fail(res, 500, 'User is already registered as an investor');
       }
 
-      // Handle image upload
+      // Handle image upload - match PHP behavior exactly
       let imageFileName = '';
-      if (req.files && req.files.image && req.files.image.length > 0) {
-        const imageFile = req.files.image[0];
-        imageFileName = imageFile.filename;
+      if (req.file) {
+        imageFileName = req.file.filename;
         console.log('Image uploaded:', imageFileName);
       }
 
       // Save investor
       const investorResult = await query(
-        `INSERT INTO user_investor (user_id, country_id, name, state_id, city_id, fund_size_id, bio, linkedin_url, image, status, created_dts) 
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, NOW())`,
+        `INSERT INTO user_investor (user_id, country_id, name, state_id, city_id, fund_size_id, bio, linkedin_url, image, status, created_dts, deleted) 
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, NOW(), 0)`,
         [decodedUserId, country_id, name, state_id, city_id, fund_size_id, bio, linkedin_url || '', imageFileName]
       );
 
@@ -3959,7 +3954,7 @@ const ApiController = {
             ELSE ''
           END AS image,
           fs.investment_range
-        FROM user_investor ui
+       FROM user_investor ui
         LEFT JOIN countries c ON c.id = ui.country_id
         LEFT JOIN states s ON s.id = ui.state_id
         LEFT JOIN cities ci ON ci.id = ui.city_id
@@ -4096,7 +4091,7 @@ const ApiController = {
             WHEN u.profile_photo != '' THEN CONCAT(?, u.profile_photo)
             ELSE ''
           END AS profile_photo
-        FROM user_investor ui
+       FROM user_investor ui
         JOIN user_investors_unlocked uiu ON ui.investor_id = uiu.investor_id
         LEFT JOIN meetings_type mt ON mt.id = uiu.meeting_id
         JOIN users u ON uiu.user_id = u.user_id
@@ -4600,6 +4595,12 @@ const ApiController = {
         ...req.body
       };
       
+      console.log('saveJobApplication - Received parameters:', {
+        user_id, token, job_id, first_name, last_name, email, mobile, skills, resume_id, resume_title, resume_file
+      });
+      console.log('saveJobApplication - req.body:', req.body);
+      console.log('saveJobApplication - req.query:', req.query);
+      
       // Check if user_id and token are provided
       if (!user_id || !token) {
         return fail(res, 500, 'user_id and token are required');
@@ -4624,70 +4625,12 @@ const ApiController = {
         return fail(res, 500, 'Token Mismatch Exception');
       }
 
-      // Check mandatory fields (matching PHP exactly)
-      if (!first_name || !skills || !email || !mobile || !job_id || job_id <= 0) {
+      // Check mandatory fields - match PHP validation exactly
+      if (first_name === "" || skills === "" || email === "" || mobile === "") {
         return fail(res, 500, 'Please enter mandatory fields');
       }
 
-      // Validate all required parameters
-      if (!user_id) {
-        return fail(res, 500, 'user_id is required');
-      }
-      
-      if (!token) {
-        return fail(res, 500, 'token is required');
-      }
-      
-      if (!job_id) {
-        return fail(res, 500, 'job_id is required');
-      }
-      
-      if (!first_name) {
-        return fail(res, 500, 'first_name is required');
-      }
-      
-      if (!last_name) {
-        return fail(res, 500, 'last_name is required');
-      }
-      
-      if (!skills) {
-        return fail(res, 500, 'skills is required');
-      }
-      
-      if (!email) {
-        return fail(res, 500, 'email is required');
-      }
-      
-      if (!mobile) {
-        return fail(res, 500, 'mobile is required');
-      }
-      
-      // Either resume_file or resume_id must be provided
-      if (!req.file && (!resume_id || resume_id <= 0)) {
-        return fail(res, 500, 'Either resume_file or resume_id is required');
-      }
-
-      // Check if job exists and is active
-      const jobRows = await query(
-        'SELECT * FROM user_job_details WHERE job_id = ? AND deleted = 0 AND status = 1',
-        [job_id]
-      );
-      
-      if (!jobRows.length) {
-        return fail(res, 500, 'Job not found or not available');
-      }
-
-      // Check if user has already applied for this job
-      const existingApplication = await query(
-        'SELECT user_id FROM user_job_applications WHERE user_id = ? AND job_id = ? AND status = 1',
-        [decodedUserId, job_id]
-      );
-
-      if (existingApplication.length > 0) {
-        return fail(res, 500, 'You have already applied for this job');
-      }
-
-      // Handle resume (matching PHP exactly)
+      // Handle resume - either resume_id OR resume_file must be provided
       let finalResumeId = null;
       
       if (req.file) {
@@ -4704,12 +4647,12 @@ const ApiController = {
           [resumeData.user_id, resumeData.resume_file, resumeData.resume_title, resumeData.status]
         );
         finalResumeId = resumeResult.insertId;
-      } else if (resume_id && resume_id > 0) {
-        // Use existing resume_id from POST data
-        finalResumeId = resume_id;
+      } else if (resume_id && parseInt(resume_id) > 0) {
+        // Use existing resume_id from POST data - convert to integer to match PHP behavior
+        finalResumeId = parseInt(resume_id);
       } else {
-        // No resume provided - return error (matching PHP)
-        return fail(res, 500, 'Resume is mandatory');
+        // Neither resume_file nor resume_id provided - return error
+        return fail(res, 500, 'Either resume_file or resume_id is required');
       }
 
       // Save job application (matching PHP exactly)
@@ -5267,20 +5210,16 @@ const ApiController = {
         return fail(res, 500, 'Token Mismatch Exception');
       }
 
-      // Check mandatory fields
-      if (!resume_id || resume_id <= 0) {
+      // Check mandatory fields - match PHP validation exactly
+      if (resume_id <= 0) {
         return fail(res, 500, 'Please enter mandatory fields');
       }
 
-      // Update resume status to 0 (soft delete)
-      const result = await query(
+      // Update resume status to 0 (soft delete) - match PHP implementation exactly
+      await query(
         'UPDATE user_resumes SET status = 0 WHERE resume_id = ? AND user_id = ?',
         [resume_id, decodedUserId]
       );
-
-      if (result.affectedRows === 0) {
-        return fail(res, 500, 'Resume not found or access denied');
-      }
 
       return res.json({
         status: true,
