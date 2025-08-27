@@ -130,6 +130,23 @@ All NodeJS routes have been updated to match the exact PHP route format. Instead
 | `/list-country-ajax` | `/list-country-ajax` | GET/POST | AdminController.getCountryLists |
 | `/save-country` | `/save-country` | GET/POST | AdminController.saveCountry |
 | `/edit-country/:id` | `/edit-country/:id` | GET/POST | AdminController.viewAddEditForm |
+| `/delete-country/:id` | `/delete-country/:id` | GET/POST | AdminController.deleteCountry |
+| `/check-duplicate-country` | `/check-duplicate-country` | GET/POST | AdminController.checkDuplicateCountry |
+| `/list-state` | `/list-state` | GET/POST | AdminController.viewState |
+| `/submit_state` | `/submit_state` | GET/POST | AdminController.submitState |
+| `/list_state_ajax` | `/list_state_ajax` | GET/POST | AdminController.listStateAjax |
+| `/check_duplicate_state` | `/check_duplicate_state` | GET/POST | AdminController.checkDuplicateState |
+| `/delete_state` | `/delete_state` | GET/POST | AdminController.deleteState |
+| `/list-city` | `/list-city` | GET/POST | AdminController.viewCities |
+| `/submit_cities` | `/submit_cities` | GET/POST | AdminController.submitCities |
+| `/list_cities_ajax` | `/list_cities_ajax` | GET/POST | AdminController.listCitiesAjax |
+| `/check_duplicate_cities` | `/check_duplicate_cities` | GET/POST | AdminController.checkDuplicateCities |
+| `/delete_cities` | `/delete_cities` | GET/POST | AdminController.deleteCities |
+| `/list-employment-type` | `/list-employment-type` | GET/POST | AdminController.viewEmploymentType |
+| `/submit_employment_type` | `/submit_employment_type` | GET/POST | AdminController.submitEmploymentType |
+| `/list_employment_type_ajax` | `/list_employment_type_ajax` | GET/POST | AdminController.listEmploymentTypeAjax |
+| `/check_duplicate_employment_type` | `/check_duplicate_employment_type` | GET/POST | AdminController.checkDuplicateEmploymentType |
+| `/delete_employment_type` | `/delete_employment_type` | GET/POST | AdminController.deleteEmploymentType |
 
 ### Investor Routes
 | Old Route | New Route | Method | Controller |

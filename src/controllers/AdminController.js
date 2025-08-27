@@ -1324,8 +1324,6 @@ class AdminController {
         });
       }
 
-      const user = userRows[0];
-
       // Validate token
       if (user.unique_token !== token) {
         return res.json({
@@ -1393,6 +1391,1802 @@ class AdminController {
         status: false,
         rcode: 500,
         message: 'Failed to delete country'
+      });
+    }
+  }
+
+  // Check duplicate country - PHP compatible version
+  static async checkDuplicateCountry(req, res) {
+    try {
+      // Support both query parameters and form data
+      const { user_id, token, name, id } = {
+        ...req.query,
+        ...req.body
+      };
+
+      console.log('checkDuplicateCountry - Parameters:', { user_id, token, name, id });
+
+      // Check if user_id and token are provided
+      if (!user_id || !token) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'user_id and token are required'
+        });
+      }
+
+      // Decode user ID
+      const decodedUserId = idDecode(user_id);
+      if (!decodedUserId) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Invalid user ID'
+        });
+      }
+
+      // Get user details and validate
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      if (!userRows.length) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Not A Valid User'
+        });
+      }
+
+      const user = userRows[0];
+
+      // Validate token
+      if (user.unique_token !== token) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Token Mismatch Exception'
+        });
+      }
+
+      // Check if user is admin (role_id = 1 or 2)
+      const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
+      if (!adminRows.length) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Permission denied'
+        });
+      }
+
+      // Check if name is provided
+      if (!name) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Country name is required'
+        });
+      }
+
+      // Build condition for duplicate check (matching PHP exactly)
+      let condition = '';
+      let params = [];
+
+      if (parseInt(id) > 0) {
+        // Editing existing country - exclude current record
+        condition = 'id != ? AND deleted = 0 AND name = ?';
+        params = [id, name];
+      } else {
+        // Adding new country
+        condition = 'deleted = 0 AND name = ?';
+        params = [name];
+      }
+
+      // Check for duplicate country name
+      const duplicateRows = await query(
+        `SELECT COUNT(*) as count FROM countries WHERE ${condition}`,
+        params
+      );
+
+      const hasDuplicate = duplicateRows[0]?.count > 0;
+
+      // Return response in PHP format (matching exactly)
+      return res.json({
+        validate: hasDuplicate
+      });
+
+    } catch (error) {
+      console.error('checkDuplicateCountry error:', error);
+      return res.json({
+        status: false,
+        rcode: 500,
+        message: 'Failed to check duplicate country'
+      });
+    }
+  }
+
+  // View state list - PHP compatible version
+  static async viewState(req, res) {
+    try {
+      // Support both query parameters and form data
+      const { user_id, token } = {
+        ...req.query,
+        ...req.body
+      };
+
+      console.log('viewState - Parameters:', { user_id, token });
+
+      // Check if user_id and token are provided
+      if (!user_id || !token) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'user_id and token are required'
+        });
+      }
+
+      // Decode user ID
+      const decodedUserId = idDecode(user_id);
+      if (!decodedUserId) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Invalid user ID'
+        });
+      }
+
+      // Get user details and validate
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      if (!userRows.length) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Not A Valid User'
+        });
+      }
+
+      const user = userRows[0];
+
+      // Validate token
+      if (user.unique_token !== token) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Token Mismatch Exception'
+        });
+      }
+
+      // Check if user is admin (role_id = 1 or 2)
+      const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
+      if (!adminRows.length) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Permission denied'
+        });
+      }
+
+      // Get all active countries ordered by name (matching PHP exactly)
+      const countries = await query('SELECT * FROM countries WHERE status = 1 AND deleted = 0 ORDER BY name ASC');
+
+      // Return response in PHP format (matching exactly)
+      return res.json({
+        status: true,
+        rcode: 200,
+        user_id: idEncode(decodedUserId),
+        unique_token: token,
+        list_country: countries || [],
+        message: 'State list view data retrieved successfully'
+      });
+
+    } catch (error) {
+      console.error('viewState error:', error);
+      return res.json({
+        status: false,
+        rcode: 500,
+        message: 'Failed to retrieve state list view data'
+      });
+    }
+  }
+
+  // Submit state - PHP compatible version
+  static async submitState(req, res) {
+    try {
+      // Support both query parameters and form data
+      const { user_id, token, row_id, country_id, name, status } = {
+        ...req.query,
+        ...req.body
+      };
+
+      console.log('submitState - Parameters:', { user_id, token, row_id, country_id, name, status });
+
+      // Check if user_id and token are provided
+      if (!user_id || !token) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'user_id and token are required'
+        });
+      }
+
+      // Decode user ID
+      const decodedUserId = idDecode(user_id);
+      if (!decodedUserId) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Invalid user ID'
+        });
+      }
+
+      // Get user details and validate
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      if (!userRows.length) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Not A Valid User'
+        });
+      }
+
+      const user = userRows[0];
+
+      // Validate token
+      if (user.unique_token !== token) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Token Mismatch Exception'
+        });
+      }
+
+      // Check if user is admin (role_id = 1 or 2)
+      const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
+      if (!adminRows.length) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Permission denied'
+        });
+      }
+
+      // Check if required fields are provided
+      if (!country_id || !name) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'country_id and name are required'
+        });
+      }
+
+      // Get admin role_id
+      const admin = adminRows[0];
+
+      if (!row_id || row_id === '') {
+        // Insert new state (matching PHP exactly)
+        const insertData = {
+          country_id: country_id,
+          name: name.trim(),
+          status: status !== undefined ? parseInt(status) : 1,
+          created_at: new Date().toISOString().slice(0, 19).replace('T', ' '),
+          created_by: admin.role_id
+        };
+
+        const insertResult = await query(
+          'INSERT INTO states (country_id, name, status, created_at, created_by, deleted) VALUES (?, ?, ?, ?, ?, 0)',
+          [insertData.country_id, insertData.name, insertData.status, insertData.created_at, insertData.created_by]
+        );
+
+        const info = 'Data Created Successfully';
+
+        // Return response in PHP format (matching exactly)
+        return res.json({
+          status: 'Success',
+          info: info
+        });
+
+      } else {
+        // Update existing state (matching PHP exactly)
+        const updateData = {
+          country_id: country_id,
+          name: name.trim(),
+          status: status !== undefined ? parseInt(status) : 1,
+          updated_at: new Date().toISOString().slice(0, 19).replace('T', ' '),
+          updated_by: admin.role_id
+        };
+
+        await query(
+          'UPDATE states SET country_id = ?, name = ?, status = ?, updated_at = ?, updated_by = ? WHERE id = ?',
+          [updateData.country_id, updateData.name, updateData.status, updateData.updated_at, updateData.updated_by, row_id]
+        );
+
+        const info = 'Data Updated Successfully';
+
+        // Return response in PHP format (matching exactly)
+        return res.json({
+          status: 'Success',
+          info: info
+        });
+      }
+
+    } catch (error) {
+      console.error('submitState error:', error);
+      return res.json({
+        status: 'Error',
+        info: 'Failed to submit state'
+      });
+    }
+  }
+
+  // List state ajax - PHP compatible version
+  static async listStateAjax(req, res) {
+    try {
+      // Support both query parameters and form data
+      const { user_id, token } = {
+        ...req.query,
+        ...req.body
+      };
+
+      console.log('listStateAjax - Parameters:', { user_id, token });
+
+      // Check if user_id and token are provided
+      if (!user_id || !token) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'user_id and token are required'
+        });
+      }
+
+      // Decode user ID
+      const decodedUserId = idDecode(user_id);
+      if (!decodedUserId) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Invalid user ID'
+        });
+      }
+
+      // Get user details and validate
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      if (!userRows.length) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Not A Valid User'
+        });
+      }
+
+      const user = userRows[0];
+
+      // Validate token
+      if (user.unique_token !== token) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Token Mismatch Exception'
+        });
+      }
+
+      // Check if user is admin (role_id = 1 or 2)
+      const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
+      if (!adminRows.length) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Permission denied'
+        });
+      }
+
+      // DataTables parameters
+      const drawValue = parseInt(req.body.draw || req.query.draw || 1);
+      const startValue = parseInt(req.body.start || req.query.start || 0);
+      const lengthValue = parseInt(req.body.length || req.query.length || 10);
+      const searchValue = req.body.search?.value || req.query.search || '';
+
+      // Get total count
+      const totalCountResult = await query('SELECT COUNT(*) as count FROM states WHERE deleted = 0');
+      const totalCount = totalCountResult[0]?.count || 0;
+
+      // Build search query
+      let searchQuery = '';
+      let searchParams = [];
+      if (searchValue) {
+        searchQuery = 'WHERE (states.name LIKE ? OR countries.name LIKE ?) AND states.deleted = 0';
+        searchParams.push(`%${searchValue}%`, `%${searchValue}%`);
+      } else {
+        searchQuery = 'WHERE states.deleted = 0';
+      }
+
+      // Get filtered count
+      let filteredCountQuery = `
+        SELECT COUNT(*) as count 
+        FROM states 
+        LEFT JOIN countries ON states.country_id = countries.id 
+        ${searchQuery}
+      `;
+      const filteredCountResult = await query(filteredCountQuery, searchParams);
+      const filteredCount = filteredCountResult[0]?.count || 0;
+
+      // Get paginated data with country names
+      let dataQuery = `
+        SELECT 
+          states.id,
+          states.name,
+          states.country_id,
+          states.status,
+          countries.name as country_name
+        FROM states 
+        LEFT JOIN countries ON states.country_id = countries.id 
+        ${searchQuery}
+        ORDER BY states.id DESC
+        LIMIT ?, ?
+      `;
+      const dataParams = [...searchParams, startValue, lengthValue];
+      const states = await query(dataQuery, dataParams);
+
+      // Format data for DataTables (matching PHP exactly)
+      const data = [];
+      let i = startValue;
+      for (const row of states) {
+        i++;
+
+        // Status badge (matching PHP exactly)
+        let status = '<span class="badge bg-soft-success text-success">Active</span>';
+        if (row.status == 0) {
+          status = '<span class="badge bg-soft-danger text-danger">Inactive</span>';
+        }
+
+        // Action buttons (matching PHP exactly)
+        const action = `<a href="javascript:void(0);" id="edit_${row.id}" data-id="${row.id}" data-country="${row.country_id}" data-name="${row.name}" data-status="${row.status}" onclick="viewEditDetails(${row.id});" class="action-icon"> <i class="mdi mdi-square-edit-outline"></i></a>
+                        <a href="javascript:void(0);" class="action-icon delete_info" data-id="${row.id}"> <i class="mdi mdi-delete"></i></a>`;
+
+        data.push([i, row.country_name, row.name, status, action]);
+      }
+
+      // Return response in DataTables format (matching PHP exactly)
+      return res.json({
+        draw: drawValue,
+        recordsTotal: totalCount,
+        recordsFiltered: filteredCount,
+        data: data
+      });
+
+    } catch (error) {
+      console.error('listStateAjax error:', error);
+      return res.json({
+        status: false,
+        rcode: 500,
+        message: 'Failed to retrieve state list'
+      });
+    }
+  }
+
+  // View cities - PHP compatible version
+  static async viewCities(req, res) {
+    try {
+      // Support both query parameters and form data
+      const { user_id, token } = {
+        ...req.query,
+        ...req.body
+      };
+
+      console.log('viewCities - Parameters:', { user_id, token });
+
+      // Check if user_id and token are provided
+      if (!user_id || !token) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'user_id and token are required'
+        });
+      }
+
+      // Decode user ID
+      const decodedUserId = idDecode(user_id);
+      if (!decodedUserId) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Invalid user ID'
+        });
+      }
+
+      // Get user details and validate
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      if (!userRows.length) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Not A Valid User'
+        });
+      }
+
+      const user = userRows[0];
+
+      // Validate token
+      if (user.unique_token !== token) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Token Mismatch Exception'
+        });
+      }
+
+      // Check if user is admin (role_id = 1 or 2)
+      const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
+      if (!adminRows.length) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Permission denied'
+        });
+      }
+
+      // Get all active states ordered by name (matching PHP exactly)
+      const states = await query('SELECT * FROM states WHERE status = 1 AND deleted = 0 ORDER BY name ASC');
+
+      // Return response in PHP format (matching exactly)
+      return res.json({
+        status: true,
+        rcode: 200,
+        user_id: idEncode(decodedUserId),
+        unique_token: token,
+        list_state: states || [],
+        message: 'City list view data retrieved successfully'
+      });
+
+    } catch (error) {
+      console.error('viewCities error:', error);
+      return res.json({
+        status: false,
+        rcode: 500,
+        message: 'Failed to retrieve city list view data'
+      });
+    }
+  }
+
+  // Submit cities - PHP compatible version
+  static async submitCities(req, res) {
+    try {
+      // Support both query parameters and form data
+      const { user_id, token, row_id, state_id, name, status } = {
+        ...req.query,
+        ...req.body
+      };
+
+      console.log('submitCities - Parameters:', { user_id, token, row_id, state_id, name, status });
+
+      // Check if user_id and token are provided
+      if (!user_id || !token) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'user_id and token are required'
+        });
+      }
+
+      // Decode user ID
+      const decodedUserId = idDecode(user_id);
+      if (!decodedUserId) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Invalid user ID'
+        });
+      }
+
+      // Get user details and validate
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      if (!userRows.length) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Not A Valid User'
+        });
+      }
+
+      const user = userRows[0];
+
+      // Validate token
+      if (user.unique_token !== token) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Token Mismatch Exception'
+        });
+      }
+
+      // Check if user is admin (role_id = 1 or 2)
+      const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
+      if (!adminRows.length) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Permission denied'
+        });
+      }
+
+      // Check if required fields are provided
+      if (!state_id || !name) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'state_id and name are required'
+        });
+      }
+
+      // Get admin role_id
+      const admin = adminRows[0];
+
+      if (!row_id || row_id === '') {
+        // Insert new city (matching PHP exactly)
+        const insertData = {
+          state_id: state_id,
+          name: name.trim(),
+          status: status !== undefined ? parseInt(status) : 1,
+          created_at: new Date().toISOString().slice(0, 19).replace('T', ' '),
+          created_by: admin.role_id
+        };
+
+        await query(
+          'INSERT INTO cities (state_id, name, status, created_at, created_by, deleted) VALUES (?, ?, ?, ?, ?, 0)',
+          [insertData.state_id, insertData.name, insertData.status, insertData.created_at, insertData.created_by]
+        );
+
+        const info = 'Data Created Successfully';
+
+        // Return response in PHP format (matching exactly)
+        return res.json({
+          status: 'Success',
+          info: info
+        });
+
+      } else {
+        // Update existing city (matching PHP exactly)
+        const updateData = {
+          state_id: state_id,
+          name: name.trim(),
+          status: status !== undefined ? parseInt(status) : 1,
+          updated_at: new Date().toISOString().slice(0, 19).replace('T', ' '),
+          updated_by: admin.role_id
+        };
+
+        await query(
+          'UPDATE cities SET state_id = ?, name = ?, status = ?, updated_at = ?, updated_by = ? WHERE id = ?',
+          [updateData.state_id, updateData.name, updateData.status, updateData.updated_at, updateData.updated_by, row_id]
+        );
+
+        const info = 'Data Updated Successfully';
+
+        // Return response in PHP format (matching exactly)
+        return res.json({
+          status: 'Success',
+          info: info
+        });
+      }
+
+    } catch (error) {
+      console.error('submitCities error:', error);
+      return res.json({
+        status: 'Error',
+        info: 'Failed to submit city'
+      });
+    }
+  }
+
+  // List cities ajax - PHP compatible version
+  static async listCitiesAjax(req, res) {
+    try {
+      // Support both query parameters and form data
+      const { user_id, token } = {
+        ...req.query,
+        ...req.body
+      };
+
+      console.log('listCitiesAjax - Parameters:', { user_id, token });
+
+      // Check if user_id and token are provided
+      if (!user_id || !token) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'user_id and token are required'
+        });
+      }
+
+      // Decode user ID
+      const decodedUserId = idDecode(user_id);
+      if (!decodedUserId) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Invalid user ID'
+        });
+      }
+
+      // Get user details and validate
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      if (!userRows.length) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Not A Valid User'
+        });
+      }
+
+      // Validate token
+      if (user.unique_token !== token) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Token Mismatch Exception'
+        });
+      }
+
+      // Check if user is admin (role_id = 1 or 2)
+      const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
+      if (!adminRows.length) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Permission denied'
+        });
+      }
+
+      // DataTables parameters
+      const drawValue = parseInt(req.body.draw || req.query.draw || 1);
+      const startValue = parseInt(req.body.start || req.query.start || 0);
+      const lengthValue = parseInt(req.body.length || req.query.length || 10);
+      const searchValue = req.body.search?.value || req.query.search || '';
+
+      // Get total count
+      const totalCountResult = await query('SELECT COUNT(*) as count FROM cities WHERE deleted = 0');
+      const totalCount = totalCountResult[0]?.count || 0;
+
+      // Build search query
+      let searchQuery = '';
+      let searchParams = [];
+      if (searchValue) {
+        searchQuery = 'WHERE (cities.name LIKE ? OR states.name LIKE ?) AND cities.deleted = 0';
+        searchParams.push(`%${searchValue}%`, `%${searchValue}%`);
+      } else {
+        searchQuery = 'WHERE cities.deleted = 0';
+      }
+
+      // Get filtered count
+      let filteredCountQuery = `
+        SELECT COUNT(*) as count
+        FROM cities
+        LEFT JOIN states ON cities.state_id = states.id
+        ${searchQuery}
+      `;
+      const filteredCountResult = await query(filteredCountQuery, searchParams);
+      const filteredCount = filteredCountResult[0]?.count || 0;
+
+      // Get paginated data with state names
+      let dataQuery = `
+        SELECT
+          cities.id,
+          cities.name,
+          cities.state_id,
+          cities.status,
+          states.name as state_name
+        FROM cities
+        LEFT JOIN states ON cities.state_id = states.id
+        ${searchQuery}
+        ORDER BY cities.id DESC
+        LIMIT ?, ?
+      `;
+      const dataParams = [...searchParams, startValue, lengthValue];
+      const cities = await query(dataQuery, dataParams);
+
+      // Format data for DataTables (matching PHP exactly)
+      const data = [];
+      let i = startValue;
+      for (const row of cities) {
+        i++;
+
+        // Status badge (matching PHP exactly)
+        let status = '<span class="badge bg-soft-success text-success">Active</span>';
+        if (row.status == 0) {
+          status = '<span class="badge bg-soft-danger text-danger">Inactive</span>';
+        }
+
+        // Action buttons (matching PHP exactly)
+        const action = `<a href="javascript:void(0);" id="edit_${row.id}" data-id="${row.id}" data-state="${row.state_id}" data-name="${row.name}" data-status="${row.status}" onclick="viewEditDetails(${row.id});" class="action-icon"> <i class="mdi mdi-square-edit-outline"></i></a>
+                        <a href="javascript:void(0);" class="action-icon delete_info" data-id="${row.id}"> <i class="mdi mdi-delete"></i></a>`;
+
+        data.push([i, row.state_name, row.name, status, action]);
+      }
+
+      // Return response in DataTables format (matching PHP exactly)
+      return res.json({
+        draw: drawValue,
+        recordsTotal: totalCount,
+        recordsFiltered: filteredCount,
+        data: data
+      });
+
+    } catch (error) {
+      console.error('listCitiesAjax error:', error);
+      return res.json({
+        status: false,
+        rcode: 500,
+          message: 'Failed to retrieve city list'
+      });
+    }
+  }
+
+  // Check duplicate cities - PHP compatible version
+  static async checkDuplicateCities(req, res) {
+    try {
+      // Support both query parameters and form data
+      const { user_id, token, sid, name, id } = {
+        ...req.query,
+        ...req.body
+      };
+
+      console.log('checkDuplicateCities - Parameters:', { user_id, token, sid, name, id });
+
+      // Check if user_id and token are provided
+      if (!user_id || !token) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'user_id and token are required'
+        });
+      }
+
+      // Decode user ID
+      const decodedUserId = idDecode(user_id);
+      if (!decodedUserId) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Invalid user ID'
+        });
+      }
+
+      // Get user details and validate
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      if (!userRows.length) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Not A Valid User'
+        });
+      }
+
+      const user = userRows[0];
+
+      // Validate token
+      if (user.unique_token !== token) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Token Mismatch Exception'
+        });
+      }
+
+      // Check if user is admin (role_id = 1 or 2)
+      const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
+      if (!adminRows.length) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Permission denied'
+        });
+      }
+
+      // Check if required fields are provided
+      if (!sid || !name) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'sid and name are required'
+        });
+      }
+
+      // Build condition for duplicate check (matching PHP exactly)
+      let condition = '';
+      let params = [];
+
+      if (parseInt(id) > 0) {
+        // Editing existing city - exclude current record and check within same state
+        condition = 'id != ? AND deleted = 0 AND state_id = ? AND name = ?';
+        params = [id, sid, name];
+      } else {
+        // Adding new city - check within same state
+        condition = 'deleted = 0 AND state_id = ? AND name = ?';
+        params = [sid, name];
+      }
+
+      // Check for duplicate city name within the same state
+      const duplicateRows = await query(
+        `SELECT COUNT(*) as count FROM cities WHERE ${condition}`,
+        params
+      );
+
+      const hasDuplicate = duplicateRows[0]?.count > 0;
+
+      // Return response in PHP format (matching exactly)
+      return res.json({
+        validate: hasDuplicate
+      });
+
+    } catch (error) {
+      console.error('checkDuplicateCities error:', error);
+      return res.json({
+        status: false,
+        rcode: 500,
+        message: 'Failed to check duplicate city'
+      });
+    }
+  }
+
+  // View employment type - PHP compatible version
+  static async viewEmploymentType(req, res) {
+    try {
+      // Support both query parameters and form data
+      const { user_id, token } = {
+        ...req.query,
+        ...req.body
+      };
+
+      console.log('viewEmploymentType - Parameters:', { user_id, token });
+
+      // Check if user_id and token are provided
+      if (!user_id || !token) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'user_id and token are required'
+        });
+      }
+
+      // Decode user ID
+      const decodedUserId = idDecode(user_id);
+      if (!decodedUserId) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Invalid user ID'
+        });
+      }
+
+      // Get user details and validate
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      if (!userRows.length) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Not A Valid User'
+        });
+      }
+
+      const user = userRows[0];
+
+      // Validate token
+      if (user.unique_token !== token) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Token Mismatch Exception'
+        });
+      }
+
+      // Check if user is admin (role_id = 1 or 2)
+      const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
+      if (!adminRows.length) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Permission denied'
+        });
+      }
+
+      // Get all employment types ordered by name (matching PHP exactly)
+      const employmentTypes = await query('SELECT * FROM employment_type WHERE deleted = 0 ORDER BY name ASC');
+
+      // Return response in PHP format (matching exactly)
+      return res.json({
+        status: true,
+        rcode: 200,
+        user_id: idEncode(decodedUserId),
+        unique_token: token,
+        employment_type_list: employmentTypes || [],
+        message: 'Employment type list view data retrieved successfully'
+      });
+
+    } catch (error) {
+      console.error('viewEmploymentType error:', error);
+      return res.json({
+        status: false,
+        rcode: 500,
+        message: 'Failed to retrieve employment type list view data'
+      });
+    }
+  }
+
+  // Submit employment type - PHP compatible version
+  static async submitEmploymentType(req, res) {
+    try {
+      // Support both query parameters and form data
+      const { user_id, token, row_id, name, status } = {
+        ...req.query,
+        ...req.body
+      };
+
+      console.log('submitEmploymentType - Parameters:', { user_id, token, row_id, name, status });
+
+      // Check if user_id and token are provided
+      if (!user_id || !token) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'user_id and token are required'
+        });
+      }
+
+      // Decode user ID
+      const decodedUserId = idDecode(user_id);
+      if (!decodedUserId) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Invalid user ID'
+        });
+      }
+
+      // Get user details and validate
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      if (!userRows.length) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Not A Valid User'
+        });
+      }
+
+      const user = userRows[0];
+
+      // Validate token
+      if (user.unique_token !== token) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Token Mismatch Exception'
+        });
+      }
+
+      // Check if user is admin (role_id = 1 or 2)
+      const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
+      if (!adminRows.length) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Permission denied'
+        });
+      }
+
+      // Check if required fields are provided
+      if (!name) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'name is required'
+        });
+      }
+
+      // Get admin role_id
+      const admin = adminRows[0];
+
+      if (!row_id || row_id === '') {
+        // Insert new employment type (matching PHP exactly)
+        const insertData = {
+          name: name.trim(),
+          status: status !== undefined ? parseInt(status) : 1,
+          created_at: new Date().toISOString().slice(0, 19).replace('T', ' '),
+          created_by: admin.role_id
+        };
+
+        await query(
+          'INSERT INTO employment_type (name, status, created_at, created_by, deleted) VALUES (?, ?, ?, ?, 0)',
+          [insertData.name, insertData.status, insertData.created_at, insertData.created_by]
+        );
+
+        const info = 'Data Created Successfully';
+
+        // Return response in PHP format (matching exactly)
+        return res.json({
+          status: 'Success',
+          info: info
+        });
+
+      } else {
+        // Update existing employment type (matching PHP exactly)
+        const updateData = {
+          name: name.trim(),
+          status: status !== undefined ? parseInt(status) : 1,
+          updated_at: new Date().toISOString().slice(0, 19).replace('T', ' '),
+          updated_by: admin.role_id
+        };
+
+        await query(
+          'UPDATE employment_type SET name = ?, status = ?, updated_at = ?, updated_by = ? WHERE id = ?',
+          [updateData.name, updateData.status, updateData.updated_at, updateData.updated_by, row_id]
+        );
+
+        const info = 'Data Updated Successfully';
+
+        // Return response in PHP format (matching exactly)
+        return res.json({
+          status: 'Success',
+          info: info
+        });
+      }
+
+    } catch (error) {
+      console.error('submitEmploymentType error:', error);
+      return res.json({
+        status: 'Error',
+        info: 'Failed to submit employment type'
+      });
+    }
+  }
+
+  // List employment type ajax - PHP compatible version
+  static async listEmploymentTypeAjax(req, res) {
+    try {
+      // Support both query parameters and form data
+      const { user_id, token } = {
+        ...req.query,
+        ...req.body
+      };
+
+      console.log('listEmploymentTypeAjax - Parameters:', { user_id, token });
+
+      // Check if user_id and token are provided
+      if (!user_id || !token) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'user_id and token are required'
+        });
+      }
+
+      // Decode user ID
+      const decodedUserId = idDecode(user_id);
+      if (!decodedUserId) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Invalid user ID'
+        });
+      }
+
+      // Get user details and validate
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      if (!userRows.length) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Not A Valid User'
+        });
+      }
+
+      const user = userRows[0];
+
+      // Validate token
+      if (user.unique_token !== token) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Token Mismatch Exception'
+        });
+      }
+
+      // Check if user is admin (role_id = 1 or 2)
+      const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
+      if (!adminRows.length) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Permission denied'
+        });
+      }
+
+      // DataTables parameters
+      const drawValue = parseInt(req.body.draw || req.query.draw || 1);
+      const startValue = parseInt(req.body.start || req.query.start || 0);
+      const lengthValue = parseInt(req.body.length || req.query.length || 10);
+      const searchValue = req.body.search?.value || req.query.search || '';
+
+      // Get total count
+      const totalCountResult = await query('SELECT COUNT(*) as count FROM employment_type WHERE deleted = 0');
+      const totalCount = totalCountResult[0]?.count || 0;
+
+      // Build search query
+      let searchQuery = '';
+      let searchParams = [];
+      if (searchValue) {
+        searchQuery = 'WHERE name LIKE ? AND deleted = 0';
+        searchParams.push(`%${searchValue}%`);
+      } else {
+        searchQuery = 'WHERE deleted = 0';
+      }
+
+      // Get filtered count
+      let filteredCountQuery = `
+        SELECT COUNT(*) as count
+        FROM employment_type
+        ${searchQuery}
+      `;
+      const filteredCountResult = await query(filteredCountQuery, searchParams);
+      const filteredCount = filteredCountResult[0]?.count || 0;
+
+      // Get paginated data
+      let dataQuery = `
+        SELECT
+          id,
+          name,
+          status
+        FROM employment_type
+        ${searchQuery}
+        ORDER BY id DESC
+        LIMIT ?, ?
+      `;
+      const dataParams = [...searchParams, startValue, lengthValue];
+      const employmentTypes = await query(dataQuery, dataParams);
+
+      // Format data for DataTables (matching PHP exactly)
+      const data = [];
+      let i = startValue;
+      for (const row of employmentTypes) {
+        i++;
+
+        // Status badge (matching PHP exactly)
+        let status = '<span class="badge bg-soft-success text-success">Active</span>';
+        if (row.status == 0) {
+          status = '<span class="badge bg-soft-danger text-danger">Inactive</span>';
+        }
+
+        // Action buttons (matching PHP exactly)
+        const action = `<a href="javascript:void(0);" id="edit_${row.id}" data-id="${row.id}" data-name="${row.name}" data-status="${row.status}" onclick="viewEditDetails(${row.id});" class="action-icon"> <i class="mdi mdi-square-edit-outline"></i></a>
+                        <a href="javascript:void(0);" class="action-icon delete_info" data-id="${row.id}"> <i class="mdi mdi-delete"></i></a>`;
+
+        data.push([i, row.name, status, action]);
+      }
+
+      // Return response in DataTables format (matching PHP exactly)
+      return res.json({
+        draw: drawValue,
+        recordsTotal: totalCount,
+        recordsFiltered: filteredCount,
+        data: data
+      });
+
+    } catch (error) {
+      console.error('listEmploymentTypeAjax error:', error);
+      return res.json({
+        status: false,
+        rcode: 500,
+        message: 'Failed to retrieve employment type list'
+      });
+    }
+  }
+
+  // Check duplicate employment type - PHP compatible version
+  static async checkDuplicateEmploymentType(req, res) {
+    try {
+      // Support both query parameters and form data
+      const { user_id, token, name, id } = {
+        ...req.query,
+        ...req.body
+      };
+
+      console.log('checkDuplicateEmploymentType - Parameters:', { user_id, token, name, id });
+
+      // Check if user_id and token are provided
+      if (!user_id || !token) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'user_id and token are required'
+        });
+      }
+
+      // Decode user ID
+      const decodedUserId = idDecode(user_id);
+      if (!decodedUserId) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Invalid user ID'
+        });
+      }
+
+      // Get user details and validate
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      if (!userRows.length) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Not A Valid User'
+        });
+      }
+
+      const user = userRows[0];
+
+      // Validate token
+      if (user.unique_token !== token) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Token Mismatch Exception'
+        });
+      }
+
+      // Check if user is admin (role_id = 1 or 2)
+      const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
+      if (!adminRows.length) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Permission denied'
+        });
+      }
+
+      // Check if required fields are provided
+      if (!name) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'name is required'
+        });
+      }
+
+      // Build condition for duplicate check (matching PHP exactly)
+      let condition = '';
+      let params = [];
+
+      if (parseInt(id) > 0) {
+        // Editing existing employment type - exclude current record
+        condition = 'id != ? AND deleted = 0 AND name = ?';
+        params = [id, name];
+      } else {
+        // Adding new employment type
+        condition = 'deleted = 0 AND name = ?';
+        params = [name];
+      }
+
+      // Check for duplicate employment type name
+      const duplicateRows = await query(
+        `SELECT COUNT(*) as count FROM employment_type WHERE ${condition}`,
+        params
+      );
+
+      const hasDuplicate = duplicateRows[0]?.count > 0;
+
+      // Return response in PHP format (matching exactly)
+      return res.json({
+        validate: hasDuplicate
+      });
+
+    } catch (error) {
+      console.error('checkDuplicateEmploymentType error:', error);
+      return res.json({
+        status: false,
+        rcode: 500,
+        message: 'Failed to check duplicate employment type'
+      });
+    }
+  }
+
+  // Delete employment type - PHP compatible version
+  static async deleteEmploymentType(req, res) {
+    try {
+      // Support both query parameters and form data
+      const { user_id, token, keys } = {
+        ...req.query,
+        ...req.body
+      };
+
+      console.log('deleteEmploymentType - Parameters:', { user_id, token, keys });
+
+      // Check if user_id and token are provided
+      if (!user_id || !token) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'user_id and token are required'
+        });
+      }
+
+      // Decode user ID
+      const decodedUserId = idDecode(user_id);
+      if (!decodedUserId) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Invalid user ID'
+        });
+      }
+
+      // Get user details and validate
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      if (!userRows.length) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Not A Valid User'
+        });
+      }
+
+      const user = userRows[0];
+
+      // Validate token
+      if (user.unique_token !== token) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Token Mismatch Exception'
+        });
+      }
+
+      // Check if user is admin (role_id = 1 or 2)
+      const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
+      if (!adminRows.length) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Permission denied'
+        });
+      }
+
+      // Check if keys (employment type ID) is provided
+      if (!keys) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Employment Type ID is required'
+        });
+      }
+
+      // Soft delete the employment type (matching PHP exactly)
+      const deleteData = {
+        deleted: 1,
+        deleted_at: new Date().toISOString().slice(0, 19).replace('T', ' '),
+        deleted_by: adminRows[0].role_id
+      };
+
+      await query(
+        'UPDATE employment_type SET deleted = ?, deleted_at = ?, deleted_by = ? WHERE id = ?',
+        [deleteData.deleted, deleteData.deleted_at, deleteData.deleted_by, keys]
+      );
+
+      // Return response in PHP format (matching exactly)
+      return res.json({
+        status: 'Success',
+        info: 'Employment Type Deleted Successfully'
+      });
+
+    } catch (error) {
+      console.error('deleteEmploymentType error:', error);
+      return res.json({
+        status: 'Error',
+        info: 'Failed to delete employment type'
+      });
+    }
+  }
+
+  // Delete cities - PHP compatible version
+  static async deleteCities(req, res) {
+    try {
+      // Support both query parameters and form data
+      const { user_id, token, keys } = {
+        ...req.query,
+        ...req.body
+      };
+
+      console.log('deleteCities - Parameters:', { user_id, token, keys });
+
+      // Check if user_id and token are provided
+      if (!user_id || !token) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'user_id and token are required'
+        });
+      }
+
+      // Decode user ID
+      const decodedUserId = idDecode(user_id);
+      if (!decodedUserId) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Invalid user ID'
+        });
+      }
+
+      // Get user details and validate
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      if (!userRows.length) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Not A Valid User'
+        });
+      }
+
+      const user = userRows[0];
+
+      // Validate token
+      if (user.unique_token !== token) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Token Mismatch Exception'
+        });
+      }
+
+      // Check if user is admin (role_id = 1 or 2)
+      const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
+      if (!adminRows.length) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Permission denied'
+        });
+      }
+
+      // Check if keys (city ID) is provided
+      if (!keys) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'City ID is required'
+        });
+      }
+
+      // Soft delete the city (matching PHP exactly)
+      const deleteData = {
+        deleted: 1,
+        deleted_at: new Date().toISOString().slice(0, 19).replace('T', ' '),
+        deleted_by: adminRows[0].role_id
+      };
+
+      await query(
+        'UPDATE cities SET deleted = ?, deleted_at = ?, deleted_by = ? WHERE id = ?',
+        [deleteData.deleted, deleteData.deleted_at, deleteData.deleted_by, keys]
+      );
+
+      // Return response in PHP format (matching exactly)
+      return res.json({
+        status: 'Success',
+        info: 'City Deleted Successfully'
+      });
+
+    } catch (error) {
+      console.error('deleteCities error:', error);
+      return res.json({
+        status: 'Error',
+        info: 'Failed to delete city'
+      });
+    }
+  }
+
+  // Delete state - PHP compatible version
+  static async deleteState(req, res) {
+    try {
+      // Support both query parameters and form data
+      const { user_id, token, keys } = {
+        ...req.query,
+        ...req.body
+      };
+
+      console.log('deleteState - Parameters:', { user_id, token, keys });
+
+      // Check if user_id and token are provided
+      if (!user_id || !token) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'user_id and token are required'
+        });
+      }
+
+      // Decode user ID
+      const decodedUserId = idDecode(user_id);
+      if (!decodedUserId) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Invalid user ID'
+        });
+      }
+
+      // Get user details and validate
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      if (!userRows.length) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Not A Valid User'
+        });
+      }
+
+      const user = userRows[0];
+
+      // Validate token
+      if (user.unique_token !== token) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Token Mismatch Exception'
+        });
+      }
+
+      // Check if user is admin (role_id = 1 or 2)
+      const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
+      if (!adminRows.length) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Permission denied'
+        });
+      }
+
+      // Check if keys (state ID) is provided
+      if (!keys) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'State ID is required'
+        });
+      }
+
+      // Check if state is mapped to cities (matching PHP exactly)
+      const cityExists = await query('SELECT COUNT(*) as count FROM cities WHERE state_id = ?', [keys]);
+      const hasCities = cityExists[0]?.count > 0;
+
+      if (hasCities) {
+        return res.json({
+          status: 'Error',
+          info: 'Could Not Delete as state already mapped to Cities'
+        });
+      }
+
+      // Soft delete the state (matching PHP exactly)
+      const deleteData = {
+        deleted: 1,
+        deleted_at: new Date().toISOString().slice(0, 19).replace('T', ' '),
+        deleted_by: adminRows[0].role_id
+      };
+
+      await query(
+        'UPDATE states SET deleted = ?, deleted_at = ?, deleted_by = ? WHERE id = ?',
+        [deleteData.deleted, deleteData.deleted_at, deleteData.deleted_by, keys]
+      );
+
+      // Return response in PHP format (matching exactly)
+      return res.json({
+        status: 'Success',
+        info: 'State Deleted Successfully'
+      });
+
+    } catch (error) {
+      console.error('deleteState error:', error);
+      return res.json({
+        status: 'Error',
+        info: 'Failed to delete state'
+      });
+    }
+  }
+
+  // Check duplicate state - PHP compatible version
+  static async checkDuplicateState(req, res) {
+    try {
+      // Support both query parameters and form data
+      const { user_id, token, cid, name, id } = {
+        ...req.query,
+        ...req.body
+      };
+
+      console.log('checkDuplicateState - Parameters:', { user_id, token, cid, name, id });
+
+      // Check if user_id and token are provided
+      if (!user_id || !token) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'user_id and token are required'
+        });
+      }
+
+      // Decode user ID
+      const decodedUserId = idDecode(user_id);
+      if (!decodedUserId) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Invalid user ID'
+        });
+      }
+
+      // Get user details and validate
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      if (!userRows.length) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Not A Valid User'
+        });
+      }
+
+      const user = userRows[0];
+
+      // Validate token
+      if (user.unique_token !== token) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Token Mismatch Exception'
+        });
+      }
+
+      // Check if user is admin (role_id = 1 or 2)
+      const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
+      if (!adminRows.length) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Permission denied'
+        });
+      }
+
+      // Check if required fields are provided
+      if (!cid || !name) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'cid and name are required'
+        });
+      }
+
+      // Build condition for duplicate check (matching PHP exactly)
+      let condition = '';
+      let params = [];
+
+      if (parseInt(id) > 0) {
+        // Editing existing state - exclude current record and check within same country
+        condition = 'id != ? AND deleted = 0 AND country_id = ? AND name = ?';
+        params = [id, cid, name];
+      } else {
+        // Adding new state - check within same country
+        condition = 'deleted = 0 AND country_id = ? AND name = ?';
+        params = [cid, name];
+      }
+
+      // Check for duplicate state name within the same country
+      const duplicateRows = await query(
+        `SELECT COUNT(*) as count FROM states WHERE ${condition}`,
+        params
+      );
+
+      const hasDuplicate = duplicateRows[0]?.count > 0;
+
+      // Return response in PHP format (matching exactly)
+      return res.json({
+        validate: hasDuplicate
+      });
+
+    } catch (error) {
+      console.error('checkDuplicateState error:', error);
+      return res.json({
+        status: false,
+        rcode: 500,
+        message: 'Failed to check duplicate state'
       });
     }
   }
