@@ -85,45 +85,82 @@ const ApiController = {
   },
   async getStateList(req, res) {
     try {
-      const { user_id, token, country_id } = req.query;
+      // Support both query parameters and form data (matching PHP exactly)
+      const { user_id, token, country_id } = {
+        ...req.query,
+        ...req.body
+      };
       
+      console.log('getStateList - Parameters:', { user_id, token, country_id });
+      
+      // Check if user_id and token are provided
       if (!user_id || !token) {
-        return fail(res, 500, 'Token Mismatch Exception');
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Token Mismatch Exception'
+        });
       }
       
+      // Check if country_id is provided
       if (!country_id) {
-        return fail(res, 500, 'country_id is required');
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'country_id is required'
+        });
       }
       
+      // Decode user ID
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
-        return fail(res, 500, 'Invalid user ID');
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Invalid user ID'
+        });
       }
       
+      // Get user details and validate
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
-        return fail(res, 500, 'Not A Valid User');
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Not A Valid User'
+        });
       }
       
       const user = userRows[0];
       
+      // Validate token
       if (user.unique_token !== token) {
-        return fail(res, 500, 'Token Mismatch Exception');
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Token Mismatch Exception'
+        });
       }
       
+      // Get states for the specified country (matching PHP exactly)
     const rows = await query('SELECT id AS state_id, name AS state_name FROM states WHERE country_id = ?', [country_id]);
       
+      // Return response in PHP format (matching exactly)
       return res.json({
         status: true,
         rcode: 200,
         user_id: idEncode(decodedUserId),
         unique_token: token,
-        state_list: toArray(rows)
+        state_list: (rows && rows.length > 0) ? rows : []
       });
       
     } catch (error) {
       console.error('getStateList error:', error);
-      return fail(res, 500, 'Failed to get state list');
+      return res.json({
+        status: false,
+        rcode: 500,
+        message: 'Failed to get state list'
+      });
     }
   },
   async getCityList(req, res) {

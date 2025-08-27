@@ -129,6 +129,7 @@ All NodeJS routes have been updated to match the exact PHP route format. Instead
 | `/list-country` | `/list-country` | GET/POST | AdminController.getCountryList |
 | `/list-country-ajax` | `/list-country-ajax` | GET/POST | AdminController.getCountryLists |
 | `/save-country` | `/save-country` | GET/POST | AdminController.saveCountry |
+| `/edit-country/:id` | `/edit-country/:id` | GET/POST | AdminController.viewAddEditForm |
 
 ### Investor Routes
 | Old Route | New Route | Method | Controller |

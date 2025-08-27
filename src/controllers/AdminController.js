@@ -1171,6 +1171,231 @@ class AdminController {
       return errorResponse(res, 'Failed to log admin action', 500);
     }
   }
+
+  // View/Edit country form - PHP compatible version
+  static async viewAddEditForm(req, res) {
+    try {
+      // Support both query parameters and form data
+      const { user_id, token } = {
+        ...req.query,
+        ...req.body
+      };
+
+      // Get country ID from URL parameter
+      const countryId = req.params.id || req.params[0];
+
+      console.log('viewAddEditForm - Parameters:', { user_id, token, countryId });
+
+      // Check if user_id and token are provided
+      if (!user_id || !token) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'user_id and token are required'
+        });
+      }
+
+      // Decode user ID
+      const decodedUserId = idDecode(user_id);
+      if (!decodedUserId) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Invalid user ID'
+        });
+      }
+
+      // Get user details and validate
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      if (!userRows.length) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Not A Valid User'
+        });
+      }
+
+      const user = userRows[0];
+
+      // Validate token
+      if (user.unique_token !== token) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Token Mismatch Exception'
+        });
+      }
+
+      // Check if user is admin (role_id = 1 or 2)
+      const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
+      if (!adminRows.length) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Permission denied'
+        });
+      }
+
+      // Check if country ID is provided
+      if (!countryId) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Country ID is required'
+        });
+      }
+
+      // Get country details for editing
+      const countryRows = await query('SELECT * FROM countries WHERE id = ? AND deleted = 0 LIMIT 1', [countryId]);
+      if (!countryRows.length) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Country not found'
+        });
+      }
+
+      const country = countryRows[0];
+
+      // Return response in PHP format (matching exactly)
+      return res.json({
+        status: true,
+        rcode: 200,
+        user_id: idEncode(decodedUserId),
+        unique_token: token,
+        country: {
+          id: country.id,
+          name: country.name,
+          status: country.status
+        },
+        message: 'Country details retrieved successfully'
+      });
+
+    } catch (error) {
+      console.error('viewAddEditForm error:', error);
+      return res.json({
+        status: false,
+        rcode: 500,
+        message: 'Failed to retrieve country details'
+      });
+    }
+  }
+
+  // Delete country - PHP compatible version
+  static async deleteCountry(req, res) {
+    try {
+      // Support both query parameters and form data
+      const { user_id, token } = {
+        ...req.query,
+        ...req.body
+      };
+
+      // Get country ID from URL parameter
+      const countryId = req.params.id || req.params[0];
+
+      console.log('deleteCountry - Parameters:', { user_id, token, countryId });
+
+      // Check if user_id and token are provided
+      if (!user_id || !token) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'user_id and token are required'
+        });
+      }
+
+      // Decode user ID
+      const decodedUserId = idDecode(user_id);
+      if (!decodedUserId) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Invalid user ID'
+        });
+      }
+
+      // Get user details and validate
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      if (!userRows.length) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Not A Valid User'
+        });
+      }
+
+      const user = userRows[0];
+
+      // Validate token
+      if (user.unique_token !== token) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Token Mismatch Exception'
+        });
+      }
+
+      // Check if user is admin (role_id = 1 or 2)
+      const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
+      if (!adminRows.length) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Permission denied'
+        });
+      }
+
+      // Check if country ID is provided
+      if (!countryId) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Country ID is required'
+        });
+      }
+
+      // Check whether this country is mapped to state (matching PHP exactly)
+      const stateExists = await query('SELECT COUNT(*) as count FROM states WHERE country_id = ?', [countryId]);
+      const hasStates = stateExists[0]?.count > 0;
+
+      if (hasStates) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Could not delete as state already mapped to country'
+        });
+      }
+
+      // Soft delete the country (matching PHP exactly)
+      const deleteData = {
+        deleted: 1,
+        deleted_at: new Date().toISOString().slice(0, 19).replace('T', ' '),
+        deleted_by: adminRows[0].role_id
+      };
+
+      await query(
+        'UPDATE countries SET deleted = ?, deleted_at = ?, deleted_by = ? WHERE id = ?',
+        [deleteData.deleted, deleteData.deleted_at, deleteData.deleted_by, countryId]
+      );
+
+      // Return response in PHP format (matching exactly)
+      return res.json({
+        status: true,
+        rcode: 200,
+        user_id: idEncode(decodedUserId),
+        unique_token: token,
+        message: 'Country deleted successfully'
+      });
+
+    } catch (error) {
+      console.error('deleteCountry error:', error);
+      return res.json({
+        status: false,
+        rcode: 500,
+        message: 'Failed to delete country'
+      });
+    }
+  }
 }
 
 module.exports = AdminController;

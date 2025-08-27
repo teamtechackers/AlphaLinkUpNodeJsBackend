@@ -189,6 +189,10 @@ router.get('/list-country-ajax', AdminController.getCountryLists);
 router.post('/list-country-ajax', uploadFormData.none(), AdminController.getCountryLists);
 router.get('/save-country', AdminController.saveCountry);
 router.post('/save-country', uploadFormData.none(), AdminController.saveCountry);
+router.get('/edit-country/:id', AdminController.viewAddEditForm);
+router.post('/edit-country/:id', uploadFormData.none(), AdminController.viewAddEditForm);
+router.get('/delete-country/:id', AdminController.deleteCountry);
+router.post('/delete-country/:id', uploadFormData.none(), AdminController.deleteCountry);
 
 // Investor Routes
 router.post('/Api-Save-Investor', uploadInvestor.single('image'), ApiController.saveInvestor);
