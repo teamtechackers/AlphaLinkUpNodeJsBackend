@@ -9,61 +9,588 @@ const NotificationService = require('../services/NotificationService');
 const AnalyticsService = require('../services/AnalyticsService');
 const { logger } = require('../utils/logger');
 const { successResponse, errorResponse } = require('../utils/response');
+const { query } = require('../config/db');
+const { idDecode, idEncode } = require('../utils/idCodec');
 
 class AdminController {
-  // Admin login
+  // Admin login - PHP compatible version
   static async adminLogin(req, res) {
     try {
-      const { email, password } = req.body;
+      // Support both query parameters and form data
+      const { username, password } = {
+        ...req.query,
+        ...req.body
+      };
       
-      // Validate required fields
-      if (!email || !password) {
-        return errorResponse(res, 'Email and password are required', 400);
+      console.log('adminLogin - Parameters:', { username, password });
+      
+      // Check if username and password are provided
+      if (!username || !password) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Username and password are required'
+        });
       }
-
-      const result = await AdminService.adminLogin(email, password);
       
-      logger.info(`Admin login successful: ${email}`);
-      return successResponse(res, 'Admin login successful', { 
-        admin: result.admin,
-        token: result.token 
+      // Get admin user details and validate
+      const adminRows = await query('SELECT * FROM admin_users WHERE username = ? LIMIT 1', [username]);
+      if (!adminRows.length) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Invalid login credentials'
+        });
+      }
+      
+      const admin = adminRows[0];
+      
+      // Validate password (using MD5 to match PHP)
+      const crypto = require('crypto');
+      const hashedPassword = crypto.createHash('md5').update(password).digest('hex');
+      
+      if (hashedPassword !== admin.password) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Invalid login credentials'
+        });
+      }
+      
+      // Get role details
+      const roleRows = await query('SELECT * FROM roles WHERE id = ? LIMIT 1', [admin.role_id]);
+      const role = roleRows.length > 0 ? roleRows[0] : null;
+      
+      // Update last login (if there's a last_login field in admin_users)
+      try {
+        await query('UPDATE admin_users SET last_login = NOW() WHERE id = ?', [admin.id]);
+      } catch (error) {
+        console.log('No last_login field in admin_users table');
+      }
+      
+      // Return response in PHP format (matching exactly)
+      return res.json({
+        status: true,
+        rcode: 200,
+        user_id: admin.id,
+        username: admin.username,
+        role_id: admin.role_id,
+        role_name: role ? role.role_name : '',
+        message: 'Admin login successful'
       });
+      
     } catch (error) {
-      logger.error('Admin login error:', error);
-      
-      if (error.message.includes('Invalid credentials')) {
-        return errorResponse(res, 'Invalid email or password', 401);
-      }
-      
-      if (error.message.includes('Account not found')) {
-        return errorResponse(res, 'Admin account not found', 404);
-      }
-      
-      if (error.message.includes('Account disabled')) {
-        return errorResponse(res, 'Account is disabled', 403);
-      }
-      
-      return errorResponse(res, 'Admin login failed', 500);
+      console.error('adminLogin error:', error);
+      return res.json({
+        status: false,
+        rcode: 500,
+        message: 'Admin login failed'
+      });
     }
   }
 
-  // Get admin dashboard data
-  static async getDashboardData(req, res) {
+  // Permission denied - PHP compatible version
+  static async permissionDenied(req, res) {
     try {
-      const adminId = req.user.id;
-      const { period = '30d' } = req.query;
-
-      const dashboardData = await AdminService.getDashboardData(adminId, period);
+      // Return response in PHP format (matching exactly)
+      return res.json({
+        status: false,
+        rcode: 403,
+        message: 'Permission denied',
+        error: 'Access forbidden'
+      });
       
-      return successResponse(res, 'Dashboard data retrieved successfully', { dashboardData });
     } catch (error) {
-      logger.error('Get dashboard data error:', error);
+      console.error('permissionDenied error:', error);
+      return res.json({
+        status: false,
+        rcode: 500,
+        message: 'Permission denied error'
+      });
+    }
+  }
+
+  // Get country list - PHP compatible version
+  static async getCountryList(req, res) {
+    try {
+      // Support both query parameters and form data
+      const { user_id, token } = {
+        ...req.query,
+        ...req.body
+      };
       
-      if (error.message.includes('not authorized')) {
-        return errorResponse(res, 'You are not authorized to access dashboard data', 403);
+      console.log('getCountryList - Parameters:', { user_id, token });
+      
+      // Check if user_id and token are provided
+      if (!user_id || !token) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'user_id and token are required'
+        });
       }
       
-      return errorResponse(res, 'Failed to retrieve dashboard data', 500);
+      // Decode user ID
+      const decodedUserId = idDecode(user_id);
+      if (!decodedUserId) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Invalid user ID'
+        });
+      }
+      
+      // Get user details and validate
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      if (!userRows.length) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Not A Valid User'
+        });
+      }
+      
+      const user = userRows[0];
+      
+      // Validate token
+      if (user.unique_token !== token) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Token Mismatch Exception'
+        });
+      }
+      
+      // Check if user is admin (role_id = 1 or 2)
+      const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
+      if (!adminRows.length) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Permission denied'
+        });
+      }
+      
+      // Get all countries (matching PHP exactly)
+      const countries = await query('SELECT * FROM countries ORDER BY name ASC');
+      
+      // Return response in PHP format (matching exactly)
+      return res.json({
+        status: true,
+        rcode: 200,
+        user_id: idEncode(decodedUserId),
+        unique_token: token,
+        countries: countries || [],
+        message: 'Country list retrieved successfully'
+      });
+      
+    } catch (error) {
+      console.error('getCountryList error:', error);
+      return res.json({
+        status: false,
+        rcode: 500,
+        message: 'Failed to retrieve country list'
+      });
+    }
+  }
+
+  // Get country list for DataTables - PHP compatible version
+  static async getCountryLists(req, res) {
+    try {
+      // Support both query parameters and form data
+      const { user_id, token, draw, start, length, search, order } = {
+        ...req.query,
+        ...req.body
+      };
+      
+      console.log('getCountryLists - Parameters:', { user_id, token, draw, start, length, search, order });
+      
+      // Check if user_id and token are provided
+      if (!user_id || !token) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'user_id and token are required'
+        });
+      }
+      
+      // Decode user ID
+      const decodedUserId = idDecode(user_id);
+      if (!decodedUserId) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Invalid user ID'
+        });
+      }
+      
+      // Get user details and validate
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      if (!userRows.length) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Not A Valid User'
+        });
+      }
+      
+      const user = userRows[0];
+      
+      // Validate token
+      if (user.unique_token !== token) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Token Mismatch Exception'
+        });
+      }
+      
+      // Check if user is admin (role_id = 1 or 2)
+      const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
+      if (!adminRows.length) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Permission denied'
+        });
+      }
+      
+      // DataTables parameters
+      const drawValue = parseInt(req.body.draw || req.query.draw || 1);
+      const startValue = parseInt(req.body.start || req.query.start || 0);
+      const lengthValue = parseInt(req.body.length || req.query.length || 10);
+      const searchValue = req.body.search?.value || req.query.search || '';
+      const orderColumn = req.body.order?.[0]?.column || req.query.orderColumn || 1;
+      const orderDir = req.body.order?.[0]?.dir || req.query.orderDir || 'asc';
+      
+      // Build search query
+      let searchQuery = '';
+      let searchParams = [];
+      if (searchValue) {
+        searchQuery = 'WHERE name LIKE ? AND deleted = 0';
+        searchParams.push(`%${searchValue}%`);
+      } else {
+        searchQuery = 'WHERE deleted = 0';
+      }
+      
+      // Get total count
+      const totalCountResult = await query('SELECT COUNT(*) as count FROM countries WHERE deleted = 0');
+      const totalCount = totalCountResult[0]?.count || 0;
+      
+      // Get filtered count
+      let filteredCountQuery = 'SELECT COUNT(*) as count FROM countries ' + searchQuery;
+      const filteredCountResult = await query(filteredCountQuery, searchParams);
+      const filteredCount = filteredCountResult[0]?.count || 0;
+      
+      // Get paginated data
+      let dataQuery = `
+        SELECT * FROM countries 
+        ${searchQuery}
+        ORDER BY name ASC
+        LIMIT ?, ?
+      `;
+      const dataParams = [...searchParams, startValue, lengthValue];
+      const countries = await query(dataQuery, dataParams);
+      
+      // Format data for DataTables (matching PHP exactly)
+      const data = [];
+      let i = startValue;
+      for (const row of countries) {
+        i++;
+        
+        // Status badge (matching PHP exactly)
+        let status = '<span class="badge bg-soft-success text-success">Active</span>';
+        if (row.status == 0) {
+          status = '<span class="badge bg-soft-danger text-danger">Inactive</span>';
+        }
+        
+        // Action buttons (matching PHP exactly)
+        const action = `<a href="javascript:void(0);" id="edit_${row.id}" data-id="${row.id}" data-name="${row.name}" data-status="${row.status}" onclick="viewEditDetails(${row.id});" class="action-icon"> <i class="mdi mdi-square-edit-outline"></i></a>
+                        <a href="delete-country/${row.id}" onclick="return confirm('Are you sure you want to delete this record?');" class="action-icon"> <i class="mdi mdi-delete"></i></a>`;
+        
+        data.push([i, row.name, status, action]);
+      }
+      
+      // Return response in DataTables format (matching PHP exactly)
+      return res.json({
+        draw: drawValue,
+        recordsTotal: totalCount,
+        recordsFiltered: filteredCount,
+        data: data
+      });
+      
+    } catch (error) {
+      console.error('getCountryLists error:', error);
+      return res.json({
+        status: false,
+        rcode: 500,
+        message: 'Failed to retrieve country lists'
+      });
+          }
+    }
+
+    // Save country - PHP compatible version
+    static async saveCountry(req, res) {
+      try {
+        // Support both query parameters and form data
+        const { user_id, token, id, name, status } = {
+          ...req.query,
+          ...req.body
+        };
+        
+        console.log('saveCountry - Parameters:', { user_id, token, id, name, status });
+        
+        // Check if user_id and token are provided
+        if (!user_id || !token) {
+          return res.json({
+            status: false,
+            rcode: 500,
+            message: 'user_id and token are required'
+          });
+        }
+        
+        // Decode user ID
+        const decodedUserId = idDecode(user_id);
+        if (!decodedUserId) {
+          return res.json({
+            status: false,
+            rcode: 500,
+            message: 'Invalid user ID'
+          });
+        }
+        
+        // Get user details and validate
+        const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+        if (!userRows.length) {
+          return res.json({
+            status: false,
+            rcode: 500,
+            message: 'Not A Valid User'
+          });
+        }
+        
+        const user = userRows[0];
+        
+        // Validate token
+        if (user.unique_token !== token) {
+          return res.json({
+            status: false,
+            rcode: 500,
+            message: 'Token Mismatch Exception'
+          });
+        }
+        
+        // Check if user is admin (role_id = 1 or 2)
+        const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
+        if (!adminRows.length) {
+          return res.json({
+            status: false,
+            rcode: 500,
+            message: 'Permission denied'
+          });
+        }
+        
+        // Get admin role_id
+        const admin = adminRows[0];
+        
+        // Check mandatory fields
+        if (!name || name.trim() === '') {
+          return res.json({
+            status: false,
+            rcode: 500,
+            message: 'Country name is required'
+          });
+        }
+        
+        // Check if status is provided
+        const countryStatus = status !== undefined ? parseInt(status) : 1;
+        
+        if (parseInt(id) === 0) {
+          // Insert new country (matching PHP exactly)
+          const insertData = {
+            name: name.trim(),
+            status: countryStatus,
+            created_at: new Date().toISOString().slice(0, 19).replace('T', ' '),
+            created_by: admin.role_id
+          };
+          
+          const insertResult = await query(
+            'INSERT INTO countries (name, status, created_at, created_by, deleted) VALUES (?, ?, ?, ?, 0)',
+            [insertData.name, insertData.status, insertData.created_at, insertData.created_by]
+          );
+          
+          const newId = insertResult.insertId;
+          
+          return res.json({
+            status: true,
+            rcode: 200,
+            user_id: idEncode(decodedUserId),
+            unique_token: token,
+            country_id: newId,
+            message: 'Data created successfully'
+          });
+          
+        } else {
+          // Update existing country (matching PHP exactly)
+          const updateData = {
+            name: name.trim(),
+            status: countryStatus,
+            updated_at: new Date().toISOString().slice(0, 19).replace('T', ' '),
+            updated_by: admin.role_id
+          };
+          
+          await query(
+            'UPDATE countries SET name = ?, status = ?, updated_at = ?, updated_by = ? WHERE id = ?',
+            [updateData.name, updateData.status, updateData.updated_at, updateData.updated_by, id]
+          );
+          
+          return res.json({
+            status: true,
+            rcode: 200,
+            user_id: idEncode(decodedUserId),
+            unique_token: token,
+            country_id: parseInt(id),
+            message: 'Data updated successfully'
+          });
+        }
+        
+      } catch (error) {
+        console.error('saveCountry error:', error);
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Failed to save country'
+        });
+      }
+    }
+  
+    // Get admin dashboard data - PHP compatible version
+  static async getDashboard(req, res) {
+    try {
+      // Support both query parameters and form data
+      const { user_id, token } = {
+        ...req.query,
+        ...req.body
+      };
+      
+      console.log('getDashboard - Parameters:', { user_id, token });
+      
+      // Check if user_id and token are provided
+      if (!user_id || !token) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'user_id and token are required'
+        });
+      }
+      
+      // Decode user ID
+      const decodedUserId = idDecode(user_id);
+      if (!decodedUserId) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Invalid user ID'
+        });
+      }
+      
+      // Get user details and validate
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      if (!userRows.length) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Not A Valid User'
+        });
+      }
+      
+      const user = userRows[0];
+      
+      // Validate token
+      if (user.unique_token !== token) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Token Mismatch Exception'
+        });
+      }
+      
+      // Check if user is admin (role_id = 1 or 2)
+      const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
+      if (!adminRows.length) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Permission denied'
+        });
+      }
+      
+      // Get dashboard counts (matching PHP exactly)
+      const countUsers = await query('SELECT COUNT(*) as count FROM users');
+      const countJobs = await query('SELECT COUNT(*) as count FROM user_job_details WHERE deleted = 0');
+      const countEvents = await query('SELECT COUNT(*) as count FROM user_event_details WHERE deleted = 0');
+      const countService = await query('SELECT COUNT(*) as count FROM user_service_provider WHERE deleted = 0');
+      const countInvestor = await query('SELECT COUNT(*) as count FROM user_investor WHERE deleted = 0');
+      
+      // Get recent jobs with location details (matching PHP exactly)
+      const listJobs = await query(`
+        SELECT 
+          user_job_details.job_title,
+          user_job_details.company_name,
+          user_job_details.address,
+          countries.name as country_name,
+          states.name as state_name,
+          cities.name as city_name
+        FROM user_job_details
+        LEFT JOIN countries ON countries.id = user_job_details.country_id
+        LEFT JOIN states ON states.id = user_job_details.state_id
+        LEFT JOIN cities ON cities.id = user_job_details.city_id
+        WHERE user_job_details.deleted = 0
+        ORDER BY user_job_details.job_id DESC
+        LIMIT 5
+      `);
+      
+      // Get recent investors with location details (matching PHP exactly)
+      const listInvestor = await query(`
+        SELECT 
+          user_investor.reference_no,
+          user_investor.name,
+          user_investor.bio,
+          countries.name as country_name,
+          states.name as state_name,
+          cities.name as city_name
+        FROM user_investor
+        LEFT JOIN countries ON countries.id = user_investor.country_id
+        LEFT JOIN states ON states.id = user_investor.state_id
+        LEFT JOIN cities ON cities.id = user_investor.city_id
+        WHERE user_investor.deleted = 0
+        ORDER BY user_investor.investor_id DESC
+        LIMIT 5
+      `);
+      
+      // Return response in PHP format (matching exactly)
+      return res.json({
+        status: true,
+        rcode: 200,
+        user_id: idEncode(decodedUserId),
+        unique_token: token,
+        count_users: countUsers[0]?.count || 0,
+        count_jobs: countJobs[0]?.count || 0,
+        count_events: countEvents[0]?.count || 0,
+        count_service: countService[0]?.count || 0,
+        count_investor: countInvestor[0]?.count || 0,
+        list_jobs: listJobs || [],
+        list_investor: listInvestor || [],
+        message: 'Dashboard data retrieved successfully'
+      });
+      
+    } catch (error) {
+      console.error('getDashboard error:', error);
+      return res.json({
+        status: false,
+        rcode: 500,
+        message: 'Failed to retrieve dashboard data'
+      });
     }
   }
 

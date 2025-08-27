@@ -4701,6 +4701,8 @@ const ApiController = {
     }
   },
 
+
+
   async getFoldersListByType(req, res) {
     try {
       // Support both query parameters and form data

@@ -7,6 +7,7 @@ const router = express.Router();
 // Import controllers
 const AuthController = require('../controllers/AuthController');
 const ApiController = require('../controllers/apiController');
+const AdminController = require('../controllers/AdminController');
 
 // Import middlewares
 const authenticate = require('../middlewares/authenticate');
@@ -175,6 +176,19 @@ router.get('/Api-View-Service-Details', ApiController.getServiceDetail);
 router.get('/Api-Service-Unlock', ApiController.serviceUnlock);
 router.post('/Api-Service-Unlock', uploadFormData.none(), ApiController.serviceUnlock);
 router.get('/Api-All-Service-Unlock-List', ApiController.getAllServiceUnlockList);
+
+// Admin Routes
+router.get('/admin-login', AdminController.adminLogin);
+router.post('/admin-login', uploadFormData.none(), AdminController.adminLogin);
+router.get('/permission-denied', AdminController.permissionDenied);
+router.get('/admin-dashboard', AdminController.getDashboard);
+router.post('/admin-dashboard', uploadFormData.none(), AdminController.getDashboard);
+router.get('/list-country', AdminController.getCountryList);
+router.post('/list-country', uploadFormData.none(), AdminController.getCountryList);
+router.get('/list-country-ajax', AdminController.getCountryLists);
+router.post('/list-country-ajax', uploadFormData.none(), AdminController.getCountryLists);
+router.get('/save-country', AdminController.saveCountry);
+router.post('/save-country', uploadFormData.none(), AdminController.saveCountry);
 
 // Investor Routes
 router.post('/Api-Save-Investor', uploadInvestor.single('image'), ApiController.saveInvestor);

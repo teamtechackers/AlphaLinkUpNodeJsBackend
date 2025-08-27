@@ -123,6 +123,13 @@ All NodeJS routes have been updated to match the exact PHP route format. Instead
 | `/api/serviceUnlock` | `/Api-Service-Unlock` | POST | ApiController.serviceUnlock |
 | `/api/getAllServiceUnlockList` | `/Api-All-Service-Unlock-List` | GET | ApiController.getAllServiceUnlockList |
 
+| `/admin-login` | `/admin-login` | GET/POST | AdminController.adminLogin |
+| `/permission-denied` | `/permission-denied` | GET | AdminController.permissionDenied |
+| `/admin-dashboard` | `/admin-dashboard` | GET/POST | AdminController.getDashboard |
+| `/list-country` | `/list-country` | GET/POST | AdminController.getCountryList |
+| `/list-country-ajax` | `/list-country-ajax` | GET/POST | AdminController.getCountryLists |
+| `/save-country` | `/save-country` | GET/POST | AdminController.saveCountry |
+
 ### Investor Routes
 | Old Route | New Route | Method | Controller |
 |-----------|-----------|---------|------------|
