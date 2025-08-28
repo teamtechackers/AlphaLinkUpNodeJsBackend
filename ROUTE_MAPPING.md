@@ -147,6 +147,108 @@ All NodeJS routes have been updated to match the exact PHP route format. Instead
 | `/list_employment_type_ajax` | `/list_employment_type_ajax` | GET/POST | AdminController.listEmploymentTypeAjax |
 | `/check_duplicate_employment_type` | `/check_duplicate_employment_type` | GET/POST | AdminController.checkDuplicateEmploymentType |
 | `/delete_employment_type` | `/delete_employment_type` | GET/POST | AdminController.deleteEmploymentType |
+| `/list-interests` | `/list-interests` | GET/POST | AdminController.viewInterests |
+| `/submit_interest` | `/submit_interest` | GET/POST | AdminController.submitInterest |
+| `/list_interest_ajax` | `/list_interest_ajax` | GET/POST | AdminController.listInterestAjax |
+| `/check_duplicate_interest` | `/check_duplicate_interest` | GET/POST | AdminController.checkDuplicateInterest |
+| `/delete_interest` | `/delete_interest` | GET/POST | AdminController.deleteInterest |
+| `/list-job-type` | `/list-job-type` | GET/POST | AdminController.viewJobType |
+| `/submit_job_type` | `/submit_job_type` | GET/POST | AdminController.submitJobType |
+| `/list_job_type_ajax` | `/list_job_type_ajax` | GET/POST | AdminController.listJobTypeAjax |
+| `/check_duplicate_job_type` | `/check_duplicate_job_type` | GET/POST | AdminController.checkDuplicateJobType |
+| `/delete_job_type` | `/delete_job_type` | GET/POST | AdminController.deleteJobType |
+| `/list-pay` | `/list-pay` | GET/POST | AdminController.viewPay |
+| `/submit_pay` | `/submit_pay` | GET/POST | AdminController.submitPay |
+| `/list_pay_ajax` | `/list_pay_ajax` | GET/POST | AdminController.listPayAjax |
+| `/check_duplicate_pay` | `/check_duplicate_pay` | GET/POST | AdminController.checkDuplicatePay |
+| `/delete_pay` | `/delete_pay` | GET/POST | AdminController.deletePay |
+| `/list-event-mode` | `/list-event-mode` | GET/POST | AdminController.viewEventMode |
+| `/submit_event_mode` | `/submit_event_mode` | GET/POST | AdminController.submitEventMode |
+| `/list_event_mode_ajax` | `/list_event_mode_ajax` | GET/POST | AdminController.listEventModeAjax |
+| `/check_duplicate_event_mode` | `/check_duplicate_event_mode` | GET/POST | AdminController.checkDuplicateEventMode |
+| `/delete_event_mode` | `/delete_event_mode` | GET/POST | AdminController.deleteEventMode |
+| `/list-event-type` | `/list-event-type` | GET/POST | AdminController.viewEventType |
+| `/submit_event_type` | `/submit_event_type` | GET/POST | AdminController.submitEventType |
+| `/list_event_type_ajax` | `/list_event_type_ajax` | GET/POST | AdminController.listEventTypeAjax |
+| `/check_duplicate_event_type` | `/check_duplicate_event_type` | GET/POST | AdminController.checkDuplicateEventType |
+| `/delete_event_type` | `/delete_event_type` | GET/POST | AdminController.deleteEventType |
+| `/list-industry-type` | `/list-industry-type` | GET/POST | AdminController.viewIndustryType |
+| `/submit_industry_type` | `/submit_industry_type` | GET/POST | AdminController.submitIndustryType |
+| `/list_industry_type_ajax` | `/list_industry_type_ajax` | GET/POST | AdminController.listIndustryTypeAjax |
+| `/check_duplicate_industry_type` | `/check_duplicate_industry_type` | GET/POST | AdminController.checkDuplicateIndustryType |
+| `/delete_industry_type` | `/delete_industry_type` | GET/POST | AdminController.deleteIndustryType |
+| `/list-fund-size` | `/list-fund-size` | GET/POST | AdminController.viewFundSize |
+| `/submit_fund_size` | `/submit_fund_size` | GET/POST | AdminController.submitFundSize |
+| `/list_fund_size_ajax` | `/list_fund_size_ajax` | GET/POST | AdminController.listFundSizeAjax |
+| `/check_duplicate_fund_size` | `/check_duplicate_fund_size` | GET/POST | AdminController.checkDuplicateFundSize |
+| `/delete_fund_size` | `/delete_fund_size` | GET/POST | AdminController.deleteFundSize |
+| `/list-folders` | `/list-folders` | GET/POST | AdminController.viewFolders |
+| `/submit_folders` | `/submit_folders` | GET/POST | AdminController.submitFolders |
+| `/list_folders_ajax` | `/list_folders_ajax` | GET/POST | AdminController.listFoldersAjax |
+| `/check_duplicate_folders` | `/check_duplicate_folders` | GET/POST | AdminController.checkDuplicateFolders |
+| `/delete_folders` | `/delete_folders` | GET/POST | AdminController.deleteFolders |
+| `/list-users` | `/list-users` | GET/POST | AdminController.viewUsers |
+| `/submit_users` | `/submit_users` | GET/POST | AdminController.submitUsers |
+| `/list_users_ajax` | `/list_users_ajax` | GET/POST | AdminController.listUsersAjax |
+| `/edit_users` | `/edit_users` | GET/POST | AdminController.editUsers |
+| `/check_duplicate_users` | `/check_duplicate_users` | GET/POST | AdminController.checkDuplicateUsers |
+| `/delete_users` | `/delete_users` | GET/POST | AdminController.deleteUsers |
+| `/get_state_list` | `/get_state_list` | GET/POST | AdminController.getStateList |
+| `/get_city_list` | `/get_city_list` | GET/POST | AdminController.getCityList |
+| `/list-service-provider` | `/list-service-provider` | GET/POST | AdminController.viewServiceProvider |
+| `/list_service_provider_ajax` | `/list_service_provider_ajax` | GET/POST | AdminController.listServiceProviderAjax |
+| `/list_service_details_ajax` | `/list_service_details_ajax` | GET/POST | AdminController.listServiceDetailsAjax |
+| `/submit_service_provider` | `/submit_service_provider` | GET/POST | AdminController.submitServiceProvider |
+| `/edit_service_provider` | `/edit_service_provider` | GET/POST | AdminController.editServiceProvider |
+| `/delete_service_provider` | `/delete_service_provider` | GET/POST | AdminController.deleteServiceProvider |
+| `/view_service_provider_details` | `/view_service_provider_details` | GET/POST | AdminController.viewServiceProviderDetails |
+| `/list-card-activation-requests` | `/list-card-activation-requests` | GET/POST | AdminController.viewCardActivationRequests |
+| `/list_card_activation_requests_ajax` | `/list_card_activation_requests_ajax` | GET/POST | AdminController.listCardActivationRequestsAjax |
+| `/submit_card_activation_requests` | `/submit_card_activation_requests` | GET/POST | AdminController.submitCardActivationRequests |
+| `/edit_card_activation_requests` | `/edit_card_activation_requests` | GET/POST | AdminController.editCardActivationRequests |
+| `/delete_card_activation_requests` | `/delete_card_activation_requests` | GET/POST | AdminController.deleteCardActivationRequests |
+| `/images_card_activation_requests` | `/images_card_activation_requests` | GET/POST | AdminController.imagesCardActivationRequests |
+
+## Investors Admin Routes
+
+| Old Route | New Route | Method | Controller Method |
+|-----------|-----------|--------|-------------------|
+| `/list-investors` | `/list-investors` | GET/POST | AdminController.viewInvestors |
+| `/list_investors_ajax` | `/list_investors_ajax` | GET/POST | AdminController.listInvestorsAjax |
+| `/submit_investors` | `/submit_investors` | GET/POST | AdminController.submitInvestors |
+| `/edit_investors` | `/edit_investors` | GET/POST | AdminController.editInvestors |
+| `/delete_investors` | `/delete_investors` | GET/POST | AdminController.deleteInvestors |
+| `/view_investors_details` | `/view_investors_details` | GET/POST | AdminController.viewInvestorsDetails |
+
+## Jobs Admin Routes
+
+| Old Route | New Route | Method | Controller Method |
+|-----------|-----------|--------|-------------------|
+| `/list-jobs` | `/list-jobs` | GET/POST | AdminController.viewJobs |
+| `/list_jobs_ajax` | `/list_jobs_ajax` | GET/POST | AdminController.listJobsAjax |
+| `/submit_jobs` | `/submit_jobs` | GET/POST | AdminController.submitJobs |
+| `/edit_jobs` | `/edit_jobs` | GET/POST | AdminController.editJobs |
+| `/delete_jobs` | `/delete_jobs` | GET/POST | AdminController.deleteJobs |
+| `/view_jobs_details` | `/view_jobs_details` | GET/POST | AdminController.viewJobsDetails |
+
+## Events Admin Routes
+
+| Old Route | New Route | Method | Controller Method |
+|-----------|-----------|--------|-------------------|
+| `/list-events` | `/list-events` | GET/POST | AdminController.viewEvents |
+| `/list_events_ajax` | `/list_events_ajax` | GET/POST | AdminController.listEventsAjax |
+| `/submit_events` | `/submit_events` | GET/POST | AdminController.submitEvents |
+| `/edit_events` | `/edit_events` | GET/POST | AdminController.editEvents |
+| `/delete_events` | `/delete_events` | GET/POST | AdminController.deleteEvents |
+| `/view_events_details` | `/view_events_details` | GET/POST | AdminController.viewEventsDetails |
+
+## Frontend Routes
+
+| Old Route | New Route | Method | Controller Method |
+|-----------|-----------|--------|-------------------|
+| `/legal-terms` | `/legal-terms` | GET | ApiController.legalTerms |
+| `/delete-request` | `/delete-request` | GET | ApiController.deleteRequest |
+| `/thank-you` | `/thank-you` | GET/POST | ApiController.thankYou |
 
 ### Investor Routes
 | Old Route | New Route | Method | Controller |

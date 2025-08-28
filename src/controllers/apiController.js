@@ -44,43 +44,72 @@ const ApiController = {
 
 
   async getCountryList(req, res) {
+    console.log('=== getCountryList method called ===');
     try {
-      const { user_id, token } = req.query;
+      // Support both query parameters and form data (matching PHP exactly)
+      const { user_id, token } = {
+        ...req.query,
+        ...req.body
+      };
       
-
+      console.log('Method - user_id:', user_id);
+      console.log('Method - token:', token);
+      
+      // Check if user_id and token are provided
       if (!user_id || !token) {
-        return fail(res, 500, 'user_id and token are required');
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Token Mismatch Exception'
+        });
       }
       
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
-        return fail(res, 500, 'Invalid user ID');
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Not A Valid User'
+        });
       }
-      
+
+      // Check if user exists and has valid token
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
-        return fail(res, 500, 'Not A Valid User');
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Not A Valid User'
+        });
       }
-      
+
       const user = userRows[0];
-      
       if (user.unique_token !== token) {
-        return fail(res, 500, 'Token Mismatch Exception');
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Token Mismatch Exception'
+        });
       }
-      
+
+      // Get country list
     const rows = await query('SELECT id AS country_id, name AS country_name FROM countries');
-      
+
       return res.json({
         status: true,
         rcode: 200,
-        user_id: idEncode(decodedUserId),
+        user_id: user_id,
         unique_token: token,
-        country_list: toArray(rows)
+        country_list: (rows && rows.length > 0) ? rows : []
       });
       
     } catch (error) {
       console.error('getCountryList error:', error);
-      return fail(res, 500, 'Failed to get country list');
+      return res.json({
+        status: false,
+        rcode: 500,
+        message: 'Failed to get country list'
+      });
     }
   },
   async getStateList(req, res) {
@@ -2388,11 +2417,23 @@ const ApiController = {
         eventBanner = req.file.filename;
       }
       
+      // Convert date from DD-MM-YYYY to YYYY-MM-DD format for MySQL
+      let formattedEventDate = event_date;
+      console.log('Original event_date:', event_date);
+      if (event_date && event_date.includes('-')) {
+        const dateParts = event_date.split('-');
+        if (dateParts.length === 3) {
+          // Convert DD-MM-YYYY to YYYY-MM-DD
+          formattedEventDate = `${dateParts[2]}-${dateParts[1]}-${dateParts[0]}`;
+          console.log('Converted event_date:', formattedEventDate);
+        }
+      }
+      
       // Prepare event data
       const eventData = {
         event_name,
         industry_type,
-        event_date: event_date, // Keep as is, don't parse with Date constructor
+        event_date: formattedEventDate,
         event_start_time,
         event_end_time,
       event_mode_id,
@@ -5868,9 +5909,53 @@ const ApiController = {
   async genericHandler(req, res) {
     const methodName = req.route.path.split('/').pop();
     return ok(res, { message: `${methodName} endpoint called successfully` });
+  },
+
+  // Frontend routes - PHP compatible version
+  deleteRequest(req, res) {
+    try {
+      const html = '<!DOCTYPE html><html><head><title>Delete Request</title></head><body><h1>Delete Request Form</h1><form action="/thank-you" method="post"><input type="text" name="user_name" placeholder="Name"><input type="text" name="user_mobile_no" placeholder="Mobile"><input type="text" name="user_email_address" placeholder="Email"><textarea name="user_account_delete_reason" placeholder="Reason"></textarea><button type="submit">Submit</button></form></body></html>';
+      res.setHeader('Content-Type', 'text/html');
+      return res.send(html);
+    } catch (error) {
+      console.error('deleteRequest error:', error);
+      return res.status(500).send('Internal Server Error');
+    }
+  },
+
+  thankYou(req, res) {
+    try {
+      const html = '<!DOCTYPE html><html><head><title>Thank You</title></head><body><h1>Thank You!</h1><p>Your request for account deletion is received and we will contact you soon.</p></body></html>';
+      res.setHeader('Content-Type', 'text/html');
+      return res.send(html);
+    } catch (error) {
+      console.error('thankYou error:', error);
+      return res.status(500).send('Internal Server Error');
+    }
+  },
+
+  // Frontend routes - PHP compatible version
+  deleteRequest(req, res) {
+    try {
+      const html = '<!DOCTYPE html><html><head><title>Delete Request</title></head><body><h1>Delete Request Form</h1><form action="/thank-you" method="post"><input type="text" name="user_name" placeholder="Name"><input type="text" name="user_mobile_no" placeholder="Mobile"><input type="text" name="user_email_address" placeholder="Email"><textarea name="user_account_delete_reason" placeholder="Reason"></textarea><button type="submit">Submit</button></form></body></html>';
+      res.setHeader('Content-Type', 'text/html');
+      return res.send(html);
+    } catch (error) {
+      console.error('deleteRequest error:', error);
+      return res.status(500).send('Internal Server Error');
+    }
+  },
+
+  thankYou(req, res) {
+    try {
+      const html = '<!DOCTYPE html><html><head><title>Thank You</title></head><body><h1>Thank You!</h1><p>Your request for account deletion is received and we will contact you soon.</p></body></html>';
+      res.setHeader('Content-Type', 'text/html');
+      return res.send(html);
+    } catch (error) {
+      console.error('thankYou error:', error);
+      return res.status(500).send('Internal Server Error');
+    }
   }
 };
 
 module.exports = ApiController;
-
-

@@ -29,8 +29,11 @@ class TwilioService {
 
     if (missingCredentials.length > 0) {
       const errorMessage = `Missing required Twilio credentials: ${missingCredentials.join(', ')}. Please configure all required environment variables.`;
-      logger.error(errorMessage);
-      throw new Error(errorMessage);
+      logger.warn(errorMessage);
+      logger.warn('Twilio service will be disabled. Running in simulation mode.');
+      this.client = null;
+      this.verifyServiceSid = null;
+      return;
     }
 
     // Initialize Twilio client
@@ -42,8 +45,10 @@ class TwilioService {
       logger.info(`Using verification service: ${this.verifyServiceSid}`);
     } catch (error) {
       const errorMessage = `Failed to initialize Twilio client: ${error.message}`;
-      logger.error(errorMessage);
-      throw new Error(errorMessage);
+      logger.warn(errorMessage);
+      logger.warn('Twilio service will be disabled. Running in simulation mode.');
+      this.client = null;
+      this.verifyServiceSid = null;
     }
   }
 
