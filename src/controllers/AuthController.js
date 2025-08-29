@@ -13,11 +13,31 @@ class AuthController {
    */
   static async sendOtp(req, res) {
     try {
-      const { mobile } = req.body;
+      // Debug logging
+      console.log('Request body:', req.body);
+      console.log('Content-Type:', req.get('Content-Type'));
+      
+      // Get mobile from request body - handle different content types
+      let mobile = req.body.mobile;
+      
+      // Handle multipart form data
+      if (!mobile && req.files && req.files.mobile) {
+        mobile = req.files.mobile;
+      }
+      
+      // Handle form data that might be in different format
+      if (!mobile && req.body && typeof req.body === 'object') {
+        // Try different possible keys
+        mobile = req.body.mobile || req.body['mobile'] || req.body.MOBILE;
+      }
       
       if (!mobile) {
+        console.log('Mobile not found in request body');
+        console.log('Available body keys:', Object.keys(req.body));
         return errorResponse(res, 'Mobile number is required', 400);
       }
+      
+      console.log('Mobile number received:', mobile);
 
       // Check if user already exists
       const existingUser = await UserService.getUserByMobile(mobile);
@@ -138,9 +158,23 @@ class AuthController {
    */
   static async verifyOtp(req, res) {
     try {
+      // Debug logging
+      console.log('Verify OTP - Request body:', req.body);
+      console.log('Verify OTP - Content-Type:', req.get('Content-Type'));
+      
+      // Get form data from request body
       const { user_id, mobile, otp, verificationSid, token } = req.body;
       
+      // Debug: Log each field
+      console.log('Verify OTP - user_id:', user_id);
+      console.log('Verify OTP - mobile:', mobile);
+      console.log('Verify OTP - otp:', otp);
+      console.log('Verify OTP - verificationSid:', verificationSid);
+      console.log('Verify OTP - token:', token);
+      
       if (!user_id || !mobile || !otp || !verificationSid || !token) {
+        console.log('Verify OTP - Missing required fields');
+        console.log('Available body keys:', Object.keys(req.body));
         return errorResponse(res, 'All fields are required', 400);
       }
 
