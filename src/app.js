@@ -4,6 +4,7 @@
 require('dotenv').config();
 
 const express = require('express');
+const path = require('path');
 const cors = require('cors');
 const helmet = require('helmet');
 const compression = require('compression');
@@ -116,6 +117,9 @@ app.use((req, res, next) => {
   logger.info(`${req.method} ${req.originalUrl} - IP: ${req.ip} - User-Agent: ${req.get('User-Agent')}`);
   next();
 });
+
+// Static file serving for uploads
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Health and version endpoints are now handled in routes/index.js
 

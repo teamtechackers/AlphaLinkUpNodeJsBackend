@@ -7,6 +7,12 @@ const { idEncode, idDecode } = require('../utils/idCodec');
 const { sendOtp, verifyOtp } = require('../services/twilio');
 const { generateToFile } = require('../services/qrcode');
 
+// Utility function to generate image URLs
+const getImageUrl = (req, path) => {
+  const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
+  return path ? `${baseUrl}/${path}` : '';
+};
+
 // Helpers
 function toArray(rows) { return Array.isArray(rows) ? rows : []; }
 
@@ -839,11 +845,110 @@ const ApiController = {
       const { user_id, token } = req.query;
       
       if (!user_id || !token) {
-        return fail(res, 500, 'user_id and token are required');
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'user_id and token are required'
+        });
       }
       
-   
-      let serviceProviderList = [];
+      // Decode user ID
+      const decodedUserId = idDecode(user_id);
+      if (!decodedUserId) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Invalid user ID'
+        });
+      }
+      
+      // Get user details and validate
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      if (!userRows.length) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Not A Valid User'
+        });
+      }
+      
+      const user = userRows[0];
+      
+      // Validate token
+      if (user.unique_token !== token) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Token Mismatch Exception'
+        });
+      }
+      
+      // Get service providers list with their services
+      const serviceProviderRows = await query(
+        `SELECT usp.*, 
+                u.full_name,
+                u.email,
+                u.mobile,
+                countries.name as country_name,
+                states.name as state_name,
+                cities.name as city_name
+         FROM user_service_provider usp
+         JOIN users u ON u.user_id = usp.user_id
+         LEFT JOIN countries ON countries.id = usp.country_id
+         LEFT JOIN states ON states.id = usp.state_id
+         LEFT JOIN cities ON cities.id = usp.city_id
+         WHERE usp.deleted = 0 AND usp.status = 1
+         ORDER BY usp.created_dts DESC
+         LIMIT 1`
+      );
+      
+      if (serviceProviderRows.length === 0) {
+        return res.json({
+          status: true,
+          rcode: 200,
+          user_id: user_id,
+          unique_token: token,
+          service_provider_list: {}
+        });
+      }
+      
+      const provider = serviceProviderRows[0];
+      
+      // Get services for this provider
+      const servicesRows = await query(
+        `SELECT usps.*, 
+                f.name as service_name
+         FROM user_service_provider_services usps
+         JOIN folders f ON f.id = usps.service_id
+         WHERE usps.sp_id = ?
+         ORDER BY usps.created_dts DESC`,
+        [provider.sp_id]
+      );
+      
+      // Format services with proper image URLs
+      const services = servicesRows.map(service => ({
+        usps_id: String(service.usps_id),
+        service_id: String(service.service_id),
+        service_name: service.service_name || '',
+        company_name: service.company_name || '',
+        tag_line: service.tag_line || null,
+        title: service.title || '',
+        service_description: service.service_description || null,
+        avg_service_rating: service.avg_service_rating ? String(service.avg_service_rating) : '',
+        service_image: service.service_image ? getImageUrl(req, `uploads/services/${service.service_image}`) : ''
+      }));
+      
+      // Format service provider with nested services
+      const serviceProviderList = {
+        sp_id: String(provider.sp_id),
+        country: provider.country_name || '',
+        state: provider.state_name || '',
+        city: provider.city_name || '',
+        description: provider.description || '',
+        avg_sp_rating: provider.avg_sp_rating ? String(provider.avg_sp_rating) : '',
+        approval_status: String(provider.approval_status),
+        services: services
+      };
       
       return res.json({
         status: true,
@@ -855,7 +960,11 @@ const ApiController = {
       
     } catch (error) {
       console.error('getServicesList error:', error);
-      return fail(res, 500, 'Failed to get services list');
+      return res.json({
+        status: false,
+        rcode: 500,
+        message: 'Failed to get services list'
+      });
     }
   },
 
@@ -1105,10 +1214,8 @@ const ApiController = {
       // Handle service image upload if provided
       if (req.files && req.files.service_image && req.files.service_image.length > 0) {
         const file = req.files.service_image[0];
-        const timestamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\..+/, '');
-        const fileName = `${usps_id}-${title.replace(/[^a-zA-Z0-9]/g, '-')}-photo-${timestamp}.${file.originalname ? file.originalname.split('.').pop() : 'jpg'}`;
-        
-        updateData.service_image = fileName;
+        // Use the filename generated by Multer (file is already saved to disk)
+        updateData.service_image = file.filename;
       }
       
       // Build dynamic UPDATE query
@@ -1137,7 +1244,7 @@ const ApiController = {
     }
   },
 
-  getBusinessCardInformation(req, res) {
+  async getBusinessCardInformation(req, res) {
     try {
       const { user_id, token } = req.query;
       
@@ -1145,30 +1252,96 @@ const ApiController = {
       
       // Check if user_id and token are provided
       if (!user_id || !token) {
-        return res.status(500).json({
+        return res.json({
           status: false,
+          rcode: 500,
           message: 'user_id and token are required'
         });
       }
       
-      // For now, return basic response without database queries to avoid errors
-      // This matches PHP behavior when no business card is found
+      // Decode user ID
+      const decodedUserId = idDecode(user_id);
+      if (!decodedUserId) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Invalid user ID'
+        });
+      }
       
-      // Return response in PHP format
+      // Get user details and validate
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      if (!userRows.length) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Not A Valid User'
+        });
+      }
+      
+      const user = userRows[0];
+      
+      // Validate token
+      if (user.unique_token !== token) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Token Mismatch Exception'
+        });
+      }
+      
+      // Get business card information
+      const businessCardRows = await query(
+        `SELECT ubc.*, 
+                countries.name as country_name,
+                states.name as state_name,
+                cities.name as city_name
+         FROM user_business_cards ubc
+         LEFT JOIN countries ON countries.id = ubc.country_id
+         LEFT JOIN states ON states.id = ubc.state_id
+         LEFT JOIN cities ON cities.id = ubc.city_id
+         WHERE ubc.user_id = ? AND ubc.deleted = 0
+         ORDER BY ubc.created_dts DESC`,
+        [decodedUserId]
+      );
+      
+      // Format business card info
+      const businessCardInfo = businessCardRows.map(card => ({
+        ubc_id: String(card.ubc_id),
+        business_name: card.business_name || '',
+        name: card.name || '',
+        business_location: card.business_location || '',
+        country_id: String(card.country_id || 0),
+        state_id: String(card.state_id || 0),
+        city_id: String(card.city_id || 0),
+        country_name: card.country_name || '',
+        state_name: card.state_name || '',
+        city_name: card.city_name || '',
+        description: card.description || '',
+        card_status: String(card.card_status || 0),
+        status: String(card.status || 0),
+        created_dts: card.created_dts || ''
+      }));
+      
+      // Get promotions list (empty for now)
+      const promotionsList = [];
+      
+      // Return response in standard format
       return res.json({
         status: true,
         rcode: 200,
         user_id: user_id,
         unique_token: token,
-        qr_image: '',
-        business_card_info: [],
-        promotions_list: []
+        qr_image: user.qr_image ? `${process.env.BASE_URL || 'http://192.168.0.100:3000'}/${user.qr_image}` : '',
+        business_card_info: businessCardInfo,
+        promotions_list: promotionsList
       });
       
     } catch (error) {
       console.error('getBusinessCardInformation error:', error);
-      return res.status(500).json({
+      return res.json({
         status: false,
+        rcode: 500,
         message: 'Failed to get business card information'
       });
     }
@@ -1901,7 +2074,7 @@ const ApiController = {
           COALESCE(u.linkedin_url, '') as linkedin_url,
           COALESCE(u.summary, '') as summary,
           CASE 
-            WHEN u.profile_photo != '' THEN CONCAT('${process.env.BASE_URL || 'http://localhost:3000'}/uploads/profiles/', u.profile_photo)
+            WHEN u.profile_photo != '' THEN CONCAT('${process.env.BASE_URL || 'http://192.168.0.100:3000'}/uploads/profiles/', u.profile_photo)
             ELSE ''
           END AS profile_photo
         FROM users u
@@ -1919,13 +2092,32 @@ const ApiController = {
 
       const userDetails = userProfileRows[0];
 
-      // Return response in PHP format (matching exactly)
+      // Format user details to convert all numeric fields to strings
+      const formattedUserDetails = {
+        user_id: String(userDetails.user_id),
+        full_name: userDetails.full_name || '',
+        email: userDetails.email || '',
+        mobile: userDetails.mobile || '',
+        address: userDetails.address || '',
+        city_id: String(userDetails.city_id || 0),
+        city: userDetails.city || '',
+        state_id: String(userDetails.state_id || 0),
+        state: userDetails.state || '',
+        country_id: String(userDetails.country_id || 0),
+        country: userDetails.country || '',
+        interests: userDetails.interests || '',
+        linkedin_url: userDetails.linkedin_url || '',
+        summary: userDetails.summary || '',
+        profile_photo: userDetails.profile_photo || ''
+      };
+
+      // Return response in standard format (user_details as array for Flutter compatibility)
       return res.json({
         status: true,
         rcode: 200,
         user_id: idEncode(decodedUserId),
         unique_token: token,
-        user_details: userDetails
+        user_details: [formattedUserDetails]
       });
       
     } catch (error) {
@@ -1977,7 +2169,7 @@ const ApiController = {
           COALESCE(u.email, '') as email,
           u.mobile,
           CASE 
-            WHEN u.profile_photo != '' THEN CONCAT('${process.env.BASE_URL || 'http://localhost:3000'}/uploads/profiles/', u.profile_photo)
+            WHEN u.profile_photo != '' THEN CONCAT('${process.env.BASE_URL || 'http://192.168.0.100:3000'}/uploads/profiles/', u.profile_photo)
             ELSE ''
           END AS profile_photo
         FROM user_contacts uc
@@ -1988,13 +2180,24 @@ const ApiController = {
         AND uc.status = 1
       `, [decodedUserId, user_folder_id, user_sub_folder_id]);
 
-      // Return response in PHP format (matching exactly)
+      // Format contacts list to convert all numeric fields to strings
+      const formattedContactsList = (contactsList || []).map(contact => ({
+        contact_user_id: String(contact.contact_user_id),
+        user_folder_id: String(contact.user_folder_id),
+        user_sub_folder_id: String(contact.user_sub_folder_id),
+        full_name: contact.full_name || '',
+        email: contact.email || '',
+        mobile: contact.mobile || '',
+        profile_photo: contact.profile_photo || ''
+      }));
+
+      // Return response in standard format
       return res.json({
         status: true,
         rcode: 200,
         user_id: idEncode(decodedUserId),
         unique_token: token,
-        contacts_list: contactsList || []
+        contacts_list: formattedContactsList
       });
       
     } catch (error) {
@@ -2188,11 +2391,19 @@ const ApiController = {
       
       // Check if user_id and token are provided
       if (!user_id || !token) {
-        return fail(res, 500, 'user_id and token are required');
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'user_id and token are required'
+        });
       }
       
       if (!business_name || !name || !business_location || !country_id || country_id <= 0 || !state_id || state_id <= 0 || !city_id || city_id <= 0) {
-        return fail(res, 500, 'Please enter mandatory fields');
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Please enter mandatory fields'
+        });
       }
       
       if (!req.files || !Array.isArray(req.files) || req.files.length === 0) {
@@ -2202,26 +2413,42 @@ const ApiController = {
           filesType: typeof req.files,
           isArray: Array.isArray(req.files)
         });
-        return fail(res, 500, 'Please enter mandatory fields');
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Please upload business documents'
+        });
       }
       
       // Decode user ID
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
-        return fail(res, 500, 'Invalid user ID');
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Invalid user ID'
+        });
       }
       
       // Get user details and validate
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
-        return fail(res, 500, 'Not A Valid User');
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Not A Valid User'
+        });
       }
       
       const user = userRows[0];
       
       // Validate token
       if (user.unique_token !== token) {
-        return fail(res, 500, 'Token Mismatch Exception');
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Token Mismatch Exception'
+        });
       }
 
       // Save business card information
@@ -2253,19 +2480,23 @@ const ApiController = {
         [decodedUserId]
       );
 
-      // Return response in PHP format (matching exactly)
+      // Return response in standard format
       return res.json({
         status: true,
         rcode: 200,
         user_id: idEncode(decodedUserId),
         unique_token: token,
-        ubc_id: ubc_id,
+        ubc_id: String(ubc_id),
         message: 'Card request sent for activation successfully'
       });
       
     } catch (error) {
       console.error('activateCard error:', error);
-      return fail(res, 500, 'Failed to activate card');
+      return res.json({
+        status: false,
+        rcode: 500,
+        message: 'Failed to activate card'
+      });
     }
   },
 
@@ -2812,11 +3043,11 @@ const ApiController = {
          LEFT JOIN users ON users.user_id = user_job_applications.user_id
          LEFT JOIN user_resumes ON user_resumes.resume_id = user_job_applications.resume_id
          WHERE user_job_applications.job_id = ?`,
-        [`${req.protocol}://${req.get('host')}/uploads/profiles/`, `${req.protocol}://${req.get('host')}/uploads/resumes/`, job_id]
+        [getImageUrl(req, 'uploads/profiles/'), getImageUrl(req, 'uploads/resumes/'), job_id]
       );
       
-      // Check if user has applied for this job
-      const hasApplied = applicantsRows.some(applicant => applicant.applicant_id === decodedUserId);
+      // Check if user has applied for this job (ensure proper type comparison)
+      const hasApplied = applicantsRows.some(applicant => parseInt(applicant.applicant_id) === parseInt(decodedUserId));
       
       // Convert all integer values to strings for applicants_list
       const applicantsList = applicantsRows.map(row => ({
@@ -3596,7 +3827,11 @@ const ApiController = {
 
   async getEventOrganisersList(req, res) {
     try {
-      const { user_id, token, event_id } = req.query;
+      // Support both query parameters and form data
+      const { user_id, token, event_id } = {
+        ...req.query,
+        ...req.body
+      };
       
       // Check if user_id and token are provided
       if (!user_id || !token) {
@@ -3651,12 +3886,30 @@ const ApiController = {
         [profilePhotoPath, event_id]
       );
 
+      // Convert all integer values to strings for organisers_list
+      const formattedOrganisersList = (organisersListRows || []).map(organiser => ({
+        organiser_id: String(organiser.organiser_id || 0),
+        full_name: organiser.full_name || "",
+        email: organiser.email || "",
+        mobile: organiser.mobile || "",
+        address: organiser.address || "",
+        city_id: String(organiser.city_id || 0),
+        city: organiser.city || "",
+        state_id: String(organiser.state_id || 0),
+        state: organiser.state || "",
+        country_id: String(organiser.country_id || 0),
+        country: organiser.country || "",
+        linkedin_url: organiser.linkedin_url || "",
+        summary: organiser.summary || "",
+        profile_photo: organiser.profile_photo || ""
+      }));
+
       return res.json({
         status: true,
         rcode: 200,
         user_id: idEncode(decodedUserId),
         unique_token: token,
-        organisers_list: organisersListRows.length > 0 ? toArray(organisersListRows) : []
+        organisers_list: formattedOrganisersList
       });
       
     } catch (error) {
@@ -3724,7 +3977,11 @@ const ApiController = {
 
   async getEventAttendeesList(req, res) {
     try {
-      const { user_id, token, event_id } = req.query;
+      // Support both query parameters and form data
+      const { user_id, token, event_id } = {
+        ...req.query,
+        ...req.body
+      };
       
       // Check if user_id and token are provided
       if (!user_id || !token) {
@@ -3780,12 +4037,31 @@ const ApiController = {
         [profilePhotoPath, event_id]
       );
 
+      // Convert all integer values to strings for attendees_list
+      const formattedAttendeesList = (attendeesListRows || []).map(attendee => ({
+        attendee_id: String(attendee.attendee_id || 0),
+        full_name: attendee.full_name || "",
+        email: attendee.email || "",
+        mobile: attendee.mobile || "",
+        address: attendee.address || "",
+        city_id: String(attendee.city_id || 0),
+        city: attendee.city || "",
+        state_id: String(attendee.state_id || 0),
+        state: attendee.state || "",
+        country_id: String(attendee.country_id || 0),
+        country: attendee.country || "",
+        interests: attendee.interests || "",
+        linkedin_url: attendee.linkedin_url || "",
+        summary: attendee.summary || "",
+        profile_photo: attendee.profile_photo || ""
+      }));
+
       return res.json({
         status: true,
         rcode: 200,
         user_id: idEncode(decodedUserId),
         unique_token: token,
-        attendees_list: attendeesListRows.length > 0 ? toArray(attendeesListRows) : []
+        attendees_list: formattedAttendeesList
       });
       
     } catch (error) {
@@ -3853,13 +4129,49 @@ const ApiController = {
         ORDER BY ued.event_id
       `, [decodedUserId]);
 
+      // Convert all integer values to strings for attended_list
+      const formattedAttendedList = (eventsAttendedList || []).map(event => ({
+        event_id: String(event.event_id || 0),
+        user_id: String(event.user_id || 0),
+        event_name: event.event_name || "",
+        industry_type: event.industry_type || "",
+        country_id: String(event.country_id || 0),
+        state_id: String(event.state_id || 0),
+        city_id: String(event.city_id || 0),
+        event_venue: event.event_venue || "",
+        event_link: event.event_link || "",
+        event_lat: event.event_lat || "",
+        event_lng: event.event_lng || "",
+        event_geo_address: event.event_geo_address || "",
+        event_date: event.event_date || "",
+        event_start_time: event.event_start_time || "",
+        event_end_time: event.event_end_time || "",
+        event_mode_id: String(event.event_mode_id || 0),
+        event_type_id: String(event.event_type_id || 0),
+        event_details: event.event_details || "",
+        event_banner: event.event_banner || "",
+        status: String(event.status || 0),
+        created_dts: event.created_dts || "",
+        created_by: event.created_by ? event.created_by.toString() : null,
+        updated_at: event.updated_at || null,
+        updated_by: event.updated_by ? event.updated_by.toString() : null,
+        deleted: String(event.deleted || 0),
+        deleted_by: event.deleted_by ? event.deleted_by.toString() : null,
+        deleted_at: event.deleted_at || null,
+        event_mode: event.event_mode || null,
+        event_type: event.event_type || null,
+        country: event.country || "",
+        state: event.state || "",
+        city: event.city || ""
+      }));
+
       // Return response in PHP format (matching exactly)
       return res.json({
         status: true,
         rcode: 200,
         user_id: idEncode(decodedUserId),
         unique_token: token,
-        attended_list: eventsAttendedList || []
+        attended_list: formattedAttendedList
       });
       
     } catch (error) {
@@ -3927,13 +4239,49 @@ const ApiController = {
         ORDER BY ued.event_id
       `, [decodedUserId]);
 
+      // Convert all integer values to strings for organised_list
+      const formattedOrganisedList = (eventsOrganisedList || []).map(event => ({
+        event_id: String(event.event_id || 0),
+        user_id: String(event.user_id || 0),
+        event_name: event.event_name || "",
+        industry_type: event.industry_type || "",
+        country_id: String(event.country_id || 0),
+        state_id: String(event.state_id || 0),
+        city_id: String(event.city_id || 0),
+        event_venue: event.event_venue || "",
+        event_link: event.event_link || "",
+        event_lat: event.event_lat || "",
+        event_lng: event.event_lng || "",
+        event_geo_address: event.event_geo_address || "",
+        event_date: event.event_date || "",
+        event_start_time: event.event_start_time || "",
+        event_end_time: event.event_end_time || "",
+        event_mode_id: String(event.event_mode_id || 0),
+        event_type_id: String(event.event_type_id || 0),
+        event_details: event.event_details || "",
+        event_banner: event.event_banner || "",
+        status: String(event.status || 0),
+        created_dts: event.created_dts || "",
+        created_by: event.created_by ? event.created_by.toString() : null,
+        updated_at: event.updated_at || null,
+        updated_by: event.updated_by ? event.updated_by.toString() : null,
+        deleted: String(event.deleted || 0),
+        deleted_by: event.deleted_by ? event.deleted_by.toString() : null,
+        deleted_at: event.deleted_at || null,
+        event_mode: event.event_mode || null,
+        event_type: event.event_type || null,
+        country: event.country || "",
+        state: event.state || "",
+        city: event.city || ""
+      }));
+
       // Return response in PHP format (matching exactly)
       return res.json({
         status: true,
         rcode: 200,
         user_id: idEncode(decodedUserId),
         unique_token: token,
-        organised_list: eventsOrganisedList || []
+        organised_list: formattedOrganisedList
       });
       
     } catch (error) {
@@ -4131,39 +4479,26 @@ const ApiController = {
         });
       }
 
-      // Get base URL for images (works for both localhost and live)
-      const baseUrl = `${req.protocol}://${req.get('host')}`;
-      
       // Get contact visiting card information
       const contactCardInfo = await query(`
         SELECT 
-          ucvc.*,
-          CASE 
-            WHEN ucvc.visiting_card_front != '' THEN CONCAT(?, ucvc.visiting_card_front)
-            ELSE ''
-          END AS visiting_card_front_url,
-          CASE 
-            WHEN ucvc.visiting_card_back != '' THEN CONCAT(?, ucvc.visiting_card_back)
-            ELSE ''
-          END AS visiting_card_back_url
+          ucvc.*
         FROM user_contacts_visiting_cards ucvc
         WHERE ucvc.user_id = ? 
         AND ucvc.user_sub_folder_id = ? 
         AND ucvc.status = 1
-      `, [`${baseUrl}/uploads/visiting_cards/`, `${baseUrl}/uploads/visiting_cards/`, decodedUserId, user_sub_folder_id]);
+      `, [decodedUserId, user_sub_folder_id]);
 
-      // Convert all integer values to strings to match the exact response format
+      // Convert all integer values to strings and generate proper image URLs to match Flutter model
       const formattedContactCardInfo = contactCardInfo.map(card => ({
-        ucvc_id: (card.ucvc_id || 0).toString(),
-        user_id: (card.user_id || 0).toString(),
-        user_folder_id: (card.user_folder_id || 0).toString(),
-        user_sub_folder_id: (card.user_sub_folder_id || 0).toString(),
-        visiting_card_front: card.visiting_card_front || "",
-        visiting_card_back: card.visiting_card_back || "",
-        status: (card.status || 0).toString(),
-        created_dts: card.created_dts || "",
-        visiting_card_front_url: card.visiting_card_front_url || "",
-        visiting_card_back_url: card.visiting_card_back_url || ""
+        ucvc_id: String(card.ucvc_id || 0),
+        user_id: String(card.user_id || 0),
+        user_folder_id: String(card.user_folder_id || 0),
+        user_sub_folder_id: String(card.user_sub_folder_id || 0),
+        visiting_card_front: card.visiting_card_front ? getImageUrl(req, `uploads/visiting_cards/${card.visiting_card_front}`) : "",
+        visiting_card_back: card.visiting_card_back ? getImageUrl(req, `uploads/visiting_cards/${card.visiting_card_back}`) : "",
+        status: String(card.status || 0),
+        created_dts: card.created_dts || ""
       }));
 
       // Return response in PHP format - exact match with same data types
@@ -4680,13 +5015,40 @@ const ApiController = {
       // Get service unlocked details
       const serviceUnlockedDetails = await query(queryString, queryParams);
 
+      // Convert all numeric fields to strings to match Flutter model
+      const formattedServiceUnlockedDetails = (serviceUnlockedDetails || []).map(service => ({
+        sp_id: String(service.sp_id || 0),
+        user_id: String(service.user_id || 0),
+        country_id: String(service.country_id || 0),
+        state_id: String(service.state_id || 0),
+        city_id: String(service.city_id || 0),
+        description: service.description || "",
+        avg_sp_rating: service.avg_sp_rating ? String(service.avg_sp_rating) : "",
+        approval_status: String(service.approval_status || 0),
+        status: String(service.status || 0),
+        created_dts: service.created_dts || "",
+        created_by: service.created_by ? String(service.created_by) : "",
+        updated_at: service.updated_at || "",
+        updated_by: service.updated_by ? String(service.updated_by) : "",
+        deleted: String(service.deleted || 0),
+        deleted_by: service.deleted_by ? String(service.deleted_by) : "",
+        deleted_at: service.deleted_at || "",
+        full_name: service.full_name || "",
+        email: service.email || "",
+        mobile: service.mobile || "",
+        country: service.country || "",
+        state: service.state || "",
+        city: service.city || "",
+        profile_photo: service.profile_photo || ""
+      }));
+
       // Return response in PHP format (matching exactly)
       return res.json({
         status: true,
         rcode: 200,
         user_id: idEncode(decodedUserId),
         unique_token: token,
-        service_unlocked_detail: serviceUnlockedDetails || []
+        service_unlocked_detail: formattedServiceUnlockedDetails
       });
       
     } catch (error) {
@@ -5009,9 +5371,9 @@ const ApiController = {
       // Get meetings type list (handle missing table gracefully)
       let meetingsTypeList = [];
       try {
-        meetingsTypeList = await query('SELECT * FROM meeting_type WHERE status = 1');
+        meetingsTypeList = await query('SELECT * FROM meetings_type WHERE status = 1');
       } catch (error) {
-        console.log('meeting_type table not found, using empty array');
+        console.log('meetings_type table not found, using empty array');
         meetingsTypeList = [];
       }
 
@@ -5126,11 +5488,31 @@ const ApiController = {
 
       // Convert all integer values to strings for meeting_type
       const formattedMeetingType = (meetingsTypeList || []).map(meeting => ({
-        meeting_id: (meeting.meeting_id || 0).toString(),
+        meeting_id: (meeting.id || 0).toString(),
         name: meeting.name || "",
         mins: (meeting.mins || 0).toString(),
         amount: (meeting.amount || 0).toString(),
         type: meeting.type || ""
+      }));
+
+      // Convert all integer values to strings for investor_unlocked
+      const formattedInvestorUnlocked = (investorUnlocked || []).map(unlock => ({
+        iu_id: String(unlock.iu_id || 0),
+        user_id: String(unlock.user_id || 0),
+        investor_id: String(unlock.investor_id || 0),
+        meeting_id: String(unlock.meeting_id || 0),
+        meeting_date: unlock.meeting_date || "",
+        meeting_time: unlock.meeting_time || "",
+        request_status: unlock.request_status || "",
+        meeting_location: unlock.meeting_location || "",
+        meeting_lat: unlock.meeting_lat ? String(unlock.meeting_lat) : "",
+        meeting_lng: unlock.meeting_lng ? String(unlock.meeting_lng) : "",
+        meeting_url: unlock.meeting_url || "",
+        rating: unlock.rating ? String(unlock.rating) : null,
+        review: unlock.review || null,
+        status: String(unlock.status || 0),
+        created_dts: unlock.created_dts || "",
+        review_dts: unlock.review_dts || null
       }));
 
       // Return response in PHP format (matching exactly)
@@ -5141,7 +5523,7 @@ const ApiController = {
         unique_token: token,
         investor_detail: formattedInvestorDetail,
         meeting_type: formattedMeetingType,
-        investor_unlocked: investorUnlocked || [],
+        investor_unlocked: formattedInvestorUnlocked,
         ratings: [ratings],
         reviews: reviews
       });
@@ -5618,13 +6000,47 @@ const ApiController = {
       }
       queryString += ` ORDER BY uiul.created_dts DESC`;
       const investorMeets = await query(queryString, queryParams);
+      
+      // Convert all numeric fields to strings to match Flutter model
+      const formattedInvestorMeets = (investorMeets || []).map(meet => ({
+        iu_id: String(meet.iu_id || 0),
+        user_id: String(meet.user_id || 0),
+        investor_id: String(meet.investor_id || 0),
+        meeting_id: String(meet.meeting_id || 0),
+        meeting_date: meet.meeting_date || "",
+        meeting_time: meet.meeting_time || "",
+        request_status: meet.request_status || "",
+        meeting_location: meet.meeting_location || "",
+        meeting_lat: meet.meeting_lat ? String(meet.meeting_lat) : "",
+        meeting_lng: meet.meeting_lng ? String(meet.meeting_lng) : "",
+        meeting_url: meet.meeting_url || "",
+        rating: meet.rating ? String(meet.rating) : "",
+        review: meet.review || "",
+        status: String(meet.status || 0),
+        created_dts: meet.created_dts || "",
+        review_dts: meet.review_dts || "",
+        investor_name: meet.investor_name || "",
+        investor_profile: meet.investor_profile || "",
+        investment_stage: meet.investment_stage || "",
+        availability: meet.availability || "",
+        meeting_city: meet.meeting_city || "",
+        countries_to_invest: meet.countries_to_invest || "",
+        investment_industry: meet.investment_industry || "",
+        language: meet.language || "",
+        avg_rating: meet.avg_rating ? String(meet.avg_rating) : "",
+        investor_image: meet.investor_image || "",
+        country: meet.country || "",
+        state: meet.state || "",
+        city: meet.city || ""
+      }));
+      
       // Return response in PHP format (matching exactly)
       return res.json({
         status: true,
         rcode: 200,
         user_id: idEncode(decodedUserId),
         unique_token: token,
-        investor_lists: investorMeets || []
+        investor_lists: formattedInvestorMeets
       });
     } catch (error) {
       console.error('getInvestorMeets error:', error);
@@ -7614,6 +8030,167 @@ const ApiController = {
     } catch (error) {
       console.error('thankYou error:', error);
       return res.status(500).send('Internal Server Error');
+    }
+  },
+
+  // Investor Unlock - Save investor meeting request
+  investorUnlock: async (req, res) => {
+    try {
+      const { user_id, token, investor_id, meeting_id, meeting_date, meeting_time } = { ...req.query, ...req.body };
+      
+      if (!user_id || !token) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'user_id and token are required'
+        });
+      }
+      
+      if (!investor_id || !meeting_id || !meeting_date || !meeting_time) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Please enter mandatory fields'
+        });
+      }
+      
+      // Decode user ID
+      const decodedUserId = idDecode(user_id);
+      if (!decodedUserId) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Invalid user ID'
+        });
+      }
+      
+      // Get user details and validate
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      if (!userRows.length) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Not A Valid User'
+        });
+      }
+      
+      const user = userRows[0];
+      
+      // Validate token
+      if (user.unique_token !== token) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Token Mismatch Exception'
+        });
+      }
+
+      // Validate investor_id
+      const investorId = parseInt(investor_id);
+      if (isNaN(investorId) || investorId <= 0) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Invalid investor ID'
+        });
+      }
+
+      // Validate meeting_id
+      const meetingId = parseInt(meeting_id);
+      if (isNaN(meetingId) || meetingId <= 0) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Invalid meeting ID'
+        });
+      }
+
+      // Format meeting date to Y-m-d format
+              let formattedMeetingDate;
+        try {
+          let dateObj;
+        
+        // Handle different date formats
+        if (meeting_date.includes('-')) {
+          const parts = meeting_date.split('-');
+          if (parts.length === 3) {
+            // Check if it's DD-MM-YYYY format
+            if (parts[0].length === 2 && parts[1].length === 2 && parts[2].length === 4) {
+              // DD-MM-YYYY format
+              dateObj = new Date(parts[2], parts[1] - 1, parts[0]);
+            } else if (parts[0].length === 4 && parts[1].length === 2 && parts[2].length === 2) {
+              // YYYY-MM-DD format
+              dateObj = new Date(meeting_date);
+            } else {
+              dateObj = new Date(meeting_date);
+            }
+          } else {
+            dateObj = new Date(meeting_date);
+          }
+        } else if (meeting_date.includes('/')) {
+          const parts = meeting_date.split('/');
+          if (parts.length === 3) {
+            // Check if it's DD/MM/YYYY format
+            if (parts[0].length === 2 && parts[1].length === 2 && parts[2].length === 4) {
+              // DD/MM/YYYY format
+              dateObj = new Date(parts[2], parts[1] - 1, parts[0]);
+            } else {
+              dateObj = new Date(meeting_date);
+            }
+          } else {
+            dateObj = new Date(meeting_date);
+          }
+        } else {
+          // Try default parsing
+          dateObj = new Date(meeting_date);
+        }
+        
+        if (isNaN(dateObj.getTime())) {
+          return res.json({
+            status: false,
+            rcode: 500,
+            message: 'Invalid meeting date format. Please use DD-MM-YYYY, YYYY-MM-DD, or DD/MM/YYYY format'
+          });
+        }
+        formattedMeetingDate = dateObj.toISOString().split('T')[0];
+      } catch (error) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Invalid meeting date format. Please use DD-MM-YYYY, YYYY-MM-DD, or DD/MM/YYYY format'
+        });
+      }
+      
+      // Insert into user_investors_unlocked table
+      const insertResult = await query(`
+        INSERT INTO user_investors_unlocked 
+        (user_id, investor_id, meeting_id, meeting_date, meeting_time, request_status, meeting_location, meeting_url, status, created_dts) 
+        VALUES (?, ?, ?, ?, ?, 'Pending', '', '', 1, NOW())
+      `, [decodedUserId, investorId, meetingId, formattedMeetingDate, meeting_time]);
+
+      if (insertResult.insertId && insertResult.insertId > 0) {
+        return res.json({
+          status: true,
+          rcode: 200,
+          user_id: user_id,
+          unique_token: token,
+          message: 'Request sent successfully'
+        });
+      } else {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Please try again'
+        });
+      }
+      
+    } catch (error) {
+      console.error('investorUnlock error:', error);
+      return res.json({
+        status: false,
+        rcode: 500,
+        message: 'Internal server error'
+      });
     }
   }
 };

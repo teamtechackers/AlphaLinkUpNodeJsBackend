@@ -15,7 +15,7 @@ const adminAuth = require('../middlewares/adminAuth');
 const validate = require('../middlewares/validation');
 const rateLimiter = require('../middlewares/rateLimiter');
 const { checkUser } = require('../middlewares/checkUser');
-const { uploadProfilePhoto, uploadFormData, uploadEvents, uploadResume, uploadInvestor, uploadVisitingCards } = require('../middlewares/upload');
+const { uploadProfilePhoto, uploadFormData, uploadEvents, uploadResume, uploadInvestor, uploadVisitingCards, uploadServices } = require('../middlewares/upload');
 
 // Serve static files (images, uploads)
 router.use('/uploads', express.static(path.join(__dirname, '../../uploads')));
@@ -104,9 +104,7 @@ router.post('/Api-Save-Education-Details', uploadFormData.none(), ApiController.
 router.get('/Api-View-Education-Details', ApiController.getEducationDetails);
 router.post('/Api-Delete-Education-Detail', uploadFormData.none(), ApiController.deleteEducationDetail);
 router.post('/Api-Save-Event-Organiser', uploadFormData.none(), ApiController.saveEventOrganiser);
-router.get('/Api-Event-Organisers-List', ApiController.getEventOrganisersList);
 router.post('/Api-Delete-Event-Organiser', uploadFormData.none(), ApiController.deleteEventOrganiser);
-router.get('/Api-Event-Attendees-List', ApiController.getEventAttendeesList);
 router.post('/Api-Save-Event-Attendee', uploadFormData.none(), ApiController.saveEventAttendee);
 router.post('/Api-Delete-Event-Attendee', uploadFormData.none(), ApiController.deleteEventAttendee);
 router.get('/Api-View-User-Detail-By-Qrcode', checkUser, ApiController.getUserDetailByQrCode);
@@ -136,11 +134,15 @@ router.post('/Api-View-Event-Information', uploadFormData.none(), ApiController.
 router.get('/Api-View-Event-Details', ApiController.getEventDetail);
 router.post('/Api-View-Event-Details', uploadFormData.none(), ApiController.getEventDetail);
 router.get('/Api-Event-Organisers-List', ApiController.getEventOrganisersList);
+router.post('/Api-Event-Organisers-List', uploadFormData.none(), ApiController.getEventOrganisersList);
 router.post('/Api-Save-Event-Organiser', uploadFormData.none(), ApiController.saveEventOrganiser);
 router.post('/Api-Delete-Event-Organiser', uploadFormData.none(), ApiController.deleteEventOrganiser);
 router.get('/Api-Event-Attendees-List', ApiController.getEventAttendeesList);
+router.post('/Api-Event-Attendees-List', uploadFormData.none(), ApiController.getEventAttendeesList);
 router.get('/Api-View-Events-Attended', ApiController.getEventsAttendedList);
+router.post('/Api-View-Events-Attended', uploadFormData.none(), ApiController.getEventsAttendedList);
 router.get('/Api-View-Events-Organised', ApiController.getEventsOrganisedList);
+router.post('/Api-View-Events-Organised', uploadFormData.none(), ApiController.getEventsOrganisedList);
 router.post('/Api-Save-Event-Attendee', uploadFormData.none(), ApiController.saveEventAttendee);
 router.post('/Api-Delete-Event-Attendee', uploadFormData.none(), ApiController.deleteEventAttendee);
 
@@ -160,7 +162,8 @@ router.post('/Api-Add-Contact-Visiting-Card', uploadVisitingCards.fields([
 router.get('/Api-View-Contact-Visiting-Card', ApiController.getContactVisitingCardInformation);
 
 // Business Card Routes
-router.post('/Api-Activate-Card', uploadFormData.array('business_documents_file[]', 10), ApiController.activateCard);
+router.get('/Api-Activate-Card', ApiController.activateCard);
+router.post('/Api-Activate-Card', uploadFormData.array('business_documents_file', 10), ApiController.activateCard);
 
 // Promotions Routes
 router.get('/Api-Promotions-List', ApiController.getPromotionsList);
@@ -181,7 +184,7 @@ router.post('/Api-Save-Service-Provider', uploadFormData.none(), ApiController.s
 router.post('/Api-Add-Review-Rating', uploadFormData.none(), ApiController.saveReviewRating);
 
 // Service Details Routes
-router.post('/Api-Save-Service-Details', uploadFormData.fields([{ name: 'service_image', maxCount: 1 }]), ApiController.saveServiceDetails);
+router.post('/Api-Save-Service-Details', uploadServices.fields([{ name: 'service_image', maxCount: 1 }]), ApiController.saveServiceDetails);
 router.get('/Api-View-Service-Details', ApiController.getServiceDetail);
 router.post('/Api-View-Service-Details', uploadFormData.none(), ApiController.getServiceDetail);
 
@@ -189,6 +192,7 @@ router.post('/Api-View-Service-Details', uploadFormData.none(), ApiController.ge
 router.get('/Api-Service-Unlock', ApiController.serviceUnlock);
 router.post('/Api-Service-Unlock', uploadFormData.none(), ApiController.serviceUnlock);
 router.get('/Api-All-Service-Unlock-List', ApiController.getAllServiceUnlockList);
+router.post('/Api-All-Service-Unlock-List', uploadFormData.none(), ApiController.getAllServiceUnlockList);
 
 // Admin Routes
 router.get('/admin-login', AdminController.adminLogin);
@@ -421,6 +425,7 @@ router.post('/Api-Add-Investor-Review-Rating', uploadFormData.none(), ApiControl
 router.get('/Api-My-Investor-Profile', ApiController.getMyInvestorProfile);
 router.post('/Api-My-Investor-Profile', uploadFormData.none(), ApiController.getMyInvestorProfile);
 router.get('/Api-My-Investor-Meets', ApiController.getInvestorMeets);
+router.post('/Api-My-Investor-Meets', uploadFormData.none(), ApiController.getInvestorMeets);
 router.get('/Api-Investor-Desk', ApiController.getInvestorDesk);
 
 // Chat Routes
