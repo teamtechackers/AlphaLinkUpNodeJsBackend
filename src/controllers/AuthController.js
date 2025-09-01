@@ -162,24 +162,51 @@ class AuthController {
       console.log('Verify OTP - Request body:', req.body);
       console.log('Verify OTP - Content-Type:', req.get('Content-Type'));
       
-      // Get form data from request body
+      // Get form data from request body - check for case variations
       const { user_id, mobile, otp, verificationSid, token } = req.body;
       
-      // Debug: Log each field
-      console.log('Verify OTP - user_id:', user_id);
-      console.log('Verify OTP - mobile:', mobile);
-      console.log('Verify OTP - otp:', otp);
-      console.log('Verify OTP - verificationSid:', verificationSid);
-      console.log('Verify OTP - token:', token);
+      // Also check for alternative field names
+      const otpValue = otp || req.body.OTP || req.body.otp_code || req.body.otpCode;
+      const mobileValue = mobile || req.body.MOBILE || req.body.phone;
+      const userIdValue = user_id || req.body.USER_ID || req.body.userId;
+      const verificationSidValue = verificationSid || req.body.VERIFICATION_SID || req.body.verificationSid;
+      const tokenValue = token || req.body.TOKEN;
       
-      if (!user_id || !mobile || !otp || !verificationSid || !token) {
-        console.log('Verify OTP - Missing required fields');
+      // Debug: Log each field
+      console.log('Verify OTP - user_id:', userIdValue);
+      console.log('Verify OTP - mobile:', mobileValue);
+      console.log('Verify OTP - otp:', otpValue);
+      console.log('Verify OTP - verificationSid:', verificationSidValue);
+      console.log('Verify OTP - token:', tokenValue);
+      
+      // Check each field individually for better error reporting
+      if (!userIdValue) {
+        console.log('Verify OTP - Missing user_id');
+        return errorResponse(res, 'user_id is required', 400);
+      }
+      if (!mobileValue) {
+        console.log('Verify OTP - Missing mobile');
+        return errorResponse(res, 'mobile is required', 400);
+      }
+      if (!otpValue || otpValue === undefined || otpValue === null || String(otpValue).trim() === '') {
+        console.log('Verify OTP - Missing or empty OTP');
         console.log('Available body keys:', Object.keys(req.body));
-        return errorResponse(res, 'All fields are required', 400);
+        console.log('Raw OTP value:', otpValue);
+        console.log('OTP type:', typeof otpValue);
+        console.log('Full request body:', JSON.stringify(req.body, null, 2));
+        return errorResponse(res, 'OTP code is required. Please enter the 6-digit code you received via SMS.', 400);
+      }
+      // verificationSid is optional (we use serviceId + mobile to verify)
+      if (!verificationSidValue) {
+        console.log('Verify OTP - verificationSid not provided; proceeding with serviceId only');
+      }
+      if (!tokenValue) {
+        console.log('Verify OTP - Missing token');
+        return errorResponse(res, 'token is required', 400);
       }
 
       // Decode user ID
-      const decodedUserId = idDecode(user_id);
+      const decodedUserId = idDecode(userIdValue);
       if (!decodedUserId) {
         return errorResponse(res, 'Invalid user ID', 400);
       }
@@ -191,12 +218,12 @@ class AuthController {
       }
 
       // Validate unique token
-      if (user.unique_token !== token) {
+      if (user.unique_token !== tokenValue) {
         return errorResponse(res, 'Invalid token', 400);
       }
 
       // Verify OTP with Twilio
-      const verificationResult = await TwilioService.verifyOTP(mobile, otp, verificationSid);
+      const verificationResult = await TwilioService.verifyOTP(mobileValue, otpValue, verificationSidValue);
       
       if (!verificationResult.success) {
         // Handle specific Twilio verification errors
@@ -227,9 +254,9 @@ class AuthController {
       logger.info(`OTP verified successfully for user: ${mobile}`);
       return phpResponse(res, 'OTP verified successfully', {
         user_id: idEncode(decodedUserId),
-        unique_token: token,
+        unique_token: tokenValue,
         profile_updated: user.profile_updated ? "1" : "0",
-        country_id: user.country_id,
+        country_id: (user.country_id !== null && user.country_id !== undefined) ? String(user.country_id) : "",
         country_name: user.country_name || ""
       });
     } catch (error) {

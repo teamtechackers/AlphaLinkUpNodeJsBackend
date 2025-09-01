@@ -149,27 +149,22 @@ class TwilioService {
       
       logger.info(`Verifying OTP for ${formattedMobile} with code: ${otp}`);
       
-      // Verify the code with Twilio using the verification SID
-      // We need to extract the service ID from the verification SID
-      // Verification SID format: VE... indicates which service was used
-      let serviceId = this.verifyServiceSid;
-      
-      // If the verification SID starts with VE, we may need to find the actual service
-      if (verificationSid.startsWith('VE')) {
-        // The VE... ID is the verification instance, not the service
-        // We'll use our configured service ID
-        serviceId = this.verifyServiceSid;
-      }
-      
+      // Verify the code with Twilio Verify using configured serviceId.
+      // Some SDKs accept either VE... verificationSid or only serviceId+to+code.
+      // We standardize on serviceId + to + code to avoid 20404 for old VE IDs.
+      const serviceId = this.verifyServiceSid;
       logger.info(`Using service ID: ${serviceId} for verification`);
-      
+
+      const payload = { to: formattedMobile, code: otp };
+      // If verificationSid provided, include it for completeness (Twilio ignores it in this call)
+      if (verificationSid) {
+        payload.verificationSid = verificationSid;
+      }
+
       const verificationCheck = await this.client.verify.v2
         .services(serviceId)
         .verificationChecks
-        .create({
-          to: formattedMobile,
-          code: otp
-        });
+        .create(payload);
 
       const isSuccess = verificationCheck.status === 'approved';
       
@@ -275,13 +270,18 @@ class TwilioService {
     }
 
     // Remove any non-digit characters except +
-    let formatted = mobile.replace(/[^\d+]/g, '');
+    let formatted = mobile.replace(/[^\d+]/g, '').trim();
     
     // Ensure it starts with +
     if (!formatted.startsWith('+')) {
-      // Add country code if not present (default to +1 for US)
-      const countryCode = process.env.DEFAULT_COUNTRY_CODE || '1';
-      formatted = `+${countryCode}${formatted}`;
+      // For Pakistani numbers starting with 92, add +92
+      if (formatted.startsWith('92')) {
+        formatted = `+${formatted}`;
+      } else {
+        // Add country code if not present (default to +1 for US)
+        const countryCode = process.env.DEFAULT_COUNTRY_CODE || '1';
+        formatted = `+${countryCode}${formatted}`;
+      }
     }
     
     // Validate the format
