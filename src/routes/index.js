@@ -10,6 +10,8 @@ const ApiController = require('../controllers/apiController');
 const AdminController = require('../controllers/AdminController');
 const CountryController = require('../controllers/countryController');
 const StateController = require('../controllers/stateController');
+const CityController = require('../controllers/cityController');
+const DashboardController = require('../controllers/dashboardController');
 
 // Import middlewares
 const authenticate = require('../middlewares/authenticate');
@@ -69,8 +71,9 @@ router.get('/Api-Country-List', CountryController.getCountryList);
 router.post('/Api-Country-List', uploadFormData.none(), CountryController.getCountryList);
 router.get('/Api-State-List', StateController.getStateList);
 router.post('/Api-State-List', uploadFormData.none(), StateController.getStateList);
-router.get('/Api-City-List', ApiController.getCityList);
-router.post('/Api-City-List', uploadFormData.none(), ApiController.getCityList);
+router.get('/Api-City-List', CityController.getCityList);
+router.post('/Api-City-List', uploadFormData.none(), CityController.getCityList);
+
 router.get('/Api-Interests-List', ApiController.getInterestsList);
 router.post('/Api-Interests-List', uploadFormData.none(), ApiController.getInterestsList);
 router.get('/Api-Employment-Type-List', ApiController.getEmploymentTypeList);
@@ -113,8 +116,8 @@ router.get('/Api-View-User-Detail-By-Qrcode', checkUser, ApiController.getUserDe
 
 
 // Dashboard Route - Support both GET and POST for form data
-router.get('/Api-Dashboard', ApiController.dashboard);
-router.post('/Api-Dashboard', ApiController.dashboard);
+router.get('/Api-Dashboard', DashboardController.dashboard);
+router.post('/Api-Dashboard', DashboardController.dashboard);
 router.get('/Api-Legal-Terms', ApiController.legalTerms);
 
 // Job Routes
@@ -338,8 +341,25 @@ router.get('/delete_users', AdminController.deleteUsers);
 router.post('/delete_users', uploadFormData.none(), AdminController.deleteUsers);
 router.get('/get_state_list', StateController.getAdminStateList);
 router.post('/get_state_list', uploadFormData.none(), StateController.getAdminStateList);
-router.get('/get_city_list', AdminController.getCityList);
-router.post('/get_city_list', uploadFormData.none(), AdminController.getCityList);
+
+// Admin City Routes
+router.get('/list-city', CityController.viewAdminCity);
+router.post('/list-city', uploadFormData.none(), CityController.viewAdminCity);
+router.get('/submit_city', CityController.submitAdminCity);
+router.post('/submit_city', uploadFormData.none(), CityController.submitAdminCity);
+router.get('/check_duplicate_city', CityController.checkAdminDuplicateCity);
+router.post('/check_duplicate_city', uploadFormData.none(), CityController.checkAdminDuplicateCity);
+router.get('/delete_city', CityController.deleteAdminCity);
+router.post('/delete_city', uploadFormData.none(), CityController.deleteAdminCity);
+router.get('/get_city_list', CityController.getAdminCityList);
+router.post('/get_city_list', uploadFormData.none(), CityController.getAdminCityList);
+
+// Admin Dashboard Routes
+router.get('/admin-dashboard', DashboardController.getAdminDashboard);
+router.post('/admin-dashboard', uploadFormData.none(), DashboardController.getAdminDashboard);
+router.get('/admin-user-overview', DashboardController.getAdminUserOverview);
+router.post('/admin-user-overview', uploadFormData.none(), DashboardController.getAdminUserOverview);
+
 router.get('/list-service-provider', AdminController.viewServiceProvider);
 router.post('/list-service-provider', uploadFormData.none(), AdminController.viewServiceProvider);
 router.get('/list_service_provider_ajax', AdminController.listServiceProviderAjax);

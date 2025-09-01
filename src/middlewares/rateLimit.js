@@ -7,7 +7,7 @@ const { logger } = require('../utils/logger');
 // General API rate limiting
 const apiLimiter = rateLimit({
   windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000, // 15 minutes
-  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 100, // limit each IP to 100 requests per windowMs
+  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 200, // limit each IP to 200 requests per windowMs (increased from 100)
   message: {
     status: false,
     message: 'Too many requests from this IP, please try again later.',
@@ -178,10 +178,10 @@ const endpointSpecificLimiters = {
     max: 10 // 10 searches per minute
   }),
 
-  // Profile updates - lower limits
+  // Profile updates - increased limits for mobile app
   profile: rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 5 // 5 profile updates per 15 minutes
+    max: 50 // 50 profile requests per 15 minutes (increased from 5)
   })
 };
 
