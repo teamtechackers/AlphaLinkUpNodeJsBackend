@@ -9,7 +9,7 @@ function ensureDirSync(dir) {
 }
 
 function storageFor(subdir) {
-  const base = path.join(process.cwd(), 'uploads', subdir);
+  const base = path.join(__dirname, '../../uploads', subdir);
   ensureDirSync(base);
   return multer.diskStorage({
     destination: function (req, file, cb) {

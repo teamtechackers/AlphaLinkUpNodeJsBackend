@@ -1,738 +1,1188 @@
 'use strict';
 
-const JobService = require('../services/JobService');
-const NotificationService = require('../services/NotificationService');
-const { logger } = require('../utils/logger');
-const { successResponse, errorResponse } = require('../utils/response');
+const { query } = require('../config/db');
+const { ok, fail } = require('../utils/response');
+const { idEncode, idDecode } = require('../utils/idCodec');
 
 class JobController {
-  // Create a new job posting
-  static async createJob(req, res) {
+  // API function - Get job information with search filters
+  static async getJobInformation(req, res) {
     try {
-      const userId = req.user.id;
-      const jobData = req.body;
-      
-      // Validate required fields
-      if (!jobData.title || !jobData.description || !jobData.company) {
-        return errorResponse(res, 'Title, description, and company are required', 400);
-      }
-
-      // Create job
-      const job = await JobService.createJob(userId, jobData);
-      
-      // Send notification to relevant users
-      try {
-        await NotificationService.sendJobNotification(job.id, 'job_created', {
-          title: job.title,
-          company: job.company,
-          location: job.location
-        });
-      } catch (notificationError) {
-        logger.warn('Failed to send job creation notification:', notificationError);
-      }
-
-      logger.info(`New job created: ${job.title} at ${job.company} by user ${userId}`);
-      return successResponse(res, 'Job created successfully', { job }, 201);
-    } catch (error) {
-      logger.error('Create job error:', error);
-      
-      if (error.message.includes('Validation failed')) {
-        return errorResponse(res, error.message, 400);
-      }
-      
-      if (error.message.includes('User not authorized')) {
-        return errorResponse(res, 'You are not authorized to create jobs', 403);
-      }
-      
-      return errorResponse(res, 'Failed to create job', 500);
-    }
-  }
-
-  // Get all jobs with filtering and pagination
-  static async getJobs(req, res) {
-    try {
-      const {
-        page = 1,
-        limit = 20,
-        status = 'active',
-        category,
-        location,
-        type,
-        experience,
-        salary_min,
-        salary_max,
-        company,
-        search,
-        sort_by = 'created_at',
-        sort_order = 'desc'
-      } = req.query;
-
-      const filters = {
-        status,
-        category,
-        location,
-        type,
-        experience,
-        salary_min: salary_min ? parseFloat(salary_min) : null,
-        salary_max: salary_max ? parseFloat(salary_max) : null,
-        company,
-        search
+      const { user_id, token, keyword, job_type, skill, location, pay } = {
+        ...req.query,
+        ...req.body
       };
-
-      const jobs = await JobService.getJobs(filters, {
-        page: parseInt(page),
-        limit: parseInt(limit),
-        sortBy: sort_by,
-        sortOrder: sort_order
+      
+      // Check if user_id and token are provided
+      if (!user_id || !token) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Token Mismatch Exception'
+        });
+      }
+      
+      // Decode user ID
+      const decodedUserId = idDecode(user_id);
+      if (!decodedUserId) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Invalid user ID'
+        });
+      }
+      
+      // Get user details and validate
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      if (!userRows.length) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Not A Valid User'
+        });
+      }
+      
+      const user = userRows[0];
+      
+      // Validate token
+      if (user.unique_token !== token) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Token Mismatch Exception'
+        });
+      }
+      
+      // Build search conditions
+      let whereConditions = ['user_job_details.user_id = ?'];
+      let queryParams = [decodedUserId];
+      
+      if (keyword) {
+        whereConditions.push('(job_title LIKE ? OR job_description LIKE ?)');
+        queryParams.push(`%${keyword}%`, `%${keyword}%`);
+      }
+      
+      if (job_type) {
+        whereConditions.push('job_type.name LIKE ?');
+        queryParams.push(`%${job_type}%`);
+      }
+      
+      if (skill) {
+        whereConditions.push('skills.name LIKE ?');
+        queryParams.push(`%${skill}%`);
+      }
+      
+      if (location) {
+        whereConditions.push('(countries.name LIKE ? OR states.name LIKE ? OR cities.name LIKE ?)');
+        queryParams.push(`%${location}%`, `%${location}%`, `%${location}%`);
+      }
+      
+      if (pay) {
+        whereConditions.push('pay.name = ?');
+        queryParams.push(pay);
+      }
+      
+      const whereClause = whereConditions.join(' AND ');
+      
+      // Execute query with search conditions
+      const rows = await query(
+        `SELECT user_job_details.*, job_type.name AS job_type, pay.name AS pay, countries.name AS country, states.name AS state, cities.name AS city,
+                GROUP_CONCAT(skills.name SEPARATOR ', ') AS skill_names
+         FROM user_job_details
+         JOIN job_type ON job_type.id = user_job_details.job_type_id
+         JOIN pay ON pay.id = user_job_details.pay_id
+         JOIN countries ON countries.id = user_job_details.country_id
+         JOIN states ON states.id = user_job_details.state_id
+         JOIN cities ON cities.id = user_job_details.city_id
+           LEFT JOIN skills ON FIND_IN_SET(skills.id, user_job_details.skill_ids)
+           WHERE ${whereClause}
+           GROUP BY user_job_details.job_id
+           ORDER BY job_id`,
+        queryParams
+      );
+      
+      // Format job information to match PHP response with all fields as strings
+      const formattedJobs = rows.map(job => ({
+        job_id: job.job_id.toString(),
+        user_id: job.user_id.toString(),
+        job_title: job.job_title || "",
+        company_name: job.company_name || "",
+        country_id: job.country_id ? job.country_id.toString() : "",
+        state_id: job.state_id ? job.state_id.toString() : "",
+        city_id: job.city_id ? job.city_id.toString() : "",
+        address: job.address || "",
+        job_lat: job.job_lat ? job.job_lat.toString() : "",
+        job_lng: job.job_lng ? job.job_lng.toString() : "",
+        job_type_id: job.job_type_id ? job.job_type_id.toString() : "",
+        pay_id: job.pay_id ? job.pay_id.toString() : "",
+        job_description: job.job_description || "",
+        skill_ids: job.skill_ids || "",
+        status: job.status ? job.status.toString() : "0",
+        created_dts: job.created_dts || "",
+        created_by: job.created_by ? job.created_by.toString() : null,
+        updated_at: job.updated_at || null,
+        updated_by: job.updated_by ? job.updated_by.toString() : null,
+        deleted: job.deleted ? job.deleted.toString() : "0",
+        deleted_by: job.deleted_by ? job.deleted_by.toString() : null,
+        deleted_at: job.deleted_at || null,
+        job_type: job.job_type || "",
+        pay: job.pay || "",
+        country: job.country || "",
+        state: job.state || "",
+        city: job.city || "",
+        skill_names: job.skill_names || ""
+      }));
+      
+      // Return response in PHP format
+      return res.json({
+        status: true,
+        rcode: 200,
+        user_id: user_id,
+        unique_token: token,
+        job_information: formattedJobs
       });
-
-      return successResponse(res, 'Jobs retrieved successfully', { jobs });
+      
     } catch (error) {
-      logger.error('Get jobs error:', error);
-      return errorResponse(res, 'Failed to retrieve jobs', 500);
+      console.error('getJobInformation error:', error);
+      return res.json({
+        status: false,
+        rcode: 500,
+        message: 'Failed to get job information'
+      });
     }
   }
 
-  // Get a specific job by ID
-  static async getJob(req, res) {
+  // API function - Get job details with applicants
+  static async getJobDetail(req, res) {
     try {
-      const { jobId } = req.params;
-      const userId = req.user?.id; // Optional for public access
-
-      const job = await JobService.getJobById(jobId, userId);
+      const { user_id, token, job_id } = {
+        ...req.query,
+        ...req.body
+      };
       
-      if (!job) {
-        return errorResponse(res, 'Job not found', 404);
+      // Check if user_id, token, and job_id are provided
+      if (!user_id || !token || !job_id) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Token Mismatch Exception'
+        });
       }
-
-      // Increment view count if user is authenticated
-      if (userId) {
-        try {
-          await JobService.incrementJobViews(jobId, userId);
-        } catch (viewError) {
-          logger.warn('Failed to increment job views:', viewError);
+      
+      // Decode user ID
+      const decodedUserId = idDecode(user_id);
+      if (!decodedUserId) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Invalid user ID'
+        });
+      }
+      
+      // Get user details and validate
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      if (!userRows.length) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Not A Valid User'
+        });
+      }
+      
+      const user = userRows[0];
+      
+      // Validate token
+      if (user.unique_token !== token) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Token Mismatch Exception'
+        });
+      }
+      
+      // Get job detail with joins (matching PHP implementation)
+      const jobRows = await query(
+        `SELECT user_job_details.*, 
+                job_type.name as job_type,
+                pay.name as pay,
+                countries.name as country,
+                states.name as state,
+                cities.name as city,
+                GROUP_CONCAT(skills.name) AS skills
+         FROM user_job_details
+         JOIN job_type ON job_type.id = user_job_details.job_type_id
+         JOIN pay ON pay.id = user_job_details.pay_id
+         JOIN countries ON countries.id = user_job_details.country_id
+         JOIN states ON states.id = user_job_details.state_id
+         JOIN cities ON cities.id = user_job_details.city_id
+           LEFT JOIN skills ON FIND_IN_SET(skills.id, user_job_details.skill_ids)
+           WHERE user_job_details.job_id = ? AND user_job_details.deleted = 0
+           GROUP BY user_job_details.job_id`,
+        [job_id]
+      );
+      
+      if (!jobRows.length) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Job not found'
+        });
+      }
+      
+      // Process skills mapping (matching PHP implementation)
+      const jobData = jobRows[0];
+      let mappedSkills = [];
+      if (jobData.skills && jobData.skill_ids) {
+        const skillIds = jobData.skill_ids.split(',');
+        const skills = jobData.skills.split(',');
+        
+        for (let i = 0; i < skillIds.length; i++) {
+          mappedSkills.push({
+            id: skillIds[i].toString(),
+            skill: skills[i] || ""
+          });
         }
       }
-
-      return successResponse(res, 'Job retrieved successfully', { job });
-    } catch (error) {
-      logger.error('Get job error:', error);
       
-      if (error.message.includes('Job not found')) {
-        return errorResponse(res, 'Job not found', 404);
-      }
+      // Convert all integer values to strings for job_detail
+      const jobDetail = [{
+        job_id: jobData.job_id.toString(),
+        user_id: jobData.user_id.toString(),
+        job_title: jobData.job_title || "",
+        company_name: jobData.company_name || "",
+        country_id: jobData.country_id.toString(),
+        state_id: jobData.state_id.toString(),
+        city_id: jobData.city_id.toString(),
+        address: jobData.address || "",
+        job_lat: jobData.job_lat || "",
+        job_lng: jobData.job_lng || "",
+        job_type_id: jobData.job_type_id.toString(),
+        pay_id: jobData.pay_id.toString(),
+        job_description: jobData.job_description || "",
+        skill_ids: jobData.skill_ids || "",
+        status: jobData.status.toString(),
+        created_dts: jobData.created_dts || "",
+        created_by: jobData.created_by || "",
+        updated_at: jobData.updated_at || "",
+        updated_by: jobData.updated_by || "",
+        deleted: jobData.deleted.toString(),
+        deleted_by: jobData.deleted_by || "",
+        deleted_at: jobData.deleted_at || "",
+        job_type: jobData.job_type || "",
+        pay: jobData.pay || "",
+        country: jobData.country || "",
+        state: jobData.state || "",
+        city: jobData.city || "",
+        skills: jobData.skills || "",
+        mapped_skills: mappedSkills
+      }];
       
-      return errorResponse(res, 'Failed to retrieve job', 500);
-    }
-  }
-
-  // Update a job posting
-  static async updateJob(req, res) {
-    try {
-      const userId = req.user.id;
-      const { jobId } = req.params;
-      const updateData = req.body;
-
-      if (Object.keys(updateData).length === 0) {
-        return errorResponse(res, 'No update data provided', 400);
-      }
-
-      const updatedJob = await JobService.updateJob(jobId, userId, updateData);
+      // Get job applicants list
+      const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
+      const profilePath = `${baseUrl}/uploads/profiles/`;
+      const resumePath = `${baseUrl}/uploads/resumes/`;
       
-      logger.info(`Job ${jobId} updated by user ${userId}`);
-      return successResponse(res, 'Job updated successfully', { job: updatedJob });
-    } catch (error) {
-      logger.error('Update job error:', error);
+      const applicantsRows = await query(
+        `SELECT user_job_applications.user_id AS applicant_id, 
+                COALESCE(user_job_applications.first_name,'') AS first_name, 
+                COALESCE(user_job_applications.last_name,'') AS last_name, 
+                COALESCE(user_job_applications.email,'') AS email, 
+                user_job_applications.mobile,
+                COALESCE(user_job_applications.skills,'') AS skills,
+                IF(users.profile_photo != '', CONCAT(?, users.profile_photo), '') AS profile_photo,
+                IF(user_resumes.resume_file != '', CONCAT(?, user_resumes.resume_file), '') AS resume_file
+         FROM user_job_applications
+         LEFT JOIN users ON users.user_id = user_job_applications.user_id
+         LEFT JOIN user_resumes ON user_resumes.resume_id = user_job_applications.resume_id
+         WHERE user_job_applications.job_id = ?`,
+        [profilePath, resumePath, job_id]
+      );
       
-      if (error.message.includes('Job not found')) {
-        return errorResponse(res, 'Job not found', 404);
-      }
+      // Check if user has applied for this job (ensure proper type comparison)
+      const hasApplied = applicantsRows.some(applicant => parseInt(applicant.applicant_id) === parseInt(decodedUserId));
       
-      if (error.message.includes('not authorized')) {
-        return errorResponse(res, 'You are not authorized to update this job', 403);
-      }
+      // Convert all integer values to strings for applicants_list
+      const applicantsList = applicantsRows.map(row => ({
+        applicant_id: row.applicant_id.toString(),
+        first_name: row.first_name || "",
+        last_name: row.last_name || "",
+        email: row.email || "",
+        mobile: row.mobile || "",
+        skills: row.skills || "",
+        profile_photo: row.profile_photo || "",
+        resume_file: row.resume_file || ""
+      }));
       
-      if (error.message.includes('Validation failed')) {
-        return errorResponse(res, error.message, 400);
-      }
-      
-      return errorResponse(res, 'Failed to update job', 500);
-    }
-  }
-
-  // Delete a job posting
-  static async deleteJob(req, res) {
-    try {
-      const userId = req.user.id;
-      const { jobId } = req.params;
-
-      await JobService.deleteJob(jobId, userId);
-      
-      logger.info(`Job ${jobId} deleted by user ${userId}`);
-      return successResponse(res, 'Job deleted successfully');
-    } catch (error) {
-      logger.error('Delete job error:', error);
-      
-      if (error.message.includes('Job not found')) {
-        return errorResponse(res, 'Job not found', 404);
-      }
-      
-      if (error.message.includes('not authorized')) {
-        return errorResponse(res, 'You are not authorized to delete this job', 403);
-      }
-      
-      return errorResponse(res, 'Failed to delete job', 500);
-    }
-  }
-
-  // Close a job posting
-  static async closeJob(req, res) {
-    try {
-      const userId = req.user.id;
-      const { jobId } = req.params;
-      const { reason } = req.body;
-
-      const closedJob = await JobService.closeJob(jobId, userId, reason);
-      
-      // Notify applicants about job closure
-      try {
-        await NotificationService.sendJobNotification(jobId, 'job_closed', {
-          title: closedJob.title,
-          company: closedJob.company,
-          reason: reason || 'Position filled'
-        });
-      } catch (notificationError) {
-        logger.warn('Failed to send job closure notification:', notificationError);
-      }
-      
-      logger.info(`Job ${jobId} closed by user ${userId}`);
-      return successResponse(res, 'Job closed successfully', { job: closedJob });
-    } catch (error) {
-      logger.error('Close job error:', error);
-      
-      if (error.message.includes('Job not found')) {
-        return errorResponse(res, 'Job not found', 404);
-      }
-      
-      if (error.message.includes('not authorized')) {
-        return errorResponse(res, 'You are not authorized to close this job', 403);
-      }
-      
-      if (error.message.includes('already closed')) {
-        return errorResponse(res, 'Job is already closed', 400);
-      }
-      
-      return errorResponse(res, 'Failed to close job', 500);
-    }
-  }
-
-  // Reopen a closed job posting
-  static async reopenJob(req, res) {
-    try {
-      const userId = req.user.id;
-      const { jobId } = req.params;
-
-      const reopenedJob = await JobService.reopenJob(jobId, userId);
-      
-      logger.info(`Job ${jobId} reopened by user ${userId}`);
-      return successResponse(res, 'Job reopened successfully', { job: reopenedJob });
-    } catch (error) {
-      logger.error('Reopen job error:', error);
-      
-      if (error.message.includes('Job not found')) {
-        return errorResponse(res, 'Job not found', 404);
-      }
-      
-      if (error.message.includes('not authorized')) {
-        return errorResponse(res, 'You are not authorized to reopen this job', 403);
-      }
-      
-      if (error.message.includes('not closed')) {
-        return errorResponse(res, 'Job is not closed', 400);
-      }
-      
-      return errorResponse(res, 'Failed to reopen job', 500);
-    }
-  }
-
-  // Apply for a job
-  static async applyForJob(req, res) {
-    try {
-      const userId = req.user.id;
-      const { jobId } = req.params;
-      const applicationData = req.body;
-
-      // Validate application data
-      if (!applicationData.cover_letter && !applicationData.resume_id) {
-        return errorResponse(res, 'Cover letter or resume is required', 400);
-      }
-
-      const application = await JobService.applyForJob(jobId, userId, applicationData);
-      
-      // Send application confirmation to applicant
-      try {
-        await NotificationService.createNotification({
-          user_id: userId,
-          type: 'job_application_submitted',
-          title: 'Application Submitted',
-          message: `Your application for ${application.job_title} has been submitted successfully.`,
-          data: { jobId, applicationId: application.id }
-        });
-      } catch (notificationError) {
-        logger.warn('Failed to send application confirmation:', notificationError);
-      }
-
-      // Send notification to job poster
-      try {
-        await NotificationService.createNotification({
-          user_id: application.job_poster_id,
-          type: 'new_job_application',
-          title: 'New Job Application',
-          message: `You have received a new application for ${application.job_title}.`,
-          data: { jobId, applicationId: application.id, applicantId: userId }
-        });
-      } catch (notificationError) {
-        logger.warn('Failed to send application notification to job poster:', notificationError);
-      }
-      
-      logger.info(`Job application submitted by user ${userId} for job ${jobId}`);
-      return successResponse(res, 'Application submitted successfully', { application }, 201);
-    } catch (error) {
-      logger.error('Apply for job error:', error);
-      
-      if (error.message.includes('Job not found')) {
-        return errorResponse(res, 'Job not found', 404);
-      }
-      
-      if (error.message.includes('Job is closed')) {
-        return errorResponse(res, 'This job is no longer accepting applications', 400);
-      }
-      
-      if (error.message.includes('already applied')) {
-        return errorResponse(res, 'You have already applied for this job', 400);
-      }
-      
-      if (error.message.includes('not eligible')) {
-        return errorResponse(res, 'You are not eligible to apply for this job', 400);
-      }
-      
-      return errorResponse(res, 'Failed to submit application', 500);
-    }
-  }
-
-  // Get job applications for a specific job
-  static async getJobApplications(req, res) {
-    try {
-      const userId = req.user.id;
-      const { jobId } = req.params;
-      const { page = 1, limit = 20, status, sort_by = 'applied_at', sort_order = 'desc' } = req.query;
-
-      const applications = await JobService.getJobApplications(jobId, userId, {
-        page: parseInt(page),
-        limit: parseInt(limit),
-        status,
-        sortBy: sort_by,
-        sortOrder: sort_order
+      // Return response in PHP format
+      return res.json({
+        status: true,
+        rcode: 200,
+        user_id: user_id,
+        unique_token: token,
+        has_applied: hasApplied,
+        job_detail: jobDetail,
+        applicants_list: applicantsList
       });
-
-      return successResponse(res, 'Applications retrieved successfully', { applications });
+      
     } catch (error) {
-      logger.error('Get job applications error:', error);
-      
-      if (error.message.includes('Job not found')) {
-        return errorResponse(res, 'Job not found', 404);
-      }
-      
-      if (error.message.includes('not authorized')) {
-        return errorResponse(res, 'You are not authorized to view applications for this job', 403);
-      }
-      
-      return errorResponse(res, 'Failed to retrieve applications', 500);
+      console.error('getJobDetail error:', error);
+      return res.json({
+        status: false,
+        rcode: 500,
+        message: 'Failed to get job detail'
+      });
     }
   }
 
-  // Get user's job applications
-  static async getUserApplications(req, res) {
+  // API function - Save job information
+  static async saveJobInformation(req, res) {
     try {
-      const userId = req.user.id;
-      const { page = 1, limit = 20, status, sort_by = 'applied_at', sort_order = 'desc' } = req.query;
-
-      const applications = await JobService.getUserApplications(userId, {
-        page: parseInt(page),
-        limit: parseInt(limit),
-        status,
-        sortBy: sort_by,
-        sortOrder: sort_order
-      });
-
-      return successResponse(res, 'Applications retrieved successfully', { applications });
-    } catch (error) {
-      logger.error('Get user applications error:', error);
-      return errorResponse(res, 'Failed to retrieve applications', 500);
-    }
-  }
-
-  // Update application status
-  static async updateApplicationStatus(req, res) {
-    try {
-      const userId = req.user.id;
-      const { applicationId } = req.params;
-      const { status, feedback, interview_date, interview_location } = req.body;
-
-      if (!status) {
-        return errorResponse(res, 'Status is required', 400);
+      // Handle both JSON and form data
+      const user_id = req.body.user_id || req.body['user_id'];
+      const token = req.body.token || req.body['token'];
+      const job_id = parseInt(req.body.job_id || req.body['job_id'] || 0);
+      const job_title = req.body.job_title || req.body['job_title'];
+      const company_name = req.body.company_name || req.body['company_name'];
+      const country_id = req.body.country_id || req.body['country_id'];
+      const state_id = req.body.state_id || req.body['state_id'];
+      const city_id = req.body.city_id || req.body['city_id'];
+      const address = req.body.address || req.body['address'];
+      const job_type_id = req.body.job_type_id || req.body['job_type_id'];
+      const pay_id = req.body.pay_id || req.body['pay_id'];
+      const job_description = req.body.job_description || req.body['job_description'];
+      const skills = req.body.skills || req.body['skills'];
+      const job_lat = req.body.job_lat || req.body['job_lat'];
+      const job_lng = req.body.job_lng || req.body['job_lng'];
+      
+      // Check if user_id and token are provided
+      if (!user_id || !token) {
+        return fail(res, 500, 'user_id and token are required');
       }
-
-      const updatedApplication = await JobService.updateApplicationStatus(applicationId, userId, {
-        status,
-        feedback,
-        interview_date,
-        interview_location
-      });
-
-      // Send notification to applicant about status change
-      try {
-        await NotificationService.createNotification({
-          user_id: updatedApplication.applicant_id,
-          type: 'application_status_updated',
-          title: 'Application Status Updated',
-          message: `Your application for ${updatedApplication.job_title} has been ${status}.`,
-          data: { 
-            jobId: updatedApplication.job_id, 
-            applicationId, 
-            status,
-            feedback,
-            interview_date,
-            interview_location
+      
+      // Decode user ID
+      const decodedUserId = idDecode(user_id);
+      if (!decodedUserId) {
+        return fail(res, 500, 'Invalid user ID');
+      }
+      
+      // Get user details and validate
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      if (!userRows.length) {
+        return fail(res, 500, 'Not A Valid User');
+      }
+      
+      const user = userRows[0];
+      
+      // Validate token
+      if (user.unique_token !== token) {
+        return fail(res, 500, 'Token Mismatch Exception');
+      }
+      
+      // Check mandatory fields - match PHP validation exactly
+      if (job_title === "" || company_name === "" || country_id === "" || state_id === "" || city_id === "" || address === "" || job_type_id === "" || pay_id === "" || job_description === "" || job_lat === "" || job_lng === "") {
+        return fail(res, 500, 'Please enter mandatory fields');
+      }
+      
+      // Check if skills are provided
+      if (!skills || skills === "" || skills.trim() === "") {
+        return fail(res, 500, 'Skills are not added please add skills');
+      }
+      
+      let existingSkillIds = [];
+      
+      // Handle skills management
+      if (skills) {
+        const skillsArray = skills.split(',').map(skill => skill.trim()).filter(skill => skill.length > 0);
+        
+        if (skillsArray.length > 0) {
+          // Get existing skills
+          const existingSkills = await query('SELECT id, name FROM skills WHERE name IN (?)', [skillsArray]);
+          const existingSkillNames = existingSkills.map(skill => skill.name);
+          existingSkillIds = existingSkills.map(skill => skill.id);
+          
+          // Find new skills that don't exist
+          const newSkills = skillsArray.filter(skill => !existingSkillNames.includes(skill));
+          
+          // Insert new skills and get their IDs
+          if (newSkills.length > 0) {
+            for (const skill of newSkills) {
+              const result = await query('INSERT INTO skills (name) VALUES (?)', [skill]);
+              existingSkillIds.push(result.insertId);
+            }
           }
-        });
-      } catch (notificationError) {
-        logger.warn('Failed to send status update notification:', notificationError);
+        }
       }
       
-      logger.info(`Application ${applicationId} status updated to ${status} by user ${userId}`);
-      return successResponse(res, 'Application status updated successfully', { application: updatedApplication });
-    } catch (error) {
-      logger.error('Update application status error:', error);
+      // Prepare job data
+      const jobData = {
+        job_title,
+        company_name,
+        country_id,
+        state_id,
+        city_id,
+        address,
+        job_lat,
+        job_lng,
+        job_type_id,
+        pay_id,
+        job_description,
+        skill_ids: existingSkillIds.length > 0 ? existingSkillIds.join(',') : ''
+      };
       
-      if (error.message.includes('Application not found')) {
-        return errorResponse(res, 'Application not found', 404);
-      }
+      let finalJobId = job_id;
       
-      if (error.message.includes('not authorized')) {
-        return errorResponse(res, 'You are not authorized to update this application', 403);
-      }
-      
-      if (error.message.includes('Invalid status')) {
-        return errorResponse(res, 'Invalid application status', 400);
-      }
-      
-      return errorResponse(res, 'Failed to update application status', 500);
-    }
-  }
-
-  // Withdraw job application
-  static async withdrawApplication(req, res) {
-    try {
-      const userId = req.user.id;
-      const { applicationId } = req.params;
-
-      const withdrawnApplication = await JobService.withdrawApplication(applicationId, userId);
-      
-      logger.info(`Application ${applicationId} withdrawn by user ${userId}`);
-      return successResponse(res, 'Application withdrawn successfully', { application: withdrawnApplication });
-    } catch (error) {
-      logger.error('Withdraw application error:', error);
-      
-      if (error.message.includes('Application not found')) {
-        return errorResponse(res, 'Application not found', 404);
-      }
-      
-      if (error.message.includes('not authorized')) {
-        return errorResponse(res, 'You are not authorized to withdraw this application', 403);
-      }
-      
-      if (error.message.includes('cannot be withdrawn')) {
-        return errorResponse(res, 'This application cannot be withdrawn', 400);
-      }
-      
-      return errorResponse(res, 'Failed to withdraw application', 500);
-    }
-  }
-
-  // Search jobs
-  static async searchJobs(req, res) {
-    try {
-      const { q, page = 1, limit = 20, filters } = req.query;
-      
-      if (!q || q.trim().length === 0) {
-        return errorResponse(res, 'Search query is required', 400);
-      }
-
-      const results = await JobService.searchJobs(q, {
-        page: parseInt(page),
-        limit: parseInt(limit),
-        filters: filters ? JSON.parse(filters) : {}
-      });
-
-      return successResponse(res, 'Search completed successfully', { results });
-    } catch (error) {
-      logger.error('Search jobs error:', error);
-      return errorResponse(res, 'Search failed', 500);
-    }
-  }
-
-  // Get job recommendations for user
-  static async getJobRecommendations(req, res) {
-    try {
-      const userId = req.user.id;
-      const { page = 1, limit = 20, category, location } = req.query;
-
-      const recommendations = await JobService.getJobRecommendations(userId, {
-        page: parseInt(page),
-        limit: parseInt(limit),
-        category,
-        location
-      });
-
-      return successResponse(res, 'Job recommendations retrieved successfully', { recommendations });
-    } catch (error) {
-      logger.error('Get job recommendations error:', error);
-      return errorResponse(res, 'Failed to retrieve job recommendations', 500);
-    }
-  }
-
-  // Get job statistics
-  static async getJobStats(req, res) {
-    try {
-      const userId = req.user.id;
-      const { startDate, endDate, groupBy } = req.query;
-
-      const stats = await JobService.getJobStatistics(userId, {
-        startDate: startDate ? new Date(startDate) : null,
-        endDate: endDate ? new Date(endDate) : null,
-        groupBy: groupBy || 'month'
-      });
-
-      return successResponse(res, 'Job statistics retrieved successfully', { stats });
-    } catch (error) {
-      logger.error('Get job stats error:', error);
-      return errorResponse(res, 'Failed to retrieve job statistics', 500);
-    }
-  }
-
-  // Get popular job categories
-  static async getPopularJobCategories(req, res) {
-    try {
-      const categories = await JobService.getPopularJobCategories();
-      return successResponse(res, 'Popular job categories retrieved successfully', { categories });
-    } catch (error) {
-      logger.error('Get popular job categories error:', error);
-      return errorResponse(res, 'Failed to retrieve popular job categories', 500);
-    }
-  }
-
-  // Get trending job locations
-  static async getTrendingJobLocations(req, res) {
-    try {
-      const locations = await JobService.getTrendingJobLocations();
-      return successResponse(res, 'Trending job locations retrieved successfully', { locations });
-    } catch (error) {
-      logger.error('Get trending job locations error:', error);
-      return errorResponse(res, 'Failed to retrieve trending job locations', 500);
-    }
-  }
-
-  // Save job for later
-  static async saveJob(req, res) {
-    try {
-      const userId = req.user.id;
-      const { jobId } = req.params;
-
-      const savedJob = await JobService.saveJob(jobId, userId);
-      
-      logger.info(`Job ${jobId} saved by user ${userId}`);
-      return successResponse(res, 'Job saved successfully', { savedJob });
-    } catch (error) {
-      logger.error('Save job error:', error);
-      
-      if (error.message.includes('Job not found')) {
-        return errorResponse(res, 'Job not found', 404);
-      }
-      
-      if (error.message.includes('already saved')) {
-        return errorResponse(res, 'Job is already saved', 400);
-      }
-      
-      return errorResponse(res, 'Failed to save job', 500);
-    }
-  }
-
-  // Remove saved job
-  static async removeSavedJob(req, res) {
-    try {
-      const userId = req.user.id;
-      const { jobId } = req.params;
-
-      await JobService.removeSavedJob(jobId, userId);
-      
-      logger.info(`Job ${jobId} removed from saved jobs by user ${userId}`);
-      return successResponse(res, 'Job removed from saved jobs successfully');
-    } catch (error) {
-      logger.error('Remove saved job error:', error);
-      
-      if (error.message.includes('Job not found')) {
-        return errorResponse(res, 'Job not found', 404);
-      }
-      
-      if (error.message.includes('not saved')) {
-        return errorResponse(res, 'Job is not in your saved jobs', 400);
-      }
-      
-      return errorResponse(res, 'Failed to remove saved job', 500);
-    }
-  }
-
-  // Get user's saved jobs
-  static async getSavedJobs(req, res) {
-    try {
-      const userId = req.user.id;
-      const { page = 1, limit = 20, sort_by = 'saved_at', sort_order = 'desc' } = req.query;
-
-      const savedJobs = await JobService.getSavedJobs(userId, {
-        page: parseInt(page),
-        limit: parseInt(limit),
-        sortBy: sort_by,
-        sortOrder: sort_order
-      });
-
-      return successResponse(res, 'Saved jobs retrieved successfully', { savedJobs });
-    } catch (error) {
-      logger.error('Get saved jobs error:', error);
-      return errorResponse(res, 'Failed to retrieve saved jobs', 500);
-    }
-  }
-
-  // Share job
-  static async shareJob(req, res) {
-    try {
-      const userId = req.user.id;
-      const { jobId } = req.params;
-      const { shareType, recipientEmail, message } = req.body;
-
-      if (!shareType) {
-        return errorResponse(res, 'Share type is required', 400);
-      }
-
-      const shareResult = await JobService.shareJob(jobId, userId, {
-        shareType,
-        recipientEmail,
-        message
-      });
-
-      logger.info(`Job ${jobId} shared by user ${userId} via ${shareType}`);
-      return successResponse(res, 'Job shared successfully', { shareResult });
-    } catch (error) {
-      logger.error('Share job error:', error);
-      
-      if (error.message.includes('Job not found')) {
-        return errorResponse(res, 'Job not found', 404);
-      }
-      
-      if (error.message.includes('Invalid share type')) {
-        return errorResponse(res, 'Invalid share type', 400);
-      }
-      
-      return errorResponse(res, 'Failed to share job', 500);
-    }
-  }
-
-  // Report job
-  static async reportJob(req, res) {
-    try {
-      const userId = req.user.id;
-      const { jobId } = req.params;
-      const { reason, description } = req.body;
-
-      if (!reason) {
-        return errorResponse(res, 'Report reason is required', 400);
-      }
-
-      const report = await JobService.reportJob(jobId, userId, {
-        reason,
-        description
-      });
-
-      logger.info(`Job ${jobId} reported by user ${userId} for reason: ${reason}`);
-      return successResponse(res, 'Job reported successfully', { report });
-    } catch (error) {
-      logger.error('Report job error:', error);
-      
-      if (error.message.includes('Job not found')) {
-        return errorResponse(res, 'Job not found', 404);
-      }
-      
-      if (error.message.includes('already reported')) {
-        return errorResponse(res, 'You have already reported this job', 400);
-      }
-      
-      return errorResponse(res, 'Failed to report job', 500);
-    }
-  }
-
-  // Get job insights
-  static async getJobInsights(req, res) {
-    try {
-      const userId = req.user.id;
-      const { jobId } = req.params;
-
-      const insights = await JobService.getJobInsights(jobId, userId);
-      
-      return successResponse(res, 'Job insights retrieved successfully', { insights });
-    } catch (error) {
-      logger.error('Get job insights error:', error);
-      
-      if (error.message.includes('Job not found')) {
-        return errorResponse(res, 'Job not found', 404);
-      }
-      
-      if (error.message.includes('not authorized')) {
-        return errorResponse(res, 'You are not authorized to view insights for this job', 403);
-      }
-      
-      return errorResponse(res, 'Failed to retrieve job insights', 500);
-    }
-  }
-
-  // Export job data
-  static async exportJobData(req, res) {
-    try {
-      const userId = req.user.id;
-      const { jobId } = req.params;
-      const { format = 'json' } = req.query;
-
-      const data = await JobService.exportJobData(jobId, userId, format);
-
-      if (format === 'json') {
-        return successResponse(res, 'Job data exported successfully', { data });
+      if (job_id == 0) {
+        // Insert new job
+        jobData.user_id = decodedUserId;
+        const result = await query(
+          'INSERT INTO user_job_details (user_id, job_title, company_name, country_id, state_id, city_id, address, job_lat, job_lng, job_type_id, pay_id, job_description, skill_ids, deleted, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 1)',
+          [jobData.user_id, jobData.job_title, jobData.company_name, jobData.country_id, jobData.state_id, jobData.city_id, jobData.address, jobData.job_lat, jobData.job_lng, jobData.job_type_id, jobData.pay_id, jobData.job_description, jobData.skill_ids]
+        );
+        finalJobId = result.insertId;
       } else {
-        // For CSV format, set appropriate headers
-        res.setHeader('Content-Type', 'text/csv');
-        res.setHeader('Content-Disposition', `attachment; filename="job_${jobId}.csv"`);
-        return res.send(data);
+        // Update existing job
+        await query(
+          'UPDATE user_job_details SET job_title=?, company_name=?, country_id=?, state_id=?, city_id=?, address=?, job_lat=?, job_lng=?, job_type_id=?, pay_id=?, job_description=?, skill_ids=? WHERE job_id=? AND user_id=?',
+          [jobData.job_title, jobData.company_name, jobData.country_id, jobData.state_id, jobData.city_id, jobData.address, jobData.job_lat, jobData.job_lng, jobData.job_type_id, jobData.pay_id, jobData.job_description, jobData.skill_ids, job_id, decodedUserId]
+        );
       }
+      
+      // Return response in PHP format - exact match
+      return res.json({
+        status: true,
+        rcode: 200,
+        user_id: idEncode(decodedUserId),
+        unique_token: token,
+        job_id: finalJobId,
+        message: 'Job Information saved successfully'
+      });
+      
     } catch (error) {
-      logger.error('Export job data error:', error);
+      console.error('saveJobInformation error:', error);
+      return fail(res, 500, 'Failed to save job information');
+    }
+  }
+
+  // API function - Apply for job
+  static async saveJobApplication(req, res) {
+    try {
+      // Support both query parameters and form data
+      const { user_id, token, job_id, first_name, last_name, email, mobile, skills, resume_id, resume_title, resume_file } = {
+        ...req.query,
+        ...req.body
+      };
       
-      if (error.message.includes('Job not found')) {
-        return errorResponse(res, 'Job not found', 404);
+      console.log('saveJobApplication - Received parameters:', {
+        user_id, token, job_id, first_name, last_name, email, mobile, skills, resume_id, resume_title, resume_file
+      });
+      
+      // Check if user_id and token are provided
+      if (!user_id || !token) {
+        return fail(res, 500, 'user_id and token are required');
       }
       
-      if (error.message.includes('not authorized')) {
-        return errorResponse(res, 'You are not authorized to export this job data', 403);
+      // Decode user ID
+      const decodedUserId = idDecode(user_id);
+      if (!decodedUserId) {
+        return fail(res, 500, 'Invalid user ID');
       }
       
-      return errorResponse(res, 'Failed to export job data', 500);
+      // Get user details and validate
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      if (!userRows.length) {
+        return fail(res, 500, 'Not A Valid User');
+      }
+      
+      const user = userRows[0];
+      
+      // Validate token
+      if (user.unique_token !== token) {
+        return fail(res, 500, 'Token Mismatch Exception');
+      }
+      
+      // Check if job_id is provided
+      if (!job_id) {
+        return fail(res, 500, 'job_id is required');
+      }
+      
+      // Check if user has already applied for this job
+      const existingApplication = await query(
+        'SELECT * FROM user_job_applications WHERE user_id = ? AND job_id = ?',
+        [decodedUserId, job_id]
+      );
+      
+      if (existingApplication.length > 0) {
+        return fail(res, 500, 'You have already applied for this job');
+      }
+      
+      // Handle resume file upload
+      let finalResumeId = resume_id;
+      if (req.file && req.file.filename) {
+        // Save resume file information
+        const resumeResult = await query(
+          'INSERT INTO user_resumes (user_id, resume_title, resume_file, created_dts) VALUES (?, ?, ?, NOW())',
+          [decodedUserId, resume_title || 'Job Application Resume', req.file.filename]
+        );
+        finalResumeId = resumeResult.insertId;
+      }
+      
+      // Save job application
+      const applicationResult = await query(
+        'INSERT INTO user_job_applications (user_id, job_id, first_name, last_name, email, mobile, skills, resume_id, created_dts) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())',
+        [decodedUserId, job_id, first_name || '', last_name || '', email || '', mobile || '', skills || '', finalResumeId]
+      );
+      
+      // Return response in PHP format
+      return res.json({
+        status: true,
+        rcode: 200,
+        user_id: idEncode(decodedUserId),
+        unique_token: token,
+        application_id: applicationResult.insertId,
+        message: 'Job application submitted successfully'
+      });
+      
+    } catch (error) {
+      console.error('saveJobApplication error:', error);
+      return fail(res, 500, 'Failed to submit job application');
+    }
+  }
+
+  // Admin function - View jobs
+  static async adminViewJobs(req, res) {
+    try {
+      // Support both query parameters and form data
+      const { user_id, token } = {
+        ...req.query,
+        ...req.body
+      };
+
+      console.log('adminViewJobs - Parameters:', { user_id, token });
+
+      // Check if user_id and token are provided
+      if (!user_id || !token) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'user_id and token are required'
+        });
+      }
+
+      // Decode user ID
+      const decodedUserId = idDecode(user_id);
+      if (!decodedUserId) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Invalid user ID'
+        });
+      }
+
+      // Check if user exists
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      if (!userRows.length) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'User not found'
+        });
+      }
+
+      // Check if user is admin
+      const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
+      if (!adminRows.length) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Permission denied'
+        });
+      }
+
+      return res.json({
+        status: true,
+        rcode: 200,
+        user_id: user_id,
+        unique_token: token,
+        message: 'Jobs view page loaded successfully'
+      });
+
+    } catch (error) {
+      console.error('adminViewJobs error:', error);
+      return res.json({
+        status: false,
+        rcode: 500,
+        message: 'Failed to load jobs view'
+      });
+    }
+  }
+
+  // Admin function - Edit jobs
+  static async adminEditJobs(req, res) {
+    try {
+      // Support both query parameters and form data
+      const { user_id, token, row_id } = {
+        ...req.query,
+        ...req.body
+      };
+
+      console.log('adminEditJobs - Parameters:', { user_id, token, row_id });
+
+      // Check if user_id and token are provided
+      if (!user_id || !token) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'user_id and token are required'
+        });
+      }
+
+      // Decode user ID
+      const decodedUserId = idDecode(user_id);
+      if (!decodedUserId) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Invalid user ID'
+        });
+      }
+
+      // Check if user exists
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      if (!userRows.length) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'User not found'
+        });
+      }
+
+      // Check if user is admin
+      const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
+      if (!adminRows.length) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Permission denied'
+        });
+      }
+
+      return res.json({
+        status: true,
+        rcode: 200,
+        user_id: user_id,
+        unique_token: token,
+        message: 'Jobs edit page loaded successfully'
+      });
+
+    } catch (error) {
+      console.error('adminEditJobs error:', error);
+      return res.json({
+        status: false,
+        rcode: 500,
+        message: 'Failed to load jobs edit'
+      });
+    }
+  }
+
+  // Admin function - Submit jobs
+  static async adminSubmitJobs(req, res) {
+    try {
+      // Support both query parameters and form data
+      const { user_id, token, row_id, user_id: job_user_id, job_title, company_name, country_id, state_id, city_id, address, job_lat, job_lng, job_type_id, pay_id, job_description, status } = {
+        ...req.query,
+        ...req.body
+      };
+      
+      // Extract job user_id from body (different from admin user_id)
+      const jobUserId = req.body.user_id;
+      
+      // Ensure admin user_id comes from query parameters
+      const adminUserId = req.query.user_id;
+
+      console.log('adminSubmitJobs - Parameters:', { user_id, token, row_id, jobUserId, job_title, company_name, country_id, state_id, city_id, address, job_lat, job_lng, job_type_id, pay_id, job_description, status });
+
+      // Check if user_id and token are provided
+      if (!adminUserId || !token) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'user_id and token are required'
+        });
+      }
+
+      // Decode user ID
+      const decodedUserId = idDecode(adminUserId);
+      if (!decodedUserId) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Invalid user ID'
+        });
+      }
+
+      // Check if user exists
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      if (!userRows.length) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'User not found'
+        });
+      }
+
+      // Check if user is admin (role_id = 1 or 2)
+      const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
+      if (!adminRows.length) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Permission denied'
+        });
+      }
+
+      // Check if required fields are provided
+      if (!jobUserId) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'user_id is required'
+        });
+      }
+
+      // Get admin role_id
+      const admin = adminRows[0];
+
+      if (!row_id || row_id === '') {
+        // Insert new job (matching PHP exactly)
+        const insertData = {
+          user_id: parseInt(jobUserId),
+          job_title: job_title ? job_title.trim() : '',
+          company_name: company_name ? company_name.trim() : '',
+          country_id: country_id ? parseInt(country_id) : 166, // Default to Pakistan
+          state_id: state_id ? parseInt(state_id) : 2728, // Default to Punjab
+          city_id: city_id ? parseInt(city_id) : 31439, // Default to Lahore
+          address: address ? address.trim() : '',
+          job_lat: job_lat ? parseFloat(job_lat) : null,
+          job_lng: job_lng ? parseFloat(job_lng) : null,
+          job_type_id: job_type_id ? parseInt(job_type_id) : null,
+          pay_id: pay_id ? parseInt(pay_id) : null,
+          job_description: job_description ? job_description.trim() : '',
+          status: status !== undefined ? parseInt(status) : 1,
+          deleted: 0,
+          created_dts: new Date().toISOString().slice(0, 19).replace('T', ' '),
+          created_by: admin.role_id
+        };
+
+        await query(
+          'INSERT INTO user_job_details (user_id, job_title, company_name, country_id, state_id, city_id, address, job_lat, job_lng, job_type_id, pay_id, job_description, status, deleted, created_dts, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+          [insertData.user_id, insertData.job_title, insertData.company_name, insertData.country_id, insertData.state_id, insertData.city_id, insertData.address, insertData.job_lat, insertData.job_lng, insertData.job_type_id, insertData.pay_id, insertData.job_description, insertData.status, insertData.deleted, insertData.created_dts, insertData.created_by]
+        );
+
+        return res.json({
+          status: 'Success',
+          info: 'Job Created Successfully'
+        });
+
+      } else {
+        // Update existing job (matching PHP exactly)
+        const updateData = {
+          user_id: parseInt(jobUserId),
+          job_title: job_title ? job_title.trim() : '',
+          company_name: company_name ? company_name.trim() : '',
+          country_id: country_id ? parseInt(country_id) : 166,
+          state_id: state_id ? parseInt(state_id) : 2728,
+          city_id: city_id ? parseInt(city_id) : 31439,
+          address: address ? address.trim() : '',
+          job_lat: job_lat ? parseFloat(job_lat) : null,
+          job_lng: job_lng ? parseFloat(job_lng) : null,
+          job_type_id: job_type_id ? parseInt(job_type_id) : null,
+          pay_id: pay_id ? parseInt(pay_id) : null,
+          job_description: job_description ? job_description.trim() : '',
+          status: status !== undefined ? parseInt(status) : 1,
+          updated_at: new Date().toISOString().slice(0, 19).replace('T', ' '),
+          updated_by: admin.role_id
+        };
+
+        await query(
+          'UPDATE user_job_details SET user_id = ?, job_title = ?, company_name = ?, country_id = ?, state_id = ?, city_id = ?, address = ?, job_lat = ?, job_lng = ?, job_type_id = ?, pay_id = ?, job_description = ?, status = ?, updated_at = ?, updated_by = ? WHERE job_id = ?',
+          [updateData.user_id, updateData.job_title, updateData.company_name, updateData.country_id, updateData.state_id, updateData.city_id, updateData.address, updateData.job_lat, updateData.job_lng, updateData.job_type_id, updateData.pay_id, updateData.job_description, updateData.status, updateData.updated_at, updateData.updated_by, row_id]
+        );
+
+        return res.json({
+          status: 'Success',
+          info: 'Job Updated Successfully'
+        });
+      }
+
+    } catch (error) {
+      console.error('adminSubmitJobs error:', error);
+      return res.json({
+        status: 'Error',
+        info: 'Failed to process job'
+      });
+    }
+  }
+
+  // Admin function - List jobs (AJAX)
+  static async adminListJobsAjax(req, res) {
+    try {
+      // Support both query parameters and form data
+      const { user_id, token } = {
+        ...req.query,
+        ...req.body
+      };
+
+      console.log('adminListJobsAjax - Parameters:', { user_id, token });
+
+      // Check if user_id and token are provided
+      if (!user_id || !token) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'user_id and token are required'
+        });
+      }
+
+      // Decode user ID
+      const decodedUserId = idDecode(user_id);
+      if (!decodedUserId) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Invalid user ID'
+        });
+      }
+
+      // Check if user exists
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      if (!userRows.length) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'User not found'
+        });
+      }
+
+      // Check if user is admin
+      const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
+      if (!adminRows.length) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Permission denied'
+        });
+      }
+
+      // Get jobs list with user details
+      const jobsList = await query(`
+        SELECT 
+          ujd.job_id,
+          ujd.user_id,
+          ujd.job_title,
+          ujd.company_name,
+          ujd.country_id,
+          ujd.state_id,
+          ujd.city_id,
+          ujd.address,
+          ujd.job_lat,
+          ujd.job_lng,
+          ujd.job_type_id,
+          ujd.pay_id,
+          ujd.job_description,
+          ujd.status,
+          ujd.created_dts,
+          ujd.created_by,
+          ujd.updated_at,
+          ujd.updated_by,
+          ujd.deleted,
+          ujd.deleted_by,
+          ujd.deleted_at,
+          u.full_name as user_name,
+          u.email as user_email,
+          u.mobile as user_mobile,
+          c.name as country_name,
+          s.name as state_name,
+          ci.name as city_name,
+          jt.name as job_type_name,
+          p.name as pay_name
+        FROM user_job_details ujd
+        LEFT JOIN users u ON ujd.user_id = u.user_id
+        LEFT JOIN countries c ON ujd.country_id = c.id
+        LEFT JOIN states s ON ujd.state_id = s.id
+        LEFT JOIN cities ci ON ujd.city_id = ci.id
+        LEFT JOIN job_type jt ON ujd.job_type_id = jt.id
+        LEFT JOIN pay p ON ujd.pay_id = p.id
+        WHERE ujd.deleted = 0
+        ORDER BY ujd.job_id DESC
+      `);
+
+      // Format jobs list
+      const formattedJobsList = jobsList.map(job => ({
+        job_id: job.job_id.toString(),
+        user_id: job.user_id.toString(),
+        job_title: job.job_title || "",
+        company_name: job.company_name || "",
+        country_id: job.country_id ? job.country_id.toString() : "",
+        state_id: job.state_id ? job.state_id.toString() : "",
+        city_id: job.city_id ? job.city_id.toString() : "",
+        address: job.address || "",
+        job_lat: job.job_lat ? job.job_lat.toString() : "",
+        job_lng: job.job_lng ? job.job_lng.toString() : "",
+        job_type_id: job.job_type_id ? job.job_type_id.toString() : "",
+        pay_id: job.pay_id ? job.pay_id.toString() : "",
+        job_description: job.job_description || "",
+        status: job.status ? job.status.toString() : "0",
+        created_dts: job.created_dts || "",
+        created_by: job.created_by ? job.created_by.toString() : "",
+        updated_at: job.updated_at || "",
+        updated_by: job.updated_by ? job.updated_by.toString() : "",
+        deleted: job.deleted ? job.deleted.toString() : "0",
+        deleted_by: job.deleted_by ? job.deleted_by.toString() : "",
+        deleted_at: job.deleted_at || "",
+        user_name: job.user_name || "",
+        user_email: job.user_email || "",
+        user_mobile: job.user_mobile || "",
+        country_name: job.country_name || "",
+        state_name: job.state_name || "",
+        city_name: job.city_name || "",
+        job_type_name: job.job_type_name || "",
+        pay_name: job.pay_name || ""
+      }));
+
+      return res.json({
+        status: true,
+        rcode: 200,
+        user_id: user_id,
+        unique_token: token,
+        jobs_list: formattedJobsList
+      });
+
+    } catch (error) {
+      console.error('adminListJobsAjax error:', error);
+      return res.json({
+        status: false,
+        rcode: 500,
+        message: 'Failed to get jobs list'
+      });
+    }
+  }
+
+  // Admin function - Delete jobs
+  static async adminDeleteJobs(req, res) {
+    try {
+      // Support both query parameters and form data
+      const { user_id, token, row_id } = {
+        ...req.query,
+        ...req.body
+      };
+
+      console.log('adminDeleteJobs - Parameters:', { user_id, token, row_id });
+
+      // Check if user_id and token are provided
+      if (!user_id || !token) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'user_id and token are required'
+        });
+      }
+
+      if (!row_id) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'row_id is required'
+        });
+      }
+
+      // Decode user ID
+      const decodedUserId = idDecode(user_id);
+      if (!decodedUserId) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Invalid user ID'
+        });
+      }
+
+      // Check if user exists
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      if (!userRows.length) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'User not found'
+        });
+      }
+
+      // Check if user is admin
+      const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
+      if (!adminRows.length) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Permission denied'
+        });
+      }
+
+      // Soft delete job
+      await query(
+        'UPDATE user_job_details SET deleted = 1, deleted_by = ?, deleted_at = NOW() WHERE job_id = ?',
+        [decodedUserId, row_id]
+      );
+
+      return res.json({
+        status: 'Success',
+        info: 'Job Deleted Successfully'
+      });
+
+    } catch (error) {
+      console.error('adminDeleteJobs error:', error);
+      return res.json({
+        status: 'Error',
+        info: 'Failed to delete job'
+      });
+    }
+  }
+
+  // Admin function - View jobs details
+  static async adminViewJobsDetails(req, res) {
+    try {
+      // Support both query parameters and form data
+      const { user_id, token, row_id } = {
+        ...req.query,
+        ...req.body
+      };
+
+      console.log('adminViewJobsDetails - Parameters:', { user_id, token, row_id });
+
+      // Check if user_id and token are provided
+      if (!user_id || !token) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'user_id and token are required'
+        });
+      }
+
+      if (!row_id) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'row_id is required'
+        });
+      }
+
+      // Decode user ID
+      const decodedUserId = idDecode(user_id);
+      if (!decodedUserId) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Invalid user ID'
+        });
+      }
+
+      // Check if user exists
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      if (!userRows.length) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'User not found'
+        });
+      }
+
+      // Check if user is admin
+      const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
+      if (!adminRows.length) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Permission denied'
+        });
+      }
+
+      // Get job details
+      const jobDetails = await query(`
+        SELECT 
+          ujd.*,
+          u.full_name as user_name,
+          u.email as user_email,
+          u.mobile as user_mobile,
+          c.name as country_name,
+          s.name as state_name,
+          ci.name as city_name,
+          jt.name as job_type_name,
+          p.name as pay_name
+        FROM user_job_details ujd
+        LEFT JOIN users u ON ujd.user_id = u.user_id
+        LEFT JOIN countries c ON ujd.country_id = c.id
+        LEFT JOIN states s ON ujd.state_id = s.id
+        LEFT JOIN cities ci ON ujd.city_id = ci.id
+        LEFT JOIN job_type jt ON ujd.job_type_id = jt.id
+        LEFT JOIN pay p ON ujd.pay_id = p.id
+        WHERE ujd.job_id = ? AND ujd.deleted = 0
+      `, [row_id]);
+
+      if (!jobDetails.length) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Job not found'
+        });
+      }
+
+      const job = jobDetails[0];
+
+      // Format job details
+      const formattedJobDetails = {
+        job_id: job.job_id.toString(),
+        user_id: job.user_id.toString(),
+        job_title: job.job_title || "",
+        company_name: job.company_name || "",
+        country_id: job.country_id ? job.country_id.toString() : "",
+        state_id: job.state_id ? job.state_id.toString() : "",
+        city_id: job.city_id ? job.city_id.toString() : "",
+        address: job.address || "",
+        job_lat: job.job_lat ? job.job_lat.toString() : "",
+        job_lng: job.job_lng ? job.job_lng.toString() : "",
+        job_type_id: job.job_type_id ? job.job_type_id.toString() : "",
+        pay_id: job.pay_id ? job.pay_id.toString() : "",
+        job_description: job.job_description || "",
+        status: job.status ? job.status.toString() : "0",
+        created_dts: job.created_dts || "",
+        created_by: job.created_by ? job.created_by.toString() : "",
+        updated_at: job.updated_at || "",
+        updated_by: job.updated_by ? job.updated_by.toString() : "",
+        deleted: job.deleted ? job.deleted.toString() : "0",
+        deleted_by: job.deleted_by ? job.deleted_by.toString() : "",
+        deleted_at: job.deleted_at || "",
+        user_name: job.user_name || "",
+        user_email: job.user_email || "",
+        user_mobile: job.user_mobile || "",
+        country_name: job.country_name || "",
+        state_name: job.state_name || "",
+        city_name: job.city_name || "",
+        job_type_name: job.job_type_name || "",
+        pay_name: job.pay_name || ""
+      };
+
+      return res.json({
+        status: true,
+        rcode: 200,
+        user_id: user_id,
+        unique_token: token,
+        job_details: formattedJobDetails
+      });
+
+    } catch (error) {
+      console.error('adminViewJobsDetails error:', error);
+      return res.json({
+        status: false,
+        rcode: 500,
+        message: 'Failed to get job details'
+      });
     }
   }
 }

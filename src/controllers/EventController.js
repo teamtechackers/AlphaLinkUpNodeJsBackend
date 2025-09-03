@@ -1,841 +1,1201 @@
 'use strict';
 
-const EventService = require('../services/EventService');
-const NotificationService = require('../services/NotificationService');
-const { logger } = require('../utils/logger');
-const { successResponse, errorResponse } = require('../utils/response');
+const { query } = require('../config/db');
+const { ok, fail } = require('../utils/response');
+const { idEncode, idDecode } = require('../utils/idCodec');
 
 class EventController {
-  // Create a new event
-  static async createEvent(req, res) {
+  
+  // API function - Get event information
+  static async getEventInformation(req, res) {
     try {
-      const userId = req.user.id;
-      const eventData = req.body;
-      
-      // Validate required fields
-      if (!eventData.title || !eventData.description || !eventData.start_date) {
-        return errorResponse(res, 'Title, description, and start date are required', 400);
-      }
-
-      // Create event
-      const event = await EventService.createEvent(userId, eventData);
-      
-      // Send notification to relevant users
-      try {
-        await NotificationService.sendEventNotification(event.id, 'event_created', {
-          title: event.title,
-          organizer: event.organizer_name,
-          startDate: event.start_date,
-          location: event.location
-        });
-      } catch (notificationError) {
-        logger.warn('Failed to send event creation notification:', notificationError);
-      }
-
-      logger.info(`New event created: ${event.title} by user ${userId}`);
-      return successResponse(res, 'Event created successfully', { event }, 201);
-    } catch (error) {
-      logger.error('Create event error:', error);
-      
-      if (error.message.includes('Validation failed')) {
-        return errorResponse(res, error.message, 400);
-      }
-      
-      if (error.message.includes('User not authorized')) {
-        return errorResponse(res, 'You are not authorized to create events', 403);
-      }
-      
-      return errorResponse(res, 'Failed to create event', 500);
-    }
-  }
-
-  // Get all events with filtering and pagination
-  static async getEvents(req, res) {
-    try {
-      const {
-        page = 1,
-        limit = 20,
-        status = 'upcoming',
-        category,
-        location,
-        mode,
-        start_date,
-        end_date,
-        organizer,
-        search,
-        sort_by = 'start_date',
-        sort_order = 'asc'
-      } = req.query;
-
-      const filters = {
-        status,
-        category,
-        location,
-        mode,
-        start_date: start_date ? new Date(start_date) : null,
-        end_date: end_date ? new Date(end_date) : null,
-        organizer,
-        search
+      const { user_id, token } = {
+        ...req.query,
+        ...req.body
       };
-
-      const events = await EventService.getEvents(filters, {
-        page: parseInt(page),
-        limit: parseInt(limit),
-        sortBy: sort_by,
-        sortOrder: sort_order
+      
+      // Check if user_id and token are provided
+      if (!user_id || !token) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Token Mismatch Exception'
+        });
+      }
+      
+      // Decode user ID
+      const decodedUserId = idDecode(user_id);
+      if (!decodedUserId) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Invalid user ID'
+        });
+      }
+      
+      // Get user details and validate
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      if (!userRows.length) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Not A Valid User'
+        });
+      }
+      
+      const user = userRows[0];
+      
+      // Validate token
+      if (user.unique_token !== token) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Token Mismatch Exception'
+        });
+      }
+      
+      // Get event information with joins (matching PHP implementation)
+      const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
+      const eventBannerPath = `${baseUrl}/uploads/events/`;
+      
+      const rows = await query(
+        `SELECT user_event_details.*, 
+                DATE_FORMAT(event_date, '%d-%m-%Y') as event_date,
+                event_mode.name as event_mode,
+                event_type.name as event_type,
+                IF(event_banner != '', CONCAT(?, event_banner), '') AS event_banner,
+                countries.name as country,
+                states.name as state,
+                cities.name as city
+         FROM user_event_details
+         LEFT JOIN event_mode ON event_mode.id = user_event_details.event_mode_id
+         LEFT JOIN event_type ON event_type.id = user_event_details.event_type_id
+         LEFT JOIN countries ON countries.id = user_event_details.country_id
+         LEFT JOIN states ON states.id = user_event_details.state_id
+         LEFT JOIN cities ON cities.id = user_event_details.city_id
+         WHERE user_event_details.user_id = ?
+         ORDER BY event_id`,
+        [eventBannerPath, decodedUserId]
+      );
+      
+      // Convert all integer values to strings
+      const eventInformation = rows.map(row => ({
+        event_id: row.event_id.toString(),
+        user_id: row.user_id.toString(),
+        event_name: row.event_name || "",
+        industry_type: row.industry_type || "",
+        country_id: row.country_id.toString(),
+        state_id: row.state_id.toString(),
+        city_id: row.city_id.toString(),
+        event_venue: row.event_venue || "",
+        event_link: row.event_link || "",
+        event_lat: row.event_lat || "",
+        event_lng: row.event_lng || "",
+        event_geo_address: row.event_geo_address || "",
+        event_date: row.event_date || "",
+        event_start_time: row.event_start_time || "",
+        event_end_time: row.event_end_time || "",
+        event_mode_id: row.event_mode_id.toString(),
+        event_type_id: row.event_type_id.toString(),
+        event_details: row.event_details || "",
+        event_banner: row.event_banner || "",
+        status: row.status.toString(),
+        created_dts: row.created_dts || "",
+        created_by: row.created_by || "",
+        updated_at: row.updated_at || "",
+        updated_by: row.updated_by || "",
+        deleted: row.deleted.toString(),
+        deleted_by: row.deleted_by || "",
+        deleted_at: row.deleted_at || "",
+        event_mode: row.event_mode || "",
+        event_type: row.event_type || "",
+        country: row.country || "",
+        state: row.state || "",
+        city: row.city || ""
+      }));
+      
+      // Return response in PHP format
+      return res.json({
+        status: true,
+        rcode: 200,
+        user_id: user_id,
+        unique_token: token,
+        event_information: eventInformation
       });
-
-      return successResponse(res, 'Events retrieved successfully', { events });
+      
     } catch (error) {
-      logger.error('Get events error:', error);
-      return errorResponse(res, 'Failed to retrieve events', 500);
+      console.error('getEventInformation error:', error);
+      return res.json({
+        status: false,
+        rcode: 500,
+        message: 'Failed to get event information'
+      });
     }
   }
-
-  // Get a specific event by ID
-  static async getEvent(req, res) {
+ static async saveEventOrganiser(req, res) {
     try {
-      const { eventId } = req.params;
-      const userId = req.user?.id; // Optional for public access
-
-      const event = await EventService.getEventById(eventId, userId);
+      const { user_id, token, event_id, organiser_id } = req.body;
       
-      if (!event) {
-        return errorResponse(res, 'Event not found', 404);
+      // Check if user_id and token are provided
+      if (!user_id || !token) {
+        return fail(res, 500, 'user_id and token are required');
+      }
+      
+      // Decode user ID
+      const decodedUserId = idDecode(user_id);
+      if (!decodedUserId) {
+        return fail(res, 500, 'Invalid user ID');
+      }
+      
+      // Get user details and validate
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      if (!userRows.length) {
+        return fail(res, 500, 'Not A Valid User');
+      }
+      
+      const user = userRows[0];
+      
+      // Validate token
+      if (user.unique_token !== token) {
+        return fail(res, 500, 'Token Mismatch Exception');
       }
 
-      // Increment view count if user is authenticated
-      if (userId) {
-        try {
-          await EventService.incrementEventViews(eventId, userId);
-        } catch (viewError) {
-          logger.warn('Failed to increment event views:', viewError);
+      // Check mandatory fields
+      if (!event_id || event_id <= 0 || !organiser_id || organiser_id <= 0) {
+        return fail(res, 500, 'Please enter mandatory fields');
+      }
+
+      // Save event organiser
+      const result = await query(
+        'INSERT INTO event_organisers (event_id, user_id) VALUES (?, ?)',
+        [event_id, organiser_id]
+      );
+      
+      const organiser_id_result = result.insertId;
+      
+      // Return response in PHP format
+      return res.json({
+        status: true,
+        rcode: 200,
+        user_id: idEncode(decodedUserId),
+        unique_token: token,
+        message: 'Organiser saved successfully'
+      });
+      
+    } catch (error) {
+      console.error('saveEventOrganiser error:', error);
+      return fail(res, 500, 'Failed to save event organiser');
+    }
+  }
+  static async getEventDetail(req, res) {
+    try {
+      const { user_id, token, event_id } = {
+        ...req.query,
+        ...req.body
+      };
+      
+      // Check if user_id, token, and event_id are provided
+      if (!user_id || !token || !event_id) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Token Mismatch Exception'
+        });
+      }
+      
+      // Decode user ID
+      const decodedUserId = idDecode(user_id);
+      if (!decodedUserId) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Invalid user ID'
+        });
+      }
+      
+      // Get user details and validate
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      if (!userRows.length) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Not A Valid User'
+        });
+      }
+      
+      const user = userRows[0];
+      
+      // Validate token
+      if (user.unique_token !== token) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Token Mismatch Exception'
+        });
+      }
+      
+      // Get event detail with joins (matching PHP implementation)
+      const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
+      const eventBannerPath = `${baseUrl}/uploads/events/`;
+      
+      const eventRows = await query(
+        `SELECT user_event_details.*, 
+                DATE_FORMAT(event_date, '%Y-%m-%d') as event_date,
+                COALESCE(full_name, '') as host_name,
+                event_mode.name as event_mode,
+                event_type.name as event_type,
+                IF(event_banner != '', CONCAT(?, event_banner), '') AS event_banner
+         FROM user_event_details
+         LEFT JOIN event_mode ON event_mode.id = user_event_details.event_mode_id
+         LEFT JOIN event_type ON event_type.id = user_event_details.event_type_id
+         LEFT JOIN users ON users.user_id = user_event_details.user_id
+         WHERE user_event_details.event_id = ?
+         ORDER BY event_id`,
+        [eventBannerPath, event_id]
+      );
+      
+      if (!eventRows.length) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Event not found'
+        });
+      }
+      
+      // Get event organisers list with full details
+      const organisersRows = await query(
+        `SELECT users.user_id AS organiser_id, 
+                COALESCE(full_name,'') AS full_name, 
+                COALESCE(email,'') AS email, 
+                mobile,
+                COALESCE(address,'') AS address,
+                users.city_id,
+                COALESCE(cities.name,'') AS city,
+                users.state_id,
+                COALESCE(states.name,'') AS state,
+                users.country_id,
+                COALESCE(countries.name,'') AS country,
+                COALESCE(linkedin_url,'') AS linkedin_url,
+                COALESCE(summary,'') AS summary,
+                IF(profile_photo != '', CONCAT(?, profile_photo), '') AS profile_photo
+         FROM event_organisers
+         JOIN users ON users.user_id = event_organisers.user_id
+         LEFT JOIN countries ON countries.id = users.country_id
+         LEFT JOIN states ON states.id = users.state_id
+         LEFT JOIN cities ON cities.id = users.city_id
+         WHERE event_organisers.event_id = ?`,
+        [`${baseUrl}/uploads/profiles/`, event_id]
+      );
+      
+      // Get event attendees list with full details
+      const attendeesRows = await query(
+        `SELECT users.user_id AS attendee_id, 
+                COALESCE(full_name,'') AS full_name, 
+                COALESCE(email,'') AS email, 
+                mobile,
+                COALESCE(address,'') AS address,
+                users.city_id,
+                COALESCE(cities.name,'') AS city,
+                users.state_id,
+                COALESCE(states.name,'') AS state,
+                users.country_id,
+                COALESCE(countries.name,'') AS country,
+                COALESCE(interests,'') AS interests,
+                COALESCE(linkedin_url,'') AS linkedin_url,
+                COALESCE(summary,'') AS summary,
+                IF(profile_photo != '', CONCAT(?, profile_photo), '') AS profile_photo
+         FROM event_attendees
+         JOIN users ON users.user_id = event_attendees.user_id
+         LEFT JOIN countries ON countries.id = users.country_id
+         LEFT JOIN states ON states.id = users.state_id
+         LEFT JOIN cities ON cities.id = users.city_id
+         WHERE event_attendees.event_id = ?`,
+        [`${baseUrl}/uploads/profiles/`, event_id]
+      );
+      
+      // Check if user has attended or organised this event
+      let has_attended = false;
+      let has_organised = false;
+      
+      // Convert decodedUserId to integer for comparison
+      const userIdForComparison = parseInt(decodedUserId);
+      
+      if (organisersRows.length > 0) {
+        const organiserUserIds = organisersRows.map(row => parseInt(row.organiser_id));
+        if (organiserUserIds.includes(userIdForComparison)) {
+          has_organised = true;
         }
       }
-
-      return successResponse(res, 'Event retrieved successfully', { event });
-    } catch (error) {
-      logger.error('Get event error:', error);
       
-      if (error.message.includes('Event not found')) {
-        return errorResponse(res, 'Event not found', 404);
+      if (attendeesRows.length > 0) {
+        const attendeeUserIds = attendeesRows.map(row => parseInt(row.attendee_id));
+        if (attendeeUserIds.includes(userIdForComparison)) {
+          has_attended = true;
+        }
       }
       
-      return errorResponse(res, 'Failed to retrieve event', 500);
-    }
-  }
-
-  // Update an event
-  static async updateEvent(req, res) {
-    try {
-      const userId = req.user.id;
-      const { eventId } = req.params;
-      const updateData = req.body;
-
-      if (Object.keys(updateData).length === 0) {
-        return errorResponse(res, 'No update data provided', 400);
-      }
-
-      const updatedEvent = await EventService.updateEvent(eventId, userId, updateData);
+      // Convert all integer values to strings for event_detail
+      const eventDetail = eventRows.map(row => ({
+        event_id: (row.event_id || 0).toString(),
+        user_id: (row.user_id || 0).toString(),
+        event_name: row.event_name || "",
+        industry_type: row.industry_type || "",
+        country_id: (row.country_id || 0).toString(),
+        state_id: (row.state_id || 0).toString(),
+        city_id: (row.city_id || 0).toString(),
+        event_venue: row.event_venue || "",
+        event_link: row.event_link || "",
+        event_lat: row.event_lat || "",
+        event_lng: row.event_lng || "",
+        event_geo_address: row.event_geo_address || "",
+        event_date: row.event_date || "",
+        event_start_time: row.event_start_time || "",
+        event_end_time: row.event_end_time || "",
+        event_mode_id: (row.event_mode_id || 0).toString(),
+        event_type_id: (row.event_type_id || 0).toString(),
+        event_details: row.event_details || "",
+        event_banner: row.event_banner || "",
+        status: (row.status || 0).toString(),
+        created_dts: row.created_dts || "",
+        created_by: row.created_by ? row.created_by.toString() : "",
+        updated_at: row.updated_at || "",
+        updated_by: row.updated_by ? row.updated_by.toString() : "",
+        deleted: (row.deleted || 0).toString(),
+        deleted_by: row.deleted_by ? row.deleted_by.toString() : "",
+        deleted_at: row.deleted_at || "",
+        host_name: row.host_name || "",
+        event_mode: row.event_mode || "",
+        event_type: row.event_type || ""
+      }));
       
-      // Notify attendees about event updates
-      try {
-        await NotificationService.sendEventNotification(eventId, 'event_updated', {
-          title: updatedEvent.title,
-          organizer: updatedEvent.organizer_name,
-          changes: Object.keys(updateData)
-        });
-      } catch (notificationError) {
-        logger.warn('Failed to send event update notification:', notificationError);
-      }
+      // Convert all integer values to strings for organisers_list
+      const organisersList = organisersRows.map(row => ({
+        organiser_id: (row.organiser_id || 0).toString(),
+        full_name: row.full_name || "",
+        email: row.email || "",
+        mobile: row.mobile || "",
+        address: row.address || "",
+        city_id: (row.city_id || 0).toString(),
+        city: row.city || "",
+        state_id: (row.state_id || 0).toString(),
+        state: row.state || "",
+        country_id: (row.country_id || 0).toString(),
+        country: row.country || "",
+        linkedin_url: row.linkedin_url || "",
+        summary: row.summary || "",
+        profile_photo: row.profile_photo || ""
+      }));
       
-      logger.info(`Event ${eventId} updated by user ${userId}`);
-      return successResponse(res, 'Event updated successfully', { event: updatedEvent });
-    } catch (error) {
-      logger.error('Update event error:', error);
+      // Convert all integer values to strings for attendees_list
+      const attendeesList = attendeesRows.map(row => ({
+        attendee_id: (row.attendee_id || 0).toString(),
+        full_name: row.full_name || "",
+        email: row.email || "",
+        mobile: row.mobile || "",
+        address: row.address || "",
+        city_id: (row.city_id || 0).toString(),
+        city: row.city || "",
+        state_id: (row.state_id || 0).toString(),
+        state: row.state || "",
+        country_id: (row.country_id || 0).toString(),
+        country: row.country || "",
+        interests: row.interests || "",
+        linkedin_url: row.linkedin_url || "",
+        summary: row.summary || "",
+        profile_photo: row.profile_photo || ""
+      }));
       
-      if (error.message.includes('Event not found')) {
-        return errorResponse(res, 'Event not found', 404);
-      }
-      
-      if (error.message.includes('not authorized')) {
-        return errorResponse(res, 'You are not authorized to update this event', 403);
-      }
-      
-      if (error.message.includes('Validation failed')) {
-        return errorResponse(res, error.message, 400);
-      }
-      
-      return errorResponse(res, 'Failed to update event', 500);
-    }
-  }
-
-  // Delete an event
-  static async deleteEvent(req, res) {
-    try {
-      const userId = req.user.id;
-      const { eventId } = req.params;
-
-      await EventService.deleteEvent(eventId, userId);
-      
-      // Notify attendees about event cancellation
-      try {
-        await NotificationService.sendEventNotification(eventId, 'event_cancelled', {
-          title: 'Event Cancelled',
-          message: 'This event has been cancelled by the organizer.'
-        });
-      } catch (notificationError) {
-        logger.warn('Failed to send event cancellation notification:', notificationError);
-      }
-      
-      logger.info(`Event ${eventId} deleted by user ${userId}`);
-      return successResponse(res, 'Event deleted successfully');
-    } catch (error) {
-      logger.error('Delete event error:', error);
-      
-      if (error.message.includes('Event not found')) {
-        return errorResponse(res, 'Event not found', 404);
-      }
-      
-      if (error.message.includes('not authorized')) {
-        return errorResponse(res, 'You are not authorized to delete this event', 403);
-      }
-      
-      return errorResponse(res, 'Failed to delete event', 500);
-    }
-  }
-
-  // Cancel an event
-  static async cancelEvent(req, res) {
-    try {
-      const userId = req.user.id;
-      const { eventId } = req.params;
-      const { reason } = req.body;
-
-      const cancelledEvent = await EventService.cancelEvent(eventId, userId, reason);
-      
-      // Notify attendees about event cancellation
-      try {
-        await NotificationService.sendEventNotification(eventId, 'event_cancelled', {
-          title: cancelledEvent.title,
-          organizer: cancelledEvent.organizer_name,
-          reason: reason || 'Event cancelled by organizer'
-        });
-      } catch (notificationError) {
-        logger.warn('Failed to send event cancellation notification:', notificationError);
-      }
-      
-      logger.info(`Event ${eventId} cancelled by user ${userId}`);
-      return successResponse(res, 'Event cancelled successfully', { event: cancelledEvent });
-    } catch (error) {
-      logger.error('Cancel event error:', error);
-      
-      if (error.message.includes('Event not found')) {
-        return errorResponse(res, 'Event not found', 404);
-      }
-      
-      if (error.message.includes('not authorized')) {
-        return errorResponse(res, 'You are not authorized to cancel this event', 403);
-      }
-      
-      if (error.message.includes('already cancelled')) {
-        return errorResponse(res, 'Event is already cancelled', 400);
-      }
-      
-      return errorResponse(res, 'Failed to cancel event', 500);
-    }
-  }
-
-  // Reschedule an event
-  static async rescheduleEvent(req, res) {
-    try {
-      const userId = req.user.id;
-      const { eventId } = req.params;
-      const { newStartDate, newEndDate, reason } = req.body;
-
-      if (!newStartDate) {
-        return errorResponse(res, 'New start date is required', 400);
-      }
-
-      const rescheduledEvent = await EventService.rescheduleEvent(eventId, userId, {
-        newStartDate: new Date(newStartDate),
-        newEndDate: newEndDate ? new Date(newEndDate) : null,
-        reason
+      // Return response in PHP format
+      return res.json({
+        status: true,
+        rcode: 200,
+        user_id: user_id,
+        unique_token: token,
+        has_attended: has_attended,
+        has_organised: has_organised,
+        event_detail: eventDetail,
+        organisers_list: organisersList,
+        attendees_list: attendeesList
       });
       
-      // Notify attendees about event rescheduling
-      try {
-        await NotificationService.sendEventNotification(eventId, 'event_rescheduled', {
-          title: rescheduledEvent.title,
-          organizer: rescheduledEvent.organizer_name,
-          oldStartDate: rescheduledEvent.previous_start_date,
-          newStartDate: rescheduledEvent.start_date,
-          reason: reason || 'Event rescheduled by organizer'
-        });
-      } catch (notificationError) {
-        logger.warn('Failed to send event rescheduling notification:', notificationError);
-      }
-      
-      logger.info(`Event ${eventId} rescheduled by user ${userId}`);
-      return successResponse(res, 'Event rescheduled successfully', { event: rescheduledEvent });
     } catch (error) {
-      logger.error('Reschedule event error:', error);
-      
-      if (error.message.includes('Event not found')) {
-        return errorResponse(res, 'Event not found', 404);
-      }
-      
-      if (error.message.includes('not authorized')) {
-        return errorResponse(res, 'You are not authorized to reschedule this event', 403);
-      }
-      
-      if (error.message.includes('Invalid date')) {
-        return errorResponse(res, 'Invalid date provided', 400);
-      }
-      
-      return errorResponse(res, 'Failed to reschedule event', 500);
-    }
-  }
-
-  // Register for an event
-  static async registerForEvent(req, res) {
-    try {
-      const userId = req.user.id;
-      const { eventId } = req.params;
-      const registrationData = req.body;
-
-      const registration = await EventService.registerForEvent(eventId, userId, registrationData);
-      
-      // Send registration confirmation to attendee
-      try {
-        await NotificationService.createNotification({
-          user_id: userId,
-          type: 'event_registration_confirmed',
-          title: 'Event Registration Confirmed',
-          message: `Your registration for ${registration.event_title} has been confirmed.`,
-          data: { eventId, registrationId: registration.id }
-        });
-      } catch (notificationError) {
-        logger.warn('Failed to send registration confirmation:', notificationError);
-      }
-
-      // Send notification to event organizer
-      try {
-        await NotificationService.createNotification({
-          user_id: registration.organizer_id,
-          type: 'new_event_registration',
-          title: 'New Event Registration',
-          message: `New registration for ${registration.event_title}.`,
-          data: { eventId, registrationId: registration.id, attendeeId: userId }
-        });
-      } catch (notificationError) {
-        logger.warn('Failed to send registration notification to organizer:', notificationError);
-      }
-      
-      logger.info(`Event registration submitted by user ${userId} for event ${eventId}`);
-      return successResponse(res, 'Registration successful', { registration }, 201);
-    } catch (error) {
-      logger.error('Register for event error:', error);
-      
-      if (error.message.includes('Event not found')) {
-        return errorResponse(res, 'Event not found', 404);
-      }
-      
-      if (error.message.includes('Event is cancelled')) {
-        return errorResponse(res, 'This event has been cancelled', 400);
-      }
-      
-      if (error.message.includes('already registered')) {
-        return errorResponse(res, 'You are already registered for this event', 400);
-      }
-      
-      if (error.message.includes('Event is full')) {
-        return errorResponse(res, 'This event is at full capacity', 400);
-      }
-      
-      if (error.message.includes('Registration closed')) {
-        return errorResponse(res, 'Registration for this event is closed', 400);
-      }
-      
-      return errorResponse(res, 'Failed to register for event', 500);
-    }
-  }
-
-  // Cancel event registration
-  static async cancelRegistration(req, res) {
-    try {
-      const userId = req.user.id;
-      const { eventId } = req.params;
-
-      const cancelledRegistration = await EventService.cancelRegistration(eventId, userId);
-      
-      // Send cancellation confirmation to attendee
-      try {
-        await NotificationService.createNotification({
-          user_id: userId,
-          type: 'event_registration_cancelled',
-          title: 'Event Registration Cancelled',
-          message: `Your registration for ${cancelledRegistration.event_title} has been cancelled.`,
-          data: { eventId, registrationId: cancelledRegistration.id }
-        });
-      } catch (notificationError) {
-        logger.warn('Failed to send cancellation confirmation:', notificationError);
-      }
-
-      // Notify organizer about registration cancellation
-      try {
-        await NotificationService.createNotification({
-          user_id: cancelledRegistration.organizer_id,
-          type: 'event_registration_cancelled',
-          title: 'Event Registration Cancelled',
-          message: `A registration for ${cancelledRegistration.event_title} has been cancelled.`,
-          data: { eventId, registrationId: cancelledRegistration.id, attendeeId: userId }
-        });
-      } catch (notificationError) {
-        logger.warn('Failed to send cancellation notification to organizer:', notificationError);
-      }
-      
-      logger.info(`Event registration cancelled by user ${userId} for event ${eventId}`);
-      return successResponse(res, 'Registration cancelled successfully', { registration: cancelledRegistration });
-    } catch (error) {
-      logger.error('Cancel registration error:', error);
-      
-      if (error.message.includes('Event not found')) {
-        return errorResponse(res, 'Event not found', 404);
-      }
-      
-      if (error.message.includes('not registered')) {
-        return errorResponse(res, 'You are not registered for this event', 400);
-      }
-      
-      if (error.message.includes('cannot be cancelled')) {
-        return errorResponse(res, 'This registration cannot be cancelled', 400);
-      }
-      
-      return errorResponse(res, 'Failed to cancel registration', 500);
-    }
-  }
-
-  // Get event registrations
-  static async getEventRegistrations(req, res) {
-    try {
-      const userId = req.user.id;
-      const { eventId } = req.params;
-      const { page = 1, limit = 20, status, sort_by = 'registered_at', sort_order = 'desc' } = req.query;
-
-      const registrations = await EventService.getEventRegistrations(eventId, userId, {
-        page: parseInt(page),
-        limit: parseInt(limit),
-        status,
-        sortBy: sort_by,
-        sortOrder: sort_order
+      console.error('getEventDetail error:', error);
+      return res.json({
+        status: false,
+        rcode: 500,
+        message: 'Failed to get event detail'
       });
-
-      return successResponse(res, 'Registrations retrieved successfully', { registrations });
-    } catch (error) {
-      logger.error('Get event registrations error:', error);
-      
-      if (error.message.includes('Event not found')) {
-        return errorResponse(res, 'Event not found', 404);
-      }
-      
-      if (error.message.includes('not authorized')) {
-        return errorResponse(res, 'You are not authorized to view registrations for this event', 403);
-      }
-      
-      return errorResponse(res, 'Failed to retrieve registrations', 500);
     }
   }
-
-  // Get user's event registrations
-  static async getUserRegistrations(req, res) {
+  static async saveEventInformation(req, res) {
     try {
-      const userId = req.user.id;
-      const { page = 1, limit = 20, status, sort_by = 'registered_at', sort_order = 'desc' } = req.query;
-
-      const registrations = await EventService.getUserRegistrations(userId, {
-        page: parseInt(page),
-        limit: parseInt(limit),
-        status,
-        sortBy: sort_by,
-        sortOrder: sort_order
-      });
-
-      return successResponse(res, 'Registrations retrieved successfully', { registrations });
-    } catch (error) {
-      logger.error('Get user registrations error:', error);
-      return errorResponse(res, 'Failed to retrieve registrations', 500);
-    }
-  }
-
-  // Update registration status
-  static async updateRegistrationStatus(req, res) {
-    try {
-      const userId = req.user.id;
-      const { registrationId } = req.params;
-      const { status, notes } = req.body;
-
-      if (!status) {
-        return errorResponse(res, 'Status is required', 400);
+      // Handle both JSON and form data
+      const event_id = parseInt(req.body.event_id || req.body['event_id'] || 0);
+      const event_name = req.body.event_name || req.body['event_name'];
+      const industry_type = req.body.industry_type || req.body['industry_type'];
+      const event_date = req.body.event_date || req.body['event_date'];
+      const event_start_time = req.body.event_start_time || req.body['event_start_time'];
+      const event_end_time = req.body.event_end_time || req.body['event_end_time'];
+      const event_mode_id = req.body.event_mode_id || req.body['event_mode_id'];
+      const event_type_id = req.body.event_type_id || req.body['event_type_id'];
+      const event_details = req.body.event_details || req.body['event_details'];
+      const country_id = req.body.country_id || req.body['country_id'];
+      const state_id = req.body.state_id || req.body['state_id'];
+      const city_id = req.body.city_id || req.body['city_id'];
+      const event_venue = req.body.event_venue || req.body['event_venue'];
+      const event_link = req.body.event_link || req.body['event_link'];
+      const event_lat = req.body.event_lat || req.body['event_lat'];
+      const event_lng = req.body.event_lng || req.body['event_lng'];
+      const event_geo_address = req.body.event_geo_address || req.body['event_geo_address'];
+      const organiser_ids = req.body.organiser_ids || req.body['organiser_ids'];
+      
+      // Get user_id and token from request (since we removed checkUser middleware)
+      const user_id = req.body.user_id || req.body['user_id'];
+      const token = req.body.token || req.body['token'];
+      
+      // Check if user_id and token are provided
+      if (!user_id || !token) {
+        return fail(res, 500, 'user_id and token are required');
       }
-
-      const updatedRegistration = await EventService.updateRegistrationStatus(registrationId, userId, {
-        status,
-        notes
-      });
-
-      // Send notification to attendee about status change
-      try {
-        await NotificationService.createNotification({
-          user_id: updatedRegistration.attendee_id,
-          type: 'registration_status_updated',
-          title: 'Registration Status Updated',
-          message: `Your registration for ${updatedRegistration.event_title} has been ${status}.`,
-          data: { 
-            eventId: updatedRegistration.event_id, 
-            registrationId, 
-            status,
-            notes
+      
+      // Decode user ID
+      const decodedUserId = idDecode(user_id);
+      if (!decodedUserId) {
+        return fail(res, 500, 'Invalid user ID');
+      }
+      
+      // Get user details and validate
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      if (!userRows.length) {
+        return fail(res, 500, 'Not A Valid User');
+      }
+      
+      const user = userRows[0];
+      
+      // Validate token
+      if (user.unique_token !== token) {
+        return fail(res, 500, 'Token Mismatch Exception');
+      }
+      
+      // Check mandatory fields - match PHP validation exactly
+      if (event_name === "" || industry_type === "" || event_date === "" || event_start_time === "" || event_end_time === "" || event_mode_id === "" || event_type_id === "" || event_details === "" || organiser_ids === "" || event_lat === "" || event_lng === "" || event_geo_address === "") {
+        return fail(res, 500, 'Please enter mandatory fields');
+      }
+      
+      // Handle event banner upload
+      let eventBanner = '';
+      if (req.file && req.file.filename) {
+        eventBanner = req.file.filename;
+      }
+      
+      // Convert date from DD-MM-YYYY to YYYY-MM-DD format for MySQL
+      let formattedEventDate = event_date;
+      console.log('Original event_date:', event_date);
+      if (event_date && event_date.includes('-')) {
+        const dateParts = event_date.split('-');
+        if (dateParts.length === 3) {
+          // Convert DD-MM-YYYY to YYYY-MM-DD
+          formattedEventDate = `${dateParts[2]}-${dateParts[1]}-${dateParts[0]}`;
+          console.log('Converted event_date:', formattedEventDate);
+        }
+      }
+      
+      // Prepare event data
+      const eventData = {
+        event_name,
+        industry_type,
+        event_date: formattedEventDate,
+        event_start_time,
+        event_end_time,
+      event_mode_id,
+      event_type_id,
+        event_details,
+        country_id: country_id || 1, // Default to country_id 1 if not provided
+        state_id: state_id || 1, // Default to state_id 1 if not provided
+        city_id: city_id || 1, // Default to city_id 1 if not provided
+        event_venue: event_venue || '',
+        event_link: event_link || '',
+        event_lat,
+        event_lng,
+        event_geo_address
+      };
+      
+      let finalEventId = event_id;
+      
+      if (event_id == 0) {
+        // Insert new event
+        eventData.user_id = decodedUserId;
+        if (eventBanner) {
+          eventData.event_banner = eventBanner;
+        }
+        
+        const result = await query(
+          'INSERT INTO user_event_details (user_id, event_name, industry_type, country_id, state_id, city_id, event_venue, event_link, event_lat, event_lng, event_geo_address, event_date, event_start_time, event_end_time, event_mode_id, event_type_id, event_details, event_banner, deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+          [eventData.user_id, eventData.event_name, eventData.industry_type, eventData.country_id, eventData.state_id, eventData.city_id, eventData.event_venue || null, eventData.event_link || null, eventData.event_lat, eventData.event_lng, eventData.event_geo_address, eventData.event_date, eventData.event_start_time, eventData.event_end_time, eventData.event_mode_id, eventData.event_type_id, eventData.event_details, eventBanner || 'default_event_banner.jpg', 0]
+        );
+        finalEventId = result.insertId;
+        
+        // Create Event Creator as Organiser
+      await query(
+          'INSERT INTO event_organisers (event_id, user_id) VALUES (?, ?)',
+          [finalEventId, decodedUserId]
+      );
+    } else {
+        // Update existing event
+        if (eventBanner) {
+          eventData.event_banner = eventBanner;
+        }
+        
+        const updateFields = [];
+        const updateValues = [];
+        
+        Object.keys(eventData).forEach(key => {
+          if (eventData[key] !== undefined) {
+            updateFields.push(`${key} = ?`);
+            updateValues.push(eventData[key]);
           }
         });
-      } catch (notificationError) {
-        logger.warn('Failed to send status update notification:', notificationError);
+        
+        if (eventBanner) {
+          updateFields.push('event_banner = ?');
+          updateValues.push(eventBanner);
+        }
+        
+        updateValues.push(event_id, decodedUserId);
+        
+      await query(
+          `UPDATE user_event_details SET ${updateFields.join(', ')} WHERE event_id = ? AND user_id = ?`,
+          updateValues
+        );
       }
       
-      logger.info(`Registration ${registrationId} status updated to ${status} by user ${userId}`);
-      return successResponse(res, 'Registration status updated successfully', { registration: updatedRegistration });
-    } catch (error) {
-      logger.error('Update registration status error:', error);
-      
-      if (error.message.includes('Registration not found')) {
-        return errorResponse(res, 'Registration not found', 404);
+      // Handle event organisers
+      if (finalEventId > 0 && organiser_ids) {
+        const organiserArray = organiser_ids.split(',').map(id => parseInt(id.trim())).filter(id => id > 0);
+        
+        if (organiserArray.length > 0) {
+          // Remove existing organisers (except the creator)
+          await query(
+            'DELETE FROM event_organisers WHERE user_id != ? AND event_id = ?',
+            [decodedUserId, finalEventId]
+          );
+          
+          // Add new organisers
+          for (const organiserUserId of organiserArray) {
+            if (organiserUserId !== decodedUserId) { // Don't add creator again
+              await query(
+                'INSERT INTO event_organisers (event_id, user_id) VALUES (?, ?)',
+                [finalEventId, organiserUserId]
+              );
+            }
+          }
+        }
       }
       
-      if (error.message.includes('not authorized')) {
-        return errorResponse(res, 'You are not authorized to update this registration', 403);
-      }
+      // Return response in PHP format
+      const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
+      const eventBannerUrl = eventBanner ? `${baseUrl}/uploads/events/${eventBanner}` : '';
       
-      if (error.message.includes('Invalid status')) {
-        return errorResponse(res, 'Invalid registration status', 400);
-      }
-      
-      return errorResponse(res, 'Failed to update registration status', 500);
-    }
-  }
-
-  // Search events
-  static async searchEvents(req, res) {
-    try {
-      const { q, page = 1, limit = 20, filters } = req.query;
-      
-      if (!q || q.trim().length === 0) {
-        return errorResponse(res, 'Search query is required', 400);
-      }
-
-      const results = await EventService.searchEvents(q, {
-        page: parseInt(page),
-        limit: parseInt(limit),
-        filters: filters ? JSON.parse(filters) : {}
-      });
-
-      return successResponse(res, 'Search completed successfully', { results });
-    } catch (error) {
-      logger.error('Search events error:', error);
-      return errorResponse(res, 'Search failed', 500);
-    }
-  }
-
-  // Get event recommendations for user
-  static async getEventRecommendations(req, res) {
-    try {
-      const userId = req.user.id;
-      const { page = 1, limit = 20, category, location, mode } = req.query;
-
-      const recommendations = await EventService.getEventRecommendations(userId, {
-        page: parseInt(page),
-        limit: parseInt(limit),
-        category,
-        location,
-        mode
-      });
-
-      return successResponse(res, 'Event recommendations retrieved successfully', { recommendations });
-    } catch (error) {
-      logger.error('Get event recommendations error:', error);
-      return errorResponse(res, 'Failed to retrieve event recommendations', 500);
-    }
-  }
-
-  // Get event statistics
-  static async getEventStats(req, res) {
-    try {
-      const userId = req.user.id;
-      const { startDate, endDate, groupBy } = req.query;
-
-      const stats = await EventService.getEventStatistics(userId, {
-        startDate: startDate ? new Date(startDate) : null,
-        endDate: endDate ? new Date(endDate) : null,
-        groupBy: groupBy || 'month'
-      });
-
-      return successResponse(res, 'Event statistics retrieved successfully', { stats });
-    } catch (error) {
-      logger.error('Get event stats error:', error);
-      return errorResponse(res, 'Failed to retrieve event statistics', 500);
-    }
-  }
-
-  // Get popular event categories
-  static async getPopularEventCategories(req, res) {
-    try {
-      const categories = await EventService.getPopularEventCategories();
-      return successResponse(res, 'Popular event categories retrieved successfully', { categories });
-    } catch (error) {
-      logger.error('Get popular event categories error:', error);
-      return errorResponse(res, 'Failed to retrieve popular event categories', 500);
-    }
-  }
-
-  // Get trending event locations
-  static async getTrendingEventLocations(req, res) {
-    try {
-      const locations = await EventService.getTrendingEventLocations();
-      return successResponse(res, 'Trending event locations retrieved successfully', { locations });
-    } catch (error) {
-      logger.error('Get trending event locations error:', error);
-      return errorResponse(res, 'Failed to retrieve trending event locations', 500);
-    }
-  }
-
-  // Save event for later
-  static async saveEvent(req, res) {
-    try {
-      const userId = req.user.id;
-      const { eventId } = req.params;
-
-      const savedEvent = await EventService.saveEvent(eventId, userId);
-      
-      logger.info(`Event ${eventId} saved by user ${userId}`);
-      return successResponse(res, 'Event saved successfully', { savedEvent });
-    } catch (error) {
-      logger.error('Save event error:', error);
-      
-      if (error.message.includes('Event not found')) {
-        return errorResponse(res, 'Event not found', 404);
-      }
-      
-      if (error.message.includes('already saved')) {
-        return errorResponse(res, 'Event is already saved', 400);
-      }
-      
-      return errorResponse(res, 'Failed to save event', 500);
-    }
-  }
-
-  // Remove saved event
-  static async removeSavedEvent(req, res) {
-    try {
-      const userId = req.user.id;
-      const { eventId } = req.params;
-
-      await EventService.removeSavedEvent(eventId, userId);
-      
-      logger.info(`Event ${eventId} removed from saved events by user ${userId}`);
-      return successResponse(res, 'Event removed from saved events successfully');
-    } catch (error) {
-      logger.error('Remove saved event error:', error);
-      
-      if (error.message.includes('Event not found')) {
-        return errorResponse(res, 'Event not found', 404);
-      }
-      
-      if (error.message.includes('not saved')) {
-        return errorResponse(res, 'Event is not in your saved events', 400);
-      }
-      
-      return errorResponse(res, 'Failed to remove saved event', 500);
-    }
-  }
-
-  // Get user's saved events
-  static async getSavedEvents(req, res) {
-    try {
-      const userId = req.user.id;
-      const { page = 1, limit = 20, sort_by = 'saved_at', sort_order = 'desc' } = req.query;
-
-      const savedEvents = await EventService.getSavedEvents(userId, {
-        page: parseInt(page),
-        limit: parseInt(limit),
-        sortBy: sort_by,
-        sortOrder: sort_order
-      });
-
-      return successResponse(res, 'Saved events retrieved successfully', { savedEvents });
-    } catch (error) {
-      logger.error('Get saved events error:', error);
-      return errorResponse(res, 'Failed to retrieve saved events', 500);
-    }
-  }
-
-  // Share event
-  static async shareEvent(req, res) {
-    try {
-      const userId = req.user.id;
-      const { eventId } = req.params;
-      const { shareType, recipientEmail, message } = req.body;
-
-      if (!shareType) {
-        return errorResponse(res, 'Share type is required', 400);
-      }
-
-      const shareResult = await EventService.shareEvent(eventId, userId, {
-        shareType,
-        recipientEmail,
-        message
-      });
-
-      logger.info(`Event ${eventId} shared by user ${userId} via ${shareType}`);
-      return successResponse(res, 'Event shared successfully', { shareResult });
-    } catch (error) {
-      logger.error('Share event error:', error);
-      
-      if (error.message.includes('Event not found')) {
-        return errorResponse(res, 'Event not found', 404);
-      }
-      
-      if (error.message.includes('Invalid share type')) {
-        return errorResponse(res, 'Invalid share type', 400);
-      }
-      
-      return errorResponse(res, 'Failed to share event', 500);
-    }
-  }
-
-  // Report event
-  static async reportEvent(req, res) {
-    try {
-      const userId = req.user.id;
-      const { eventId } = req.params;
-      const { reason, description } = req.body;
-
-      if (!reason) {
-        return errorResponse(res, 'Report reason is required', 400);
-      }
-
-      const report = await EventService.reportEvent(eventId, userId, {
-        reason,
-        description
-      });
-
-      logger.info(`Event ${eventId} reported by user ${userId} for reason: ${reason}`);
-      return successResponse(res, 'Event reported successfully', { report });
-    } catch (error) {
-      logger.error('Report event error:', error);
-      
-      if (error.message.includes('Event not found')) {
-        return errorResponse(res, 'Event not found', 404);
-      }
-      
-      if (error.message.includes('already reported')) {
-        return errorResponse(res, 'You have already reported this event', 400);
-      }
-      
-      return errorResponse(res, 'Failed to report event', 500);
-    }
-  }
-
-  // Get event insights
-  static async getEventInsights(req, res) {
-    try {
-      const userId = req.user.id;
-      const { eventId } = req.params;
-
-      const insights = await EventService.getEventInsights(eventId, userId);
-      
-      return successResponse(res, 'Event insights retrieved successfully', { insights });
-    } catch (error) {
-      logger.error('Get event insights error:', error);
-      
-      if (error.message.includes('Event not found')) {
-        return errorResponse(res, 'Event not found', 404);
-      }
-      
-      if (error.message.includes('not authorized')) {
-        return errorResponse(res, 'You are not authorized to view insights for this event', 403);
-      }
-      
-      return errorResponse(res, 'Failed to retrieve event insights', 500);
-    }
-  }
-
-  // Export event data
-  static async exportEventData(req, res) {
-    try {
-      const userId = req.user.id;
-      const { eventId } = req.params;
-      const { format = 'json' } = req.query;
-
-      const data = await EventService.exportEventData(eventId, userId, format);
-
-      if (format === 'json') {
-        return successResponse(res, 'Event data exported successfully', { data });
-      } else {
-        // For CSV format, set appropriate headers
-        res.setHeader('Content-Type', 'text/csv');
-        res.setHeader('Content-Disposition', `attachment; filename="event_${eventId}.csv"`);
-        return res.send(data);
-      }
-    } catch (error) {
-      logger.error('Export event data error:', error);
-      
-      if (error.message.includes('Event not found')) {
-        return errorResponse(res, 'Event not found', 404);
-      }
-      
-      if (error.message.includes('not authorized')) {
-        return errorResponse(res, 'You are not authorized to export this event data', 403);
-      }
-      
-      return errorResponse(res, 'Failed to export event data', 500);
-    }
-  }
-
-  // Send event reminders
-  static async sendEventReminders(req, res) {
-    try {
-      const userId = req.user.id;
-      const { eventId } = req.params;
-      const { reminderType, customMessage } = req.body;
-
-      if (!reminderType) {
-        return errorResponse(res, 'Reminder type is required', 400);
-      }
-
-      const result = await EventService.sendEventReminders(eventId, userId, {
-        reminderType,
-        customMessage
+      return res.json({
+        status: true,
+        rcode: 200,
+        user_id: idEncode(decodedUserId),
+        unique_token: token,
+        event_id: finalEventId,
+        event_banner: eventBannerUrl,
+        message: 'Event Information saved successfully'
       });
       
-      logger.info(`Event reminders sent for event ${eventId} by user ${userId}`);
-      return successResponse(res, 'Event reminders sent successfully', { result });
     } catch (error) {
-      logger.error('Send event reminders error:', error);
-      
-      if (error.message.includes('Event not found')) {
-        return errorResponse(res, 'Event not found', 404);
-      }
-      
-      if (error.message.includes('not authorized')) {
-        return errorResponse(res, 'You are not authorized to send reminders for this event', 403);
-      }
-      
-      if (error.message.includes('Invalid reminder type')) {
-        return errorResponse(res, 'Invalid reminder type', 400);
-      }
-      
-      return errorResponse(res, 'Failed to send event reminders', 500);
+      console.error('saveEventInformation error:', error);
+      return fail(res, 500, 'Failed to save event information');
     }
   }
+
+  static async getEventOrganisersList(req, res) {
+    try {
+      // Support both query parameters and form data
+      const { user_id, token, event_id } = {
+        ...req.query,
+        ...req.body
+      };
+      
+      // Check if user_id and token are provided
+      if (!user_id || !token) {
+        return fail(res, 500, 'user_id and token are required');
+      }
+      
+      // Decode user ID
+      const decodedUserId = idDecode(user_id);
+      if (!decodedUserId) {
+        return fail(res, 500, 'Invalid user ID');
+      }
+      
+      // Get user details and validate
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      if (!userRows.length) {
+        return fail(res, 500, 'Not A Valid User');
+      }
+      
+      const user = userRows[0];
+      
+      // Validate token
+      if (user.unique_token !== token) {
+        return fail(res, 500, 'Token Mismatch Exception');
+      }
+
+      // Get event organisers list with dynamic profile photo URLs
+      const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
+      const profilePhotoPath = `${baseUrl}/uploads/profiles/`;
+      
+      const organisersListRows = await query(
+        `SELECT users.user_id as organiser_id, 
+                COALESCE(full_name, '') as full_name, 
+                COALESCE(email, '') as email, 
+                mobile,
+                COALESCE(address, '') as address, 
+                COALESCE(users.city_id, '') as city_id, 
+                COALESCE(cities.name, '') as city,
+                COALESCE(users.state_id, '') as state_id, 
+                COALESCE(states.name, '') as state, 
+                COALESCE(users.country_id, '') as country_id, 
+                COALESCE(countries.name, '') as country, 
+                COALESCE(linkedin_url, '') as linkedin_url, 
+                COALESCE(summary, '') as summary,
+              IF(profile_photo != '', CONCAT(?, profile_photo), '') AS profile_photo
+       FROM event_organisers
+       JOIN users ON users.user_id = event_organisers.user_id
+         LEFT JOIN countries ON countries.id = users.country_id
+         LEFT JOIN states ON states.id = users.state_id
+         LEFT JOIN cities ON cities.id = users.city_id
+         LEFT JOIN interests ON interests.id = users.interests
+         WHERE event_organisers.event_id = ?`,
+        [profilePhotoPath, event_id]
+      );
+
+      // Convert all integer values to strings for organisers_list
+      const formattedOrganisersList = (organisersListRows || []).map(organiser => ({
+        organiser_id: String(organiser.organiser_id || 0),
+        full_name: organiser.full_name || "",
+        email: organiser.email || "",
+        mobile: organiser.mobile || "",
+        address: organiser.address || "",
+        city_id: String(organiser.city_id || 0),
+        city: organiser.city || "",
+        state_id: String(organiser.state_id || 0),
+        state: organiser.state || "",
+        country_id: String(organiser.country_id || 0),
+        country: organiser.country || "",
+        linkedin_url: organiser.linkedin_url || "",
+        summary: organiser.summary || "",
+        profile_photo: organiser.profile_photo || ""
+      }));
+
+      return res.json({
+        status: true,
+        rcode: 200,
+        user_id: idEncode(decodedUserId),
+        unique_token: token,
+        organisers_list: formattedOrganisersList
+      });
+      
+    } catch (error) {
+      console.error('getEventOrganisersList error:', error);
+      return fail(res, 500, 'Failed to get event organisers list');
+    }
+  }
+
+  static async deleteEventOrganiser(req, res) {
+    try {
+      const { user_id, token, event_id, organiser_id } = req.body;
+      
+      // Check if user_id and token are provided
+      if (!user_id || !token) {
+        return fail(res, 500, 'user_id and token are required');
+      }
+      
+      // Decode user ID
+      const decodedUserId = idDecode(user_id);
+      if (!decodedUserId) {
+        return fail(res, 500, 'Invalid user ID');
+      }
+      
+      // Get user details and validate
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      if (!userRows.length) {
+        return fail(res, 500, 'Not A Valid User');
+      }
+      
+      const user = userRows[0];
+      
+      // Validate token
+      if (user.unique_token !== token) {
+        return fail(res, 500, 'Token Mismatch Exception');
+      }
+
+      // Check mandatory fields
+      if (!event_id || event_id <= 0 || !organiser_id || organiser_id <= 0) {
+        return fail(res, 500, 'Please enter mandatory fields');
+      }
+
+      // Delete event organiser
+      const result = await query(
+        'DELETE FROM event_organisers WHERE event_id = ? AND user_id = ?',
+        [event_id, organiser_id]
+      );
+
+      if (result.affectedRows === 0) {
+        return fail(res, 500, 'Event organiser not found or access denied');
+      }
+
+      return res.json({
+        status: true,
+        rcode: 200,
+        user_id: idEncode(decodedUserId),
+        unique_token: token,
+        message: 'Organiser deleted successfully'
+      });
+      
+    } catch (error) {
+      console.error('deleteEventOrganiser error:', error);
+      return fail(res, 500, 'Failed to delete event organiser');
+    }
+  }
+
+  static async getEventAttendeesList(req, res) {
+    try {
+      // Support both query parameters and form data
+      const { user_id, token, event_id } = {
+        ...req.query,
+        ...req.body
+      };
+      
+      // Check if user_id and token are provided
+      if (!user_id || !token) {
+        return fail(res, 500, 'user_id and token are required');
+      }
+      
+      // Decode user ID
+      const decodedUserId = idDecode(user_id);
+      if (!decodedUserId) {
+        return fail(res, 500, 'Invalid user ID');
+      }
+      
+      // Get user details and validate
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      if (!userRows.length) {
+        return fail(res, 500, 'Not A Valid User');
+      }
+      
+      const user = userRows[0];
+      
+      // Validate token
+      if (user.unique_token !== token) {
+        return fail(res, 500, 'Token Mismatch Exception');
+      }
+
+      // Get event attendees list with dynamic profile photo URLs
+      const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
+      const profilePhotoPath = `${baseUrl}/uploads/profiles/`;
+      
+      const attendeesListRows = await query(
+        `SELECT users.user_id as attendee_id, 
+                COALESCE(full_name, '') as full_name, 
+                COALESCE(email, '') as email, 
+                mobile,
+                COALESCE(address, '') as address, 
+                COALESCE(users.city_id, '') as city_id, 
+                COALESCE(cities.name, '') as city,
+                COALESCE(users.state_id, '') as state_id, 
+                COALESCE(states.name, '') as state, 
+                COALESCE(users.country_id, '') as country_id, 
+                COALESCE(countries.name, '') as country, 
+                COALESCE(interests, '') as interests, 
+                COALESCE(linkedin_url, '') as linkedin_url, 
+                COALESCE(summary, '') as summary,
+              IF(profile_photo != '', CONCAT(?, profile_photo), '') AS profile_photo
+       FROM event_attendees
+       JOIN users ON users.user_id = event_attendees.user_id
+         LEFT JOIN countries ON countries.id = users.country_id
+         LEFT JOIN states ON states.id = users.state_id
+         LEFT JOIN cities ON cities.id = users.city_id
+         LEFT JOIN interests ON interests.id = users.interests
+         WHERE event_attendees.event_id = ?`,
+        [profilePhotoPath, event_id]
+      );
+
+      // Convert all integer values to strings for attendees_list
+      const formattedAttendeesList = (attendeesListRows || []).map(attendee => ({
+        attendee_id: String(attendee.attendee_id || 0),
+        full_name: attendee.full_name || "",
+        email: attendee.email || "",
+        mobile: attendee.mobile || "",
+        address: attendee.address || "",
+        city_id: String(attendee.city_id || 0),
+        city: attendee.city || "",
+        state_id: String(attendee.state_id || 0),
+        state: attendee.state || "",
+        country_id: String(attendee.country_id || 0),
+        country: attendee.country || "",
+        interests: attendee.interests || "",
+        linkedin_url: attendee.linkedin_url || "",
+        summary: attendee.summary || "",
+        profile_photo: attendee.profile_photo || ""
+      }));
+
+      return res.json({
+        status: true,
+        rcode: 200,
+        user_id: idEncode(decodedUserId),
+        unique_token: token,
+        attendees_list: formattedAttendeesList
+      });
+      
+    } catch (error) {
+      console.error('getEventAttendeesList error:', error);
+      return fail(res, 500, 'Failed to get event attendees list');
+    }
+  }
+
+  static async getEventsAttendedList(req, res) {
+    try {
+      // Support both query parameters and form data
+      const { user_id, token } = {
+        ...req.query,
+        ...req.body
+      };
+      
+      console.log('getEventsAttendedList - Parameters:', { user_id, token });
+      
+      // Check if user_id and token are provided
+      if (!user_id || !token) {
+        return fail(res, 500, 'user_id and token are required');
+      }
+      
+      // Decode user ID
+      const decodedUserId = idDecode(user_id);
+      if (!decodedUserId) {
+        return fail(res, 500, 'Invalid user ID');
+      }
+      
+      // Get user details and validate
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      if (!userRows.length) {
+        return fail(res, 500, 'Not A Valid User');
+      }
+      
+      const user = userRows[0];
+      
+      // Validate token
+      if (user.unique_token !== token) {
+        return fail(res, 500, 'Token Mismatch Exception');
+      }
+
+      // Get events attended list with comprehensive details
+      const eventsAttendedList = await query(`
+        SELECT 
+          ued.*,
+          event_mode.name AS event_mode,
+          event_type.name AS event_type,
+          DATE_FORMAT(ued.event_date, '%d-%m-%Y') AS event_date,
+          CASE 
+            WHEN ued.event_banner != '' THEN CONCAT('${process.env.BASE_URL || req.protocol + '://' + req.get('host')}/uploads/events/', ued.event_banner)
+            ELSE ''
+          END AS event_banner,
+          countries.name AS country,
+          states.name AS state,
+          cities.name AS city
+        FROM user_event_details ued
+        JOIN event_attendees ea ON ea.event_id = ued.event_id
+        LEFT JOIN event_mode ON event_mode.id = ued.event_mode_id
+        LEFT JOIN event_type ON event_type.id = ued.event_type_id
+        LEFT JOIN countries ON countries.id = ued.country_id
+        LEFT JOIN states ON states.id = ued.state_id
+        LEFT JOIN cities ON cities.id = ued.city_id
+        WHERE ea.user_id = ?
+        ORDER BY ued.event_id
+      `, [decodedUserId]);
+
+      // Convert all integer values to strings for attended_list
+      const formattedAttendedList = (eventsAttendedList || []).map(event => ({
+        event_id: String(event.event_id || 0),
+        user_id: String(event.user_id || 0),
+        event_name: event.event_name || "",
+        industry_type: event.industry_type || "",
+        country_id: String(event.country_id || 0),
+        state_id: String(event.state_id || 0),
+        city_id: String(event.city_id || 0),
+        event_venue: event.event_venue || "",
+        event_link: event.event_link || "",
+        event_lat: event.event_lat || "",
+        event_lng: event.event_lng || "",
+        event_geo_address: event.event_geo_address || "",
+        event_date: event.event_date || "",
+        event_start_time: event.event_start_time || "",
+        event_end_time: event.event_end_time || "",
+        event_mode_id: String(event.event_mode_id || 0),
+        event_type_id: String(event.event_type_id || 0),
+        event_details: event.event_details || "",
+        event_banner: event.event_banner || "",
+        status: String(event.status || 0),
+        created_dts: event.created_dts || "",
+        created_by: event.created_by ? event.created_by.toString() : null,
+        updated_at: event.updated_at || null,
+        updated_by: event.updated_by ? event.updated_by.toString() : null,
+        deleted: String(event.deleted || 0),
+        deleted_by: event.deleted_by ? event.deleted_by.toString() : null,
+        deleted_at: event.deleted_at || null,
+        event_mode: event.event_mode || null,
+        event_type: event.event_type || null,
+        country: event.country || "",
+        state: event.state || "",
+        city: event.city || ""
+      }));
+
+      // Return response in PHP format (matching exactly)
+      return res.json({
+        status: true,
+        rcode: 200,
+        user_id: idEncode(decodedUserId),
+        unique_token: token,
+        attended_list: formattedAttendedList
+      });
+      
+    } catch (error) {
+      console.error('getEventsAttendedList error:', error);
+      return fail(res, 500, 'Failed to get events attended list');
+    }
+  }
+
+  static async getEventsOrganisedList(req, res) {
+    try {
+      // Support both query parameters and form data
+      const { user_id, token } = {
+        ...req.query,
+        ...req.body
+      };
+      
+      console.log('getEventsOrganisedList - Parameters:', { user_id, token });
+      
+      // Check if user_id and token are provided
+      if (!user_id || !token) {
+        return fail(res, 500, 'user_id and token are required');
+      }
+      
+      // Decode user ID
+      const decodedUserId = idDecode(user_id);
+      if (!decodedUserId) {
+        return fail(res, 500, 'Invalid user ID');
+      }
+      
+      // Get user details and validate
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      if (!userRows.length) {
+        return fail(res, 500, 'Not A Valid User');
+      }
+      
+      const user = userRows[0];
+      
+      // Validate token
+      if (user.unique_token !== token) {
+        return fail(res, 500, 'Token Mismatch Exception');
+      }
+
+      // Get events organised list with comprehensive details
+      const eventsOrganisedList = await query(`
+        SELECT 
+          ued.*,
+          event_mode.name AS event_mode,
+          event_type.name AS event_type,
+          DATE_FORMAT(ued.event_date, '%d-%m-%Y') AS event_date,
+          CASE 
+            WHEN ued.event_banner != '' THEN CONCAT('${process.env.BASE_URL || req.protocol + '://' + req.get('host')}/uploads/events/', ued.event_banner)
+            ELSE ''
+          END AS event_banner,
+          countries.name AS country,
+          states.name AS state,
+          cities.name AS city
+        FROM user_event_details ued
+        JOIN event_organisers eo ON eo.event_id = ued.event_id
+        LEFT JOIN event_mode ON event_mode.id = ued.event_mode_id
+        LEFT JOIN event_type ON event_type.id = ued.event_type_id
+        LEFT JOIN countries ON countries.id = ued.country_id
+        LEFT JOIN states ON states.id = ued.state_id
+        LEFT JOIN cities ON cities.id = ued.city_id
+        WHERE eo.user_id = ?
+        ORDER BY ued.event_id
+      `, [decodedUserId]);
+
+      // Convert all integer values to strings for organised_list
+      const formattedOrganisedList = (eventsOrganisedList || []).map(event => ({
+        event_id: String(event.event_id || 0),
+        user_id: String(event.user_id || 0),
+        event_name: event.event_name || "",
+        industry_type: event.industry_type || "",
+        country_id: String(event.country_id || 0),
+        state_id: String(event.state_id || 0),
+        city_id: String(event.city_id || 0),
+        event_venue: event.event_venue || "",
+        event_link: event.event_link || "",
+        event_lat: event.event_lat || "",
+        event_lng: event.event_lng || "",
+        event_geo_address: event.event_geo_address || "",
+        event_date: event.event_date || "",
+        event_start_time: event.event_start_time || "",
+        event_end_time: event.event_end_time || "",
+        event_mode_id: String(event.event_mode_id || 0),
+        event_type_id: String(event.event_type_id || 0),
+        event_details: event.event_details || "",
+        event_banner: event.event_banner || "",
+        status: String(event.status || 0),
+        created_dts: event.created_dts || "",
+        created_by: event.created_by ? event.created_by.toString() : null,
+        updated_at: event.updated_at || null,
+        updated_by: event.updated_by ? event.updated_by.toString() : null,
+        deleted: String(event.deleted || 0),
+        deleted_by: event.deleted_by ? event.deleted_by.toString() : null,
+        deleted_at: event.deleted_at || null,
+        event_mode: event.event_mode || null,
+        event_type: event.event_type || null,
+        country: event.country || "",
+        state: event.state || "",
+        city: event.city || ""
+      }));
+
+      // Return response in PHP format (matching exactly)
+      return res.json({
+        status: true,
+        rcode: 200,
+        user_id: idEncode(decodedUserId),
+        unique_token: token,
+        organised_list: formattedOrganisedList
+      });
+      
+    } catch (error) {
+      console.error('getEventsOrganisedList error:', error);
+      return fail(res, 500, 'Failed to get events organised list');
+    }
+  }
+
+  static async saveEventAttendee(req, res) {
+    try {
+      const { user_id, token, event_id } = req.body;
+      
+      // Check if user_id and token are provided
+      if (!user_id || !token) {
+        return fail(res, 500, 'user_id and token are required');
+      }
+      
+      // Decode user ID
+      const decodedUserId = idDecode(user_id);
+      if (!decodedUserId) {
+        return fail(res, 500, 'Invalid user ID');
+      }
+      
+      // Get user details and validate
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      if (!userRows.length) {
+        return fail(res, 500, 'Not A Valid User');
+      }
+      
+      const user = userRows[0];
+      
+      // Validate token
+      if (user.unique_token !== token) {
+        return fail(res, 500, 'Token Mismatch Exception');
+      }
+
+      // Check mandatory fields
+      if (!event_id || event_id <= 0) {
+        return fail(res, 500, 'Please enter mandatory fields');
+      }
+
+      const add_user_id = decodedUserId;
+
+      // Save event attendee
+      const result = await query(
+        'INSERT INTO event_attendees (event_id, user_id) VALUES (?, ?)',
+        [event_id, add_user_id]
+      );
+      
+      const attendee_id = result.insertId;
+      
+      // Update attendee_reference_id
+      const attendee_reference_id = `ALPHA-${add_user_id}${event_id}${attendee_id.toString().padStart(3, '0')}`;
+      
+      await query(
+        'UPDATE event_attendees SET attendee_reference_id = ? WHERE attendee_id = ?',
+        [attendee_reference_id, attendee_id]
+      );
+      
+      // Return response in PHP format
+      return res.json({
+        status: true,
+        rcode: 200,
+        user_id: idEncode(decodedUserId),
+        unique_token: token,
+        message: 'Attendee saved successfully'
+      });
+      
+    } catch (error) {
+      console.error('saveEventAttendee error:', error);
+      return fail(res, 500, 'Failed to save event attendee');
+    }
+  }
+
+  static async deleteEventAttendee(req, res) {
+    try {
+      const { user_id, token, event_id, attendee_id } = req.body;
+      
+      // Check if user_id and token are provided
+      if (!user_id || !token) {
+        return fail(res, 500, 'user_id and token are required');
+      }
+      
+      // Decode user ID
+      const decodedUserId = idDecode(user_id);
+      if (!decodedUserId) {
+        return fail(res, 500, 'Invalid user ID');
+      }
+      
+      // Get user details and validate
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      if (!userRows.length) {
+        return fail(res, 500, 'Not A Valid User');
+      }
+      
+      const user = userRows[0];
+      
+      // Validate token
+      if (user.unique_token !== token) {
+        return fail(res, 500, 'Token Mismatch Exception');
+      }
+
+      // Check mandatory fields - match PHP validation exactly
+      if (event_id <= 0 || attendee_id <= 0) {
+        return fail(res, 500, 'Please enter mandatory fields');
+      }
+
+      // Delete event attendee - match PHP implementation exactly
+      await query(
+        'DELETE FROM event_attendees WHERE event_id = ? AND user_id = ?',
+        [event_id, attendee_id]
+      );
+
+      return res.json({
+        status: true,
+        rcode: 200,
+        user_id: idEncode(decodedUserId),
+        unique_token: token,
+        message: 'Attendee deleted successfully'
+      });
+      
+    } catch (error) {
+      console.error('deleteEventAttendee error:', error);
+      return fail(res, 500, 'Failed to delete event attendee');
+    }
+  }
+
 }
 
 module.exports = EventController;

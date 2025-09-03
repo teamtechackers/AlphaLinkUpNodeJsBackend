@@ -7,7 +7,7 @@ const router = express.Router();
 const AuthController = require('../controllers/AuthController');
 const UserController = require('../controllers/UserController');
 const JobController = require('../controllers/JobController');
-const EventController = require('../controllers/EventController');
+
 const ChatController = require('../controllers/ChatController');
 const AdminController = require('../controllers/AdminController');
 const SearchController = require('../controllers/SearchController');

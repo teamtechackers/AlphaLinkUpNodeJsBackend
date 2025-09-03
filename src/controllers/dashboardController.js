@@ -27,16 +27,16 @@ const DashboardController = {
         return errorResponse(res, 'Invalid token or user not found', 401);
       }
 
-      // Validation: If valid lat + lng provided, enable location-based search
-      // Country (location) is optional when coordinates are provided
-      // Check if coordinates are valid (not 0.0, 0.0)
-      const isValidCoordinates = lat && long && 
-        parseFloat(lat) !== 0 && parseFloat(long) !== 0 && 
-        parseFloat(lat) !== 0.0 && parseFloat(long) !== 0.0;
+      // Validation: Check if coordinates are provided
+      // If lat/lng are 0,0, show all events/jobs without location filtering
+      // If valid coordinates provided, enable location-based search
+      const hasCoordinates = lat && long;
+      const isZeroCoordinates = hasCoordinates && parseFloat(lat) === 0 && parseFloat(long) === 0;
+      const isValidCoordinates = hasCoordinates && !isZeroCoordinates;
       
-      if (isValidCoordinates) {
-        // Enable location-based search with valid coordinates
-      } else if (location && (!lat || !long)) {
+      if (hasCoordinates && !isValidCoordinates && !isZeroCoordinates) {
+        return errorResponse(res, 'Invalid coordinates provided', 400);
+      } else if (location && !hasCoordinates) {
         return errorResponse(res, 'If location is provided, lat and long are also required', 400);
       }
 
@@ -46,8 +46,8 @@ const DashboardController = {
 
       const arrAttendedEventids = [];
       
-      // Get events based on the valid coordinates that are attended by the user
-      if (isValidCoordinates) {
+      // Get events based on the coordinates that are attended by the user
+      if (hasCoordinates && !isZeroCoordinates) {
         const eventsAttendedRows = await query(
           `SELECT event_attendees.event_id FROM event_attendees 
            JOIN user_event_details ON event_attendees.event_id = user_event_details.event_id
@@ -70,14 +70,14 @@ const DashboardController = {
         });
       }
 
-      // Get events based on the valid coordinates not posted by the logged in user
+      // Get events based on the coordinates not posted by the logged in user
       let eventsList = [];
-      if (isValidCoordinates) {
+      if (hasCoordinates && !isZeroCoordinates) {
         let eventsQuery = `
           SELECT user_event_details.*, 
                  event_mode.name as event_mode, 
                  event_type.name as event_type,
-                 IF(user_event_details.event_banner != '', CONCAT('${req.protocol}://${req.get('host')}/uploads/events/', user_event_details.event_banner), '') AS event_banner,
+                 IF(user_event_details.event_banner != '', CONCAT('${process.env.BASE_URL || req.protocol + '://' + req.get('host')}/uploads/events/', user_event_details.event_banner), '') AS event_banner,
                  COUNT(DISTINCT event_attendees.event_id) AS total_attendees,
                  (6371 * ACOS(
                    COS(RADIANS(?)) 
@@ -157,7 +157,7 @@ const DashboardController = {
           SELECT user_event_details.*, 
                  event_mode.name as event_mode, 
                  event_type.name as event_type,
-                 IF(user_event_details.event_banner != '', CONCAT('${req.protocol}://${req.get('host')}/uploads/events/', user_event_details.event_banner), '') AS event_banner,
+                 IF(user_event_details.event_banner != '', CONCAT('${process.env.BASE_URL || req.protocol + '://' + req.get('host')}/uploads/events/', user_event_details.event_banner), '') AS event_banner,
                  COUNT(DISTINCT event_attendees.event_id) AS total_attendees
           FROM user_event_details 
           JOIN event_mode ON event_mode.id = user_event_details.event_mode_id
@@ -227,9 +227,9 @@ const DashboardController = {
         }));
       }
 
-      // Get jobs based on the valid coordinates not posted by the logged in user
+      // Get jobs based on the coordinates not posted by the logged in user
       let jobsList = [];
-      if (isValidCoordinates) {
+      if (hasCoordinates && !isZeroCoordinates) {
         let jobsQuery = `
           SELECT user_job_details.*, 
                  job_type.name as job_type_name, 
