@@ -30,90 +30,6 @@ const ApiController = {
   },
   async logout(req, res) { return ok(res, { message: 'Logged out' }); },
 
-  async sendOtp(req, res) {
-    try {
-      const { mobile } = req.body;
-      if (!mobile) return fail(res, 500, 'Mobile required');
-      const sid = await sendOtp(mobile);
-      return ok(res, { verification_sid: sid });
-    } catch (e) { return fail(res, 500, 'OTP send failed'); }
-  },
-
-  async verifyOtp(req, res) {
-    try {
-      const { mobile, verification_sid, otp } = req.body;
-      if (!mobile || !verification_sid || !otp) return fail(res, 500, 'Invalid request');
-      const status = await verifyOtp(mobile, verification_sid, otp);
-      return ok(res, { status });
-    } catch (e) { return fail(res, 500, 'OTP verify failed'); }
-  },
-
-async getFundSizeList(req, res) {
-    try {
-      const { user_id, token } = {
-         ...req.query,
-        ...req.body
-      };
-      
-      if (!user_id || !token) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'Token Mismatch Exception'
-        });
-      }
-      
-      const decodedUserId = idDecode(user_id);
-      if (!decodedUserId) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'Invalid user ID'
-        });
-      }
-      
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
-      if (!userRows.length) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'Not A Valid User'
-        });
-      }
-      
-      const user = userRows[0];
-      
-      if (user.unique_token !== token) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'Token Mismatch Exception'
-        });
-      }
-      
-    const rows = await query('SELECT id AS fund_size_id, investment_range FROM fund_size');
-      
-      return res.json({
-        status: true,
-        rcode: 200,
-        user_id: user_id,
-        unique_token: token,
-        fund_size_list: rows.map(row => ({
-          fund_size_id: row.fund_size_id.toString(),
-          investment_range: row.investment_range || ""
-        }))
-      });
-      
-    } catch (error) {
-      console.error('getFundSizeList error:', error);
-      return res.json({
-        status: false,
-        rcode: 500,
-        message: 'Failed to get fund size list'
-      });
-    }
-  },
-
   async getPromotionsList(req, res) {
     try {
       const { user_id, token } = req.query;
@@ -810,16 +726,16 @@ async getFundSizeList(req, res) {
                 COALESCE(interests, '') as interests,
                 COALESCE(linkedin_url, '') as linkedin_url,
                 COALESCE(summary, '') as summary,
-                IF(profile_photo != '', CONCAT(?, profile_photo), '') AS profile_photo,
-                IF(qr_image != '', CONCAT(?, qr_image), '') AS qr_image,
+              IF(profile_photo != '', CONCAT(?, profile_photo), '') AS profile_photo,
+              IF(qr_image != '', CONCAT(?, qr_image), '') AS qr_image,
                 profile_updated,
                 card_requested,
                 is_service_provider,
                 is_investor
-         FROM users
-         LEFT JOIN countries ON countries.id = users.country_id
-         LEFT JOIN states ON states.id = users.state_id
-         LEFT JOIN cities ON cities.id = users.city_id
+       FROM users
+       LEFT JOIN countries ON countries.id = users.country_id
+       LEFT JOIN states ON states.id = users.state_id
+       LEFT JOIN cities ON cities.id = users.city_id
          WHERE mobile LIKE ?`,
         [profilePhotoPath, qrCodePath, `%${mobile_no}%`]
       );
@@ -1322,11 +1238,11 @@ async getFundSizeList(req, res) {
           const timestamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\..+/, '');
           const fileName = `business-doc-${timestamp}.${file.originalname ? file.originalname.split('.').pop() : 'pdf'}`;
           
-          await query(
+      await query(
             `INSERT INTO user_business_card_files (ubc_id, business_documents_file, status, created_dts) 
              VALUES (?, ?, 1, NOW())`,
             [ubc_id, fileName]
-          );
+      );
         }
       }
 
@@ -2873,22 +2789,26 @@ async getFundSizeList(req, res) {
         ...req.query,
         ...req.body
       };
-      console.log('getInvestorMeets - Parameters:', { user_id, token, filter_type });
+      
       if (!user_id || !token) {
         return fail(res, 500, 'user_id and token are required');
       }
+      
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
         return fail(res, 500, 'Invalid user ID');
       }
+      
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return fail(res, 500, 'Not A Valid User');
       }
+      
       const user = userRows[0];
       if (user.unique_token !== token) {
         return fail(res, 500, 'Token Mismatch Exception');
       }
+      
       // Get investor meets with comprehensive details
       let queryString = `
         SELECT 
@@ -2903,20 +2823,25 @@ async getFundSizeList(req, res) {
           ui.language,
           ui.avg_rating,
           CASE 
-            WHEN ui.image != '' THEN CONCAT('${process.env.BASE_URL || req.protocol + '://' + req.get('host')}/uploads/investors/', ui.image)
+            WHEN ui.image != '' THEN CONCAT('${process.env.BASE_URL || req.protocol + '://' + req.get('host')}/uploads/investors/thumbs/', ui.image)
             ELSE ''
-          END AS investor_image,
+          END AS image,
           countries.name AS country,
           states.name AS state,
-          cities.name AS city
+          cities.name AS city,
+          COALESCE(mt.name, '') AS meeting_name,
+          COALESCE(mt.type, '') AS meeting_type,
+          COALESCE(mt.mins, '') AS mins
         FROM user_investors_unlocked uiul
         JOIN user_investor ui ON ui.investor_id = uiul.investor_id
+        LEFT JOIN meetings_type mt ON mt.id = uiul.meeting_id
         LEFT JOIN countries ON countries.id = ui.country_id
         LEFT JOIN states ON states.id = ui.state_id
         LEFT JOIN cities ON cities.id = ui.city_id
         WHERE uiul.user_id = ?
       `;
       const queryParams = [decodedUserId];
+      
       // Apply filter if provided
       if (filter_type && filter_type !== '') {
         if (filter_type === 'pending') {
@@ -2930,49 +2855,50 @@ async getFundSizeList(req, res) {
         }
       }
       queryString += ` ORDER BY uiul.created_dts DESC`;
+      
       const investorMeets = await query(queryString, queryParams);
       
       // Convert all numeric fields to strings to match Flutter model
-      const formattedInvestorMeets = (investorMeets || []).map(meet => ({
-        iu_id: String(meet.iu_id || 0),
-        user_id: String(meet.user_id || 0),
-        investor_id: String(meet.investor_id || 0),
-        meeting_id: String(meet.meeting_id || 0),
-        meeting_date: meet.meeting_date || "",
-        meeting_time: meet.meeting_time || "",
-        request_status: meet.request_status || "",
-        meeting_location: meet.meeting_location || "",
-        meeting_lat: meet.meeting_lat ? String(meet.meeting_lat) : "",
-        meeting_lng: meet.meeting_lng ? String(meet.meeting_lng) : "",
-        meeting_url: meet.meeting_url || "",
-        rating: meet.rating ? String(meet.rating) : "",
-        review: meet.review || "",
-        status: String(meet.status || 0),
-        created_dts: meet.created_dts || "",
-        review_dts: meet.review_dts || "",
-        investor_name: meet.investor_name || "",
-        investor_profile: meet.investor_profile || "",
-        investment_stage: meet.investment_stage || "",
-        availability: meet.availability || "",
-        meeting_city: meet.meeting_city || "",
-        countries_to_invest: meet.countries_to_invest || "",
-        investment_industry: meet.investment_industry || "",
-        language: meet.language || "",
-        avg_rating: meet.avg_rating ? String(meet.avg_rating) : "",
-        investor_image: meet.investor_image || "",
-        country: meet.country || "",
-        state: meet.state || "",
-        city: meet.city || ""
-      }));
+      const formattedInvestorMeets = (investorMeets || []).map(meet => {
+        // Format date to match PHP: DATE_FORMAT(meeting_date, '%d-%m-%Y')
+        let formattedDate = "";
+        if (meet.meeting_date) {
+          const date = new Date(meet.meeting_date);
+          const day = String(date.getDate()).padStart(2, '0');
+          const month = String(date.getMonth() + 1).padStart(2, '0');
+          const year = date.getFullYear();
+          formattedDate = `${day}-${month}-${year}`;
+        }
+        
+        return {
+          iu_id: String(meet.iu_id || 0),
+          user_id: String(meet.user_id || 0),
+          investor_id: String(meet.investor_id || 0),
+          investor_name: meet.investor_name || "",
+          meeting_date: formattedDate,
+          meeting_time: meet.meeting_time || "",
+          request_status: meet.request_status || "",
+          meeting_location: meet.meeting_location || "",
+          meeting_lat: meet.meeting_lat ? String(meet.meeting_lat) : "",
+          meeting_lng: meet.meeting_lng ? String(meet.meeting_lng) : "",
+          meeting_url: meet.meeting_url || "",
+          meeting_name: meet.meeting_name || "",
+          meeting_type: meet.meeting_type || "",
+          mins: meet.mins ? String(meet.mins) : "",
+          image: meet.image || "",
+          review_status: meet.review ? "1" : "0"
+        };
+      });
       
       // Return response in PHP format (matching exactly)
       return res.json({
         status: true,
         rcode: 200,
-        user_id: idEncode(decodedUserId),
+        user_id: user_id,
         unique_token: token,
         investor_lists: formattedInvestorMeets
       });
+      
     } catch (error) {
       console.error('getInvestorMeets error:', error);
       return fail(res, 500, 'Failed to get investor meets');
@@ -3549,523 +3475,6 @@ async getFundSizeList(req, res) {
     } catch (error) {
       console.error('deleteProjectDetail error:', error);
       return fail(res, 500, 'Failed to delete project detail');
-    }
-  },
-
-  async saveEducationDetails(req, res) {
-    try {
-      const { user_id, token, education_detail_id, institute_name, degree, start_date, end_date } = req.body;
-      
-      // Check if user_id and token are provided
-      if (!user_id || !token) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'Token Mismatch Exception'
-        });
-      }
-      
-      // Decode user ID
-      const decodedUserId = idDecode(user_id);
-      if (!decodedUserId) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'Invalid user ID'
-        });
-      }
-      
-      // Get user details and validate
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
-      if (!userRows.length) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'Not A Valid User'
-        });
-      }
-      
-      const user = userRows[0];
-      
-      // Validate token
-      if (user.unique_token !== token) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'Token Mismatch Exception'
-        });
-      }
-
-      // Check mandatory fields
-      if (!institute_name || !degree || !start_date || !end_date) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'Please enter mandatory fields'
-        });
-      }
-
-      let finalEducationDetailId = education_detail_id || 0;
-
-      // Format dates to Y-m-d format - handle both DD-MM-YYYY and YYYY-MM-DD formats
-      let formattedStartDate, formattedEndDate;
-      
-      // Check if date is in DD-MM-YYYY format (from Flutter)
-      if (start_date && start_date.includes('-') && start_date.split('-')[0].length === 2) {
-        // Convert DD-MM-YYYY to YYYY-MM-DD
-        const [day, month, year] = start_date.split('-');
-        formattedStartDate = `${year}-${month}-${day}`;
-      } else {
-        // Assume it's already in YYYY-MM-DD format or use Date constructor
-        formattedStartDate = new Date(start_date).toISOString().split('T')[0];
-      }
-      
-      if (end_date) {
-        // Check if date is in DD-MM-YYYY format (from Flutter)
-        if (end_date.includes('-') && end_date.split('-')[0].length === 2) {
-          // Convert DD-MM-YYYY to YYYY-MM-DD
-          const [day, month, year] = end_date.split('-');
-          formattedEndDate = `${year}-${month}-${day}`;
-        } else {
-          // Assume it's already in YYYY-MM-DD format or use Date constructor
-          formattedEndDate = new Date(end_date).toISOString().split('T')[0];
-        }
-      } else {
-        formattedEndDate = null;
-      }
-
-      if (finalEducationDetailId == 0) {
-        // Insert new education detail
-        const result = await query(
-          `INSERT INTO user_education_details (user_id, institute_name, degree, start_date, end_date) 
-           VALUES (?, ?, ?, ?, ?)`,
-          [decodedUserId, institute_name, degree, formattedStartDate, formattedEndDate]
-        );
-        finalEducationDetailId = result.insertId;
-      } else {
-        // Update existing education detail
-        await query(
-          `UPDATE user_education_details 
-           SET institute_name = ?, degree = ?, start_date = ?, end_date = ?
-           WHERE education_detail_id = ? AND user_id = ?`,
-          [institute_name, degree, formattedStartDate, formattedEndDate, finalEducationDetailId, decodedUserId]
-        );
-      }
-      
-      // Return response in PHP format
-      return res.json({
-        status: true,
-        rcode: 200,
-        user_id: user_id,
-        unique_token: token,
-        education_detail_id: finalEducationDetailId.toString(),
-        message: 'Education Details saved successfully'
-      });
-      
-    } catch (error) {
-      console.error('saveEducationDetails error:', error);
-      return res.json({
-        status: false,
-        rcode: 500,
-        message: 'Failed to save education details'
-      });
-    }
-  },
-
-  async getEducationDetails(req, res) {
-    try {
-      const { user_id, token } = req.query;
-      
-      // Check if user_id and token are provided
-      if (!user_id || !token) {
-        return fail(res, 500, 'user_id and token are required');
-      }
-      
-      // Decode user ID
-      const decodedUserId = idDecode(user_id);
-      if (!decodedUserId) {
-        return fail(res, 500, 'Invalid user ID');
-      }
-      
-      // Get user details and validate
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
-      if (!userRows.length) {
-        return fail(res, 500, 'Not A Valid User');
-      }
-      
-      const user = userRows[0];
-      
-      // Validate token
-      if (user.unique_token !== token) {
-        return fail(res, 500, 'Token Mismatch Exception');
-      }
-
-      // Get education details with formatted dates (dd-mm-yyyy)
-      const educationDetailsRows = await query(
-        `SELECT user_education_details.*, 
-                DATE_FORMAT(start_date, '%d-%m-%Y') AS start_date, 
-                DATE_FORMAT(end_date, '%d-%m-%Y') AS end_date
-         FROM user_education_details 
-         WHERE user_id = ? 
-         ORDER BY education_detail_id`,
-        [decodedUserId]
-      );
-
-      return res.json({
-        status: true,
-        rcode: 200,
-        user_id: idEncode(decodedUserId),
-        unique_token: token,
-        education_details: educationDetailsRows.length > 0 ? toArray(educationDetailsRows) : []
-      });
-      
-    } catch (error) {
-      console.error('getEducationDetails error:', error);
-      return fail(res, 500, 'Failed to get education details');
-    }
-  },
-
-  async deleteEducationDetail(req, res) {
-    try {
-      const { user_id, token, education_detail_id } = req.body;
-      
-      // Check if user_id and token are provided
-      if (!user_id || !token) {
-        return fail(res, 500, 'user_id and token are required');
-      }
-      
-      // Decode user ID
-      const decodedUserId = idDecode(user_id);
-      if (!decodedUserId) {
-        return fail(res, 500, 'Invalid user ID');
-      }
-      
-      // Get user details and validate
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
-      if (!userRows.length) {
-        return fail(res, 500, 'Not A Valid User');
-      }
-      
-      const user = userRows[0];
-      
-      // Validate token
-      if (user.unique_token !== token) {
-        return fail(res, 500, 'Token Mismatch Exception');
-      }
-
-      // Check mandatory fields
-      if (!education_detail_id || education_detail_id <= 0) {
-        return fail(res, 500, 'Please enter mandatory fields');
-      }
-
-      // Delete education detail
-      const result = await query(
-        'DELETE FROM user_education_details WHERE education_detail_id = ? AND user_id = ?',
-        [education_detail_id, decodedUserId]
-      );
-
-      if (result.affectedRows === 0) {
-        return fail(res, 500, 'Education detail not found or access denied');
-      }
-
-      return res.json({
-        status: true,
-        rcode: 200,
-        user_id: idEncode(decodedUserId),
-        unique_token: token,
-        message: 'Education Detail deleted successfully'
-      });
-      
-    } catch (error) {
-      console.error('deleteEducationDetail error:', error);
-      return fail(res, 500, 'Failed to delete education detail');
-    }
-  },
-
-  async getWorkDetails(req, res) {
-    try {
-      const { user_id, token } = {
-        ...req.query,
-        ...req.body
-      };
-      
-      // Check if user_id and token are provided
-      if (!user_id || !token) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'Token Mismatch Exception'
-        });
-      }
-      
-      // Decode user ID
-      const decodedUserId = idDecode(user_id);
-      if (!decodedUserId) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'Invalid user ID'
-        });
-      }
-      
-      // Get user details and validate
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
-      if (!userRows.length) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'Not A Valid User'
-        });
-      }
-      
-      const user = userRows[0];
-      
-      // Validate token
-      if (user.unique_token !== token) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'Token Mismatch Exception'
-        });
-      }
-
-      // Get work details with employment type and formatted dates
-      const workDetailsRows = await query(
-        `SELECT user_work_details.*,
-                DATE_FORMAT(start_date, '%d-%m-%Y') AS start_date,
-                DATE_FORMAT(end_date, '%d-%m-%Y') AS end_date,
-                employment_type.name as employment_type
-         FROM user_work_details
-         JOIN employment_type ON employment_type.id = user_work_details.employment_type_id
-         WHERE user_id = ? 
-         ORDER BY work_detail_id`,
-        [decodedUserId]
-      );
-      
-      // Convert all integer values to strings
-      const workDetails = workDetailsRows.map(row => ({
-        work_detail_id: (row.work_detail_id || 0).toString(),
-        user_id: (row.user_id || 0).toString(),
-        company_name: row.company_name || "",
-        position: row.position || "",
-        employment_type_id: (row.employment_type_id || 0).toString(),
-        employment_type: row.employment_type || "",
-        start_date: row.start_date || "",
-        end_date: row.end_date || "",
-        description: row.description || "",
-        status: (row.status || 0).toString(),
-        created_dts: row.created_dts || "",
-        created_by: row.created_by || "",
-        updated_at: row.updated_at || "",
-        updated_by: row.updated_by || "",
-        deleted: (row.deleted || 0).toString(),
-        deleted_by: row.deleted_by || "",
-        deleted_at: row.deleted_at || ""
-      }));
-      
-      // Return response in PHP format
-      return res.json({
-        status: true,
-        rcode: 200,
-        user_id: user_id,
-        unique_token: token,
-        work_details: workDetails
-      });
-      
-    } catch (error) {
-      console.error('getWorkDetails error:', error);
-      return res.json({
-        status: false,
-        rcode: 500,
-        message: 'Failed to get work details'
-      });
-    }
-  },
-
-  async deleteWorkDetail(req, res) {
-    try {
-      const { user_id, token, work_detail_id } = req.body;
-      
-      // Check if user_id, token, and work_detail_id are provided
-      if (!user_id || !token || !work_detail_id) {
-        return fail(res, 500, 'user_id, token, and work_detail_id are required');
-      }
-      
-      // Decode user ID
-      const decodedUserId = idDecode(user_id);
-      if (!decodedUserId) {
-        return fail(res, 500, 'Invalid user ID');
-      }
-      
-      // Get user details and validate
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
-      if (!userRows.length) {
-        return fail(res, 500, 'Not A Valid User');
-      }
-      
-      const user = userRows[0];
-      
-      // Validate token
-      if (user.unique_token !== token) {
-        return fail(res, 500, 'Token Mismatch Exception');
-      }
-
-      // Check if work_detail_id is valid
-      if (work_detail_id <= 0) {
-        return fail(res, 500, 'Please enter mandatory fields');
-      }
-
-      // Delete the work detail (ensure it belongs to the authenticated user)
-      const result = await query(
-        'DELETE FROM user_work_details WHERE work_detail_id = ? AND user_id = ?',
-        [work_detail_id, decodedUserId]
-      );
-      
-      // Check if any row was affected
-      if (result.affectedRows === 0) {
-        return fail(res, 500, 'Work detail not found or access denied');
-      }
-      
-      // Return response in PHP format
-      return res.json({
-        status: true,
-        rcode: 200,
-        user_id: idEncode(decodedUserId),
-        unique_token: token,
-        message: 'Work Detail deleted successfully'
-      });
-      
-    } catch (error) {
-      console.error('deleteWorkDetail error:', error);
-      return fail(res, 500, 'Failed to delete work detail');
-    }
-  },
-
-  async saveWorkDetails(req, res) {
-    try {
-      const { user_id, token, work_detail_id, company_name, designation, start_date, end_date, currently_working, employment_type_id } = req.body;
-      
-      // Check if user_id and token are provided
-      if (!user_id || !token) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'Token Mismatch Exception'
-        });
-      }
-      
-      // Decode user ID
-      const decodedUserId = idDecode(user_id);
-      if (!decodedUserId) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'Invalid user ID'
-        });
-      }
-      
-      // Get user details and validate
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
-      if (!userRows.length) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'Not A Valid User'
-        });
-      }
-      
-      const user = userRows[0];
-      
-      // Validate token
-      if (user.unique_token !== token) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'Token Mismatch Exception'
-        });
-      }
-
-      // Check mandatory fields
-      if (!company_name || !designation || !start_date || !employment_type_id) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'Please enter mandatory fields'
-        });
-      }
-
-      // Format dates to Y-m-d format - handle both DD-MM-YYYY and YYYY-MM-DD formats
-      let formattedStartDate, formattedEndDate;
-      
-      // Check if date is in DD-MM-YYYY format (from Flutter)
-      if (start_date && start_date.includes('-') && start_date.split('-')[0].length === 2) {
-        // Convert DD-MM-YYYY to YYYY-MM-DD
-        const [day, month, year] = start_date.split('-');
-        formattedStartDate = `${year}-${month}-${day}`;
-      } else {
-        // Assume it's already in YYYY-MM-DD format or use Date constructor
-        formattedStartDate = new Date(start_date).toISOString().split('T')[0];
-      }
-      
-      if (end_date) {
-        // Check if date is in DD-MM-YYYY format (from Flutter)
-        if (end_date.includes('-') && end_date.split('-')[0].length === 2) {
-          // Convert DD-MM-YYYY to YYYY-MM-DD
-          const [day, month, year] = end_date.split('-');
-          formattedEndDate = `${year}-${month}-${day}`;
-        } else {
-          // Assume it's already in YYYY-MM-DD format or use Date constructor
-          formattedEndDate = new Date(end_date).toISOString().split('T')[0];
-        }
-      } else {
-        formattedEndDate = null;
-      }
-
-      let finalWorkDetailId = work_detail_id || 0;
-
-      if (finalWorkDetailId == 0) {
-        // Insert new work detail
-        const result = await query(
-          `INSERT INTO user_work_details (user_id, company_name, designation, start_date, end_date, currently_working, employment_type_id) 
-           VALUES (?, ?, ?, ?, ?, ?, ?)`,
-          [decodedUserId, company_name, designation, formattedStartDate, formattedEndDate, currently_working || 0, employment_type_id]
-        );
-        finalWorkDetailId = result.insertId;
-      } else {
-        // Update existing work detail
-        const updateResult = await query(
-          `UPDATE user_work_details 
-           SET company_name = ?, designation = ?, start_date = ?, end_date = ?, currently_working = ?, employment_type_id = ?
-           WHERE work_detail_id = ? AND user_id = ?`,
-          [company_name, designation, formattedStartDate, formattedEndDate, currently_working || 0, employment_type_id, finalWorkDetailId, decodedUserId]
-        );
-        
-        if (updateResult.affectedRows === 0) {
-          return res.json({
-            status: false,
-            rcode: 500,
-            message: 'Work detail not found or access denied'
-          });
-        }
-      }
-      
-      // Return response in PHP format
-      return res.json({
-        status: true,
-        rcode: 200,
-        user_id: user_id,
-        unique_token: token,
-        work_detail_id: finalWorkDetailId.toString(),
-        message: 'Work Details saved successfully'
-      });
-      
-    } catch (error) {
-      console.error('saveWorkDetails error:', error);
-      return res.json({
-        status: false,
-        rcode: 500,
-        message: 'Failed to save work details'
-      });
     }
   },
 

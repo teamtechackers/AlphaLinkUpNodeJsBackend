@@ -244,151 +244,13 @@ class AdminController {
     }
   }
 
-  // Get platform overview statistics
-  static async getPlatformOverview(req, res) {
-    try {
-      const adminId = req.user.id;
-      const { startDate, endDate } = req.query;
 
-      const overview = await AnalyticsService.getPlatformOverview({
-        startDate: startDate ? new Date(startDate) : null,
-        endDate: endDate ? new Date(endDate) : null
-      });
-      
-      return successResponse(res, 'Platform overview retrieved successfully', { overview });
-    } catch (error) {
-      logger.error('Get platform overview error:', error);
-      
-      if (error.message.includes('not authorized')) {
-        return errorResponse(res, 'You are not authorized to access platform overview', 403);
-      }
-      
-      return errorResponse(res, 'Failed to retrieve platform overview', 500);
-    }
-  }
 
-  // Get user management data
-  static async getUserManagementData(req, res) {
-    try {
-      const adminId = req.user.id;
-      const { page = 1, limit = 20, status, role, search, sort_by = 'created_at', sort_order = 'desc' } = req.query;
 
-      const users = await AdminService.getUserManagementData(adminId, {
-        page: parseInt(page),
-        limit: parseInt(limit),
-        status,
-        role,
-        search,
-        sortBy: sort_by,
-        sortOrder: sort_order
-      });
-      
-      return successResponse(res, 'User management data retrieved successfully', { users });
-    } catch (error) {
-      logger.error('Get user management data error:', error);
-      
-      if (error.message.includes('not authorized')) {
-        return errorResponse(res, 'You are not authorized to access user management data', 403);
-      }
-      
-      return errorResponse(res, 'Failed to retrieve user management data', 500);
-    }
-  }
 
-  // Update user status
-  static async updateUserStatus(req, res) {
-    try {
-      const adminId = req.user.id;
-      const { userId } = req.params;
-      const { status, reason } = req.body;
 
-      if (!status) {
-        return errorResponse(res, 'Status is required', 400);
-      }
 
-      const updatedUser = await AdminService.updateUserStatus(adminId, userId, { status, reason });
-      
-      // Send notification to user about status change
-      try {
-        await NotificationService.createNotification({
-          user_id: userId,
-          type: 'account_status_changed',
-          title: 'Account Status Updated',
-          message: `Your account status has been changed to ${status}.`,
-          data: { status, reason, updatedBy: adminId }
-        });
-      } catch (notificationError) {
-        logger.warn('Failed to send status change notification:', notificationError);
-      }
-      
-      logger.info(`User ${userId} status updated to ${status} by admin ${adminId}`);
-      return successResponse(res, 'User status updated successfully', { user: updatedUser });
-    } catch (error) {
-      logger.error('Update user status error:', error);
-      
-      if (error.message.includes('User not found')) {
-        return errorResponse(res, 'User not found', 404);
-      }
-      
-      if (error.message.includes('not authorized')) {
-        return errorResponse(res, 'You are not authorized to update user status', 403);
-      }
-      
-      if (error.message.includes('Invalid status')) {
-        return errorResponse(res, 'Invalid user status', 400);
-      }
-      
-      return errorResponse(res, 'Failed to update user status', 500);
-    }
-  }
 
-  // Bulk update user status
-  static async bulkUpdateUserStatus(req, res) {
-    try {
-      const adminId = req.user.id;
-      const { userIds, status, reason } = req.body;
-
-      if (!userIds || !Array.isArray(userIds) || userIds.length === 0) {
-        return errorResponse(res, 'User IDs array is required', 400);
-      }
-
-      if (!status) {
-        return errorResponse(res, 'Status is required', 400);
-      }
-
-      const result = await AdminService.bulkUpdateUserStatus(adminId, userIds, { status, reason });
-      
-      // Send notifications to users about status changes
-      try {
-        for (const userId of userIds) {
-          await NotificationService.createNotification({
-            user_id: userId,
-            type: 'account_status_changed',
-            title: 'Account Status Updated',
-            message: `Your account status has been changed to ${status}.`,
-            data: { status, reason, updatedBy: adminId }
-          });
-        }
-      } catch (notificationError) {
-        logger.warn('Failed to send bulk status change notifications:', notificationError);
-      }
-      
-      logger.info(`Bulk user status update: ${userIds.length} users updated to ${status} by admin ${adminId}`);
-      return successResponse(res, 'User statuses updated successfully', { result });
-    } catch (error) {
-      logger.error('Bulk update user status error:', error);
-      
-      if (error.message.includes('not authorized')) {
-        return errorResponse(res, 'You are not authorized to perform bulk user updates', 403);
-      }
-      
-      if (error.message.includes('Invalid status')) {
-        return errorResponse(res, 'Invalid user status', 400);
-      }
-      
-      return errorResponse(res, 'Failed to update user statuses', 500);
-    }
-  }
 
   // Get content moderation data
   static async getContentModerationData(req, res) {
@@ -4097,16 +3959,6 @@ class AdminController {
 
   // View folders - PHP compatible version
 
-
-
-
-
-
-
-
-
-
-  // View users - PHP compatible version
   static async viewUsers(req, res) {
     try {
       // Support both query parameters and form data

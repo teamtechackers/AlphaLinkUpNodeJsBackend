@@ -18,6 +18,7 @@ const JobTypeController = require('../controllers/jobTypeController');
 const PayController = require('../controllers/payController');
 const EventModeController = require('../controllers/eventModeController');
 const EventTypeController = require('../controllers/eventTypeController');
+const FundController = require('../controllers/FundController');
 const EventController = require('../controllers/EventController');
 const UserProfileController = require('../controllers/userProfileController');
 const JobController = require('../controllers/JobController');
@@ -96,8 +97,8 @@ router.get('/Api-Event-Mode-List', EventModeController.getEventModeList);
 router.post('/Api-Event-Mode-List', uploadFormData.none(), EventModeController.getEventModeList);
 router.get('/Api-Event-Type-List', EventTypeController.getEventTypeList);
 router.post('/Api-Event-Type-List', uploadFormData.none(), EventTypeController.getEventTypeList);
-router.get('/Api-Fund-Size-List', ApiController.getFundSizeList);
-router.post('/Api-Fund-Size-List', uploadFormData.none(), ApiController.getFundSizeList);
+router.get('/Api-Fund-Size-List', FundController.getFundSizeList);
+router.post('/Api-Fund-Size-List', uploadFormData.none(), FundController.getFundSizeList);
 
 // Profile Routes
 router.post('/Api-Update-Profile', uploadProfilePhoto.single('profile_photo'), UserProfileController.updateProfile);
@@ -115,9 +116,9 @@ router.post('/Api-Save-Project-Details', uploadProjectLogo.single('project_logo'
 router.get('/Api-View-Project-Details', UserProfileController.getProjectDetails);
 router.post('/Api-View-Project-Details', uploadFormData.none(), UserProfileController.getProjectDetails);
 router.post('/Api-Delete-Project-Detail', uploadFormData.none(), UserProfileController.deleteProjectDetail);
-router.post('/Api-Save-Education-Details', uploadFormData.none(), ApiController.saveEducationDetails);
-router.get('/Api-View-Education-Details', ApiController.getEducationDetails);
-router.post('/Api-Delete-Education-Detail', uploadFormData.none(), ApiController.deleteEducationDetail);
+router.post('/Api-Save-Education-Details', uploadFormData.none(), UserProfileController.saveEducationDetails);
+router.get('/Api-View-Education-Details', UserProfileController.getEducationDetails);
+router.post('/Api-Delete-Education-Detail', uploadFormData.none(), UserProfileController.deleteEducationDetail);
 router.post('/Api-Save-Event-Organiser', uploadFormData.none(), EventController.saveEventOrganiser);
 router.post('/Api-Delete-Event-Organiser', uploadFormData.none(), EventController.deleteEventOrganiser);
 router.post('/Api-Save-Event-Attendee', uploadFormData.none(), EventController.saveEventAttendee);
@@ -135,6 +136,7 @@ router.post('/Api-Save-Job-Information', uploadFormData.none(), JobController.sa
 router.get('/Api-View-Job-Information', JobController.getJobInformation);
 router.post('/Api-View-Job-Information', uploadFormData.none(), JobController.getJobInformation);
 router.post('/Api-Apply-Job', uploadResume.single('resume_file'), JobController.saveJobApplication);
+router.post('/Api-Delete-Resume', uploadFormData.none(), ApiController.deleteResume);
 router.get('/Api-View-Job-Details', JobController.getJobDetail);
 router.post('/Api-View-Job-Details', uploadFormData.none(), JobController.getJobDetail);
 // Removed unused job-related routes
@@ -315,16 +317,16 @@ router.get('/check-duplicate-industry-type', AdminController.checkDuplicateIndus
 router.post('/check-duplicate-industry-type', uploadFormData.none(), AdminController.checkDuplicateIndustryType);
 router.get('/delete-industry-type', AdminController.deleteIndustryType);
 router.post('/delete-industry-type', uploadFormData.none(), AdminController.deleteIndustryType);
-router.get('/list-fund-size', AdminController.viewFundSize);
-router.post('/list-fund-size', uploadFormData.none(), AdminController.viewFundSize);
-router.get('/submit-fund-size', AdminController.submitFundSize);
-router.post('/submit-fund-size', uploadFormData.none(), AdminController.submitFundSize);
-router.get('/list-fund-size-ajax', AdminController.listFundSizeAjax);
-router.post('/list-fund-size-ajax', uploadFormData.none(), AdminController.listFundSizeAjax);
+router.get('/list-fund-size', FundController.viewFundSize);
+router.post('/list-fund-size', uploadFormData.none(), FundController.viewFundSize);
+router.get('/submit-fund-size', FundController.submitFundSize);
+router.post('/submit-fund-size', uploadFormData.none(), FundController.submitFundSize);
+router.get('/list-fund-size-ajax', FundController.listFundSizeAjax);
+router.post('/list-fund-size-ajax', uploadFormData.none(), FundController.listFundSizeAjax);
 router.get('/check-duplicate-fund-size', AdminController.checkDuplicateFundSize);
 router.post('/check-duplicate-fund-size', uploadFormData.none(), AdminController.checkDuplicateFundSize);
-router.get('/delete-fund-size', AdminController.deleteFundSize);
-router.post('/delete-fund-size', uploadFormData.none(), AdminController.deleteFundSize);
+router.get('/delete-fund-size', FundController.deleteFundSize);
+router.post('/delete-fund-size', uploadFormData.none(), FundController.deleteFundSize);
 router.get('/list-folders', FolderController.viewFolders);
 router.post('/list-folders', uploadFormData.none(), FolderController.viewFolders);
 router.get('/submit-folders', FolderController.submitFolders);

@@ -1196,6 +1196,234 @@ class UserProfileController {
     }
   }
 
+  static async saveEducationDetails(req, res) {
+    try {
+      const { user_id, token, education_detail_id, institute_name, degree, start_date, end_date } = req.body;
+      
+      // Check if user_id and token are provided
+      if (!user_id || !token) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Token Mismatch Exception'
+        });
+      }
+      
+      // Decode user ID
+      const decodedUserId = idDecode(user_id);
+      if (!decodedUserId) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Invalid user ID'
+        });
+      }
+      
+      // Get user details and validate
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      if (!userRows.length) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Not A Valid User'
+        });
+      }
+      
+      const user = userRows[0];
+      
+      // Validate token
+      if (user.unique_token !== token) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Token Mismatch Exception'
+        });
+      }
+
+      // Check mandatory fields
+      if (!institute_name || !degree || !start_date || !end_date) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Please enter mandatory fields'
+        });
+      }
+
+      let finalEducationDetailId = education_detail_id || 0;
+
+      // Format dates to Y-m-d format - handle both DD-MM-YYYY and YYYY-MM-DD formats
+      let formattedStartDate, formattedEndDate;
+      
+      // Check if date is in DD-MM-YYYY format (from Flutter)
+      if (start_date && start_date.includes('-') && start_date.split('-')[0].length === 2) {
+        // Convert DD-MM-YYYY to YYYY-MM-DD
+        const [day, month, year] = start_date.split('-');
+        formattedStartDate = `${year}-${month}-${day}`;
+      } else {
+        // Assume it's already in YYYY-MM-DD format or use Date constructor
+        formattedStartDate = new Date(start_date).toISOString().split('T')[0];
+      }
+      
+      if (end_date) {
+        // Check if date is in DD-MM-YYYY format (from Flutter)
+        if (end_date.includes('-') && end_date.split('-')[0].length === 2) {
+          // Convert DD-MM-YYYY to YYYY-MM-DD
+          const [day, month, year] = end_date.split('-');
+          formattedEndDate = `${year}-${month}-${day}`;
+        } else {
+          // Assume it's already in YYYY-MM-DD format or use Date constructor
+          formattedEndDate = new Date(end_date).toISOString().split('T')[0];
+        }
+      } else {
+        formattedEndDate = null;
+      }
+
+      if (finalEducationDetailId == 0) {
+        // Insert new education detail
+        const result = await query(
+          `INSERT INTO user_education_details (user_id, institute_name, degree, start_date, end_date) 
+           VALUES (?, ?, ?, ?, ?)`,
+          [decodedUserId, institute_name, degree, formattedStartDate, formattedEndDate]
+        );
+        finalEducationDetailId = result.insertId;
+      } else {
+        // Update existing education detail
+        await query(
+          `UPDATE user_education_details 
+           SET institute_name = ?, degree = ?, start_date = ?, end_date = ?
+           WHERE education_detail_id = ? AND user_id = ?`,
+          [institute_name, degree, formattedStartDate, formattedEndDate, finalEducationDetailId, decodedUserId]
+        );
+      }
+      
+      // Return response in PHP format
+      return res.json({
+        status: true,
+        rcode: 200,
+        user_id: user_id,
+        unique_token: token,
+        education_detail_id: finalEducationDetailId.toString(),
+        message: 'Education Details saved successfully'
+      });
+      
+    } catch (error) {
+      console.error('saveEducationDetails error:', error);
+      return res.json({
+        status: false,
+        rcode: 500,
+        message: 'Failed to save education details'
+      });
+    }
+  }
+  static async getEducationDetails(req, res) {
+    try {
+      const { user_id, token } = req.query;
+      
+      // Check if user_id and token are provided
+      if (!user_id || !token) {
+        return fail(res, 500, 'user_id and token are required');
+      }
+      
+      // Decode user ID
+      const decodedUserId = idDecode(user_id);
+      if (!decodedUserId) {
+        return fail(res, 500, 'Invalid user ID');
+      }
+      
+      // Get user details and validate
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      if (!userRows.length) {
+        return fail(res, 500, 'Not A Valid User');
+      }
+      
+      const user = userRows[0];
+      
+      // Validate token
+      if (user.unique_token !== token) {
+        return fail(res, 500, 'Token Mismatch Exception');
+      }
+
+      // Get education details with formatted dates (dd-mm-yyyy)
+      const educationDetailsRows = await query(
+        `SELECT user_education_details.*, 
+                DATE_FORMAT(start_date, '%d-%m-%Y') AS start_date, 
+                DATE_FORMAT(end_date, '%d-%m-%Y') AS end_date
+         FROM user_education_details 
+         WHERE user_id = ? 
+         ORDER BY education_detail_id`,
+        [decodedUserId]
+      );
+
+      return res.json({
+        status: true,
+        rcode: 200,
+        user_id: idEncode(decodedUserId),
+        unique_token: token,
+        education_details: educationDetailsRows.length > 0 ? toArray(educationDetailsRows) : []
+      });
+      
+    } catch (error) {
+      console.error('getEducationDetails error:', error);
+      return fail(res, 500, 'Failed to get education details');
+    }
+  }
+
+  static async deleteEducationDetail(req, res) {
+    try {
+      const { user_id, token, education_detail_id } = req.body;
+      
+      // Check if user_id and token are provided
+      if (!user_id || !token) {
+        return fail(res, 500, 'user_id and token are required');
+      }
+      
+      // Decode user ID
+      const decodedUserId = idDecode(user_id);
+      if (!decodedUserId) {
+        return fail(res, 500, 'Invalid user ID');
+      }
+      
+      // Get user details and validate
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      if (!userRows.length) {
+        return fail(res, 500, 'Not A Valid User');
+      }
+      
+      const user = userRows[0];
+      
+      // Validate token
+      if (user.unique_token !== token) {
+        return fail(res, 500, 'Token Mismatch Exception');
+      }
+
+      // Check mandatory fields
+      if (!education_detail_id || education_detail_id <= 0) {
+        return fail(res, 500, 'Please enter mandatory fields');
+      }
+
+      // Delete education detail
+      const result = await query(
+        'DELETE FROM user_education_details WHERE education_detail_id = ? AND user_id = ?',
+        [education_detail_id, decodedUserId]
+      );
+
+      if (result.affectedRows === 0) {
+        return fail(res, 500, 'Education detail not found or access denied');
+      }
+
+      return res.json({
+        status: true,
+        rcode: 200,
+        user_id: idEncode(decodedUserId),
+        unique_token: token,
+        message: 'Education Detail deleted successfully'
+      });
+      
+    } catch (error) {
+      console.error('deleteEducationDetail error:', error);
+      return fail(res, 500, 'Failed to delete education detail');
+    }
+  }
   // API function - Get project details
   static async getProjectDetails(req, res) {
     try {
@@ -1338,6 +1566,296 @@ class UserProfileController {
         status: false,
         rcode: 500,
         message: 'Failed to delete project detail'
+      });
+    }
+  }
+
+  // API function - Get work details
+  static async getWorkDetails(req, res) {
+    try {
+      const { user_id, token } = {
+        ...req.query,
+        ...req.body
+      };
+      
+      // Check if user_id and token are provided
+      if (!user_id || !token) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Token Mismatch Exception'
+        });
+      }
+      
+      // Decode user ID
+      const decodedUserId = idDecode(user_id);
+      if (!decodedUserId) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Invalid user ID'
+        });
+      }
+      
+      // Get user details and validate
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      if (!userRows.length) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Not A Valid User'
+        });
+      }
+      
+      const user = userRows[0];
+      
+      // Validate token
+      if (user.unique_token !== token) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Token Mismatch Exception'
+        });
+      }
+
+      // Get work details with employment type and formatted dates
+      const workDetailsRows = await query(
+        `SELECT user_work_details.*,
+                DATE_FORMAT(start_date, '%d-%m-%Y') AS start_date,
+                DATE_FORMAT(end_date, '%d-%m-%Y') AS end_date,
+                employment_type.name as employment_type
+         FROM user_work_details
+         JOIN employment_type ON employment_type.id = user_work_details.employment_type_id
+         WHERE user_id = ? 
+         ORDER BY work_detail_id`,
+        [decodedUserId]
+      );
+      
+      // Convert all integer values to strings
+      const workDetails = workDetailsRows.map(row => ({
+        work_detail_id: (row.work_detail_id || 0).toString(),
+        user_id: (row.user_id || 0).toString(),
+        company_name: row.company_name || "",
+        position: row.position || "",
+        employment_type_id: (row.employment_type_id || 0).toString(),
+        employment_type: row.employment_type || "",
+        start_date: row.start_date || "",
+        end_date: row.end_date || "",
+        description: row.description || "",
+        status: (row.status || 0).toString(),
+        created_dts: row.created_dts || "",
+        created_by: row.created_by || "",
+        updated_at: row.updated_at || "",
+        updated_by: row.updated_by || "",
+        deleted: (row.deleted || 0).toString(),
+        deleted_by: row.deleted_by || "",
+        deleted_at: row.deleted_at || ""
+      }));
+      
+      // Return response in PHP format
+      return res.json({
+        status: true,
+        rcode: 200,
+        user_id: user_id,
+        unique_token: token,
+        work_details: workDetails
+      });
+      
+    } catch (error) {
+      console.error('getWorkDetails error:', error);
+      return res.json({
+        status: false,
+        rcode: 500,
+        message: 'Failed to get work details'
+      });
+    }
+  }
+
+  // API function - Delete work detail
+  static async deleteWorkDetail(req, res) {
+    try {
+      const { user_id, token, work_detail_id } = req.body;
+      
+      // Check if user_id, token, and work_detail_id are provided
+      if (!user_id || !token || !work_detail_id) {
+        return fail(res, 500, 'user_id, token, and work_detail_id are required');
+      }
+      
+      // Decode user ID
+      const decodedUserId = idDecode(user_id);
+      if (!decodedUserId) {
+        return fail(res, 500, 'Invalid user ID');
+      }
+      
+      // Get user details and validate
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      if (!userRows.length) {
+        return fail(res, 500, 'Not A Valid User');
+      }
+      
+      const user = userRows[0];
+      
+      // Validate token
+      if (user.unique_token !== token) {
+        return fail(res, 500, 'Token Mismatch Exception');
+      }
+
+      // Check if work_detail_id is valid
+      if (work_detail_id <= 0) {
+        return fail(res, 500, 'Please enter mandatory fields');
+      }
+
+      // Delete the work detail (ensure it belongs to the authenticated user)
+      const result = await query(
+        'DELETE FROM user_work_details WHERE work_detail_id = ? AND user_id = ?',
+        [work_detail_id, decodedUserId]
+      );
+      
+      // Check if any row was affected
+      if (result.affectedRows === 0) {
+        return fail(res, 500, 'Work detail not found or access denied');
+      }
+      
+      // Return response in PHP format
+      return res.json({
+        status: true,
+        rcode: 200,
+        user_id: idEncode(decodedUserId),
+        unique_token: token,
+        message: 'Work Detail deleted successfully'
+      });
+      
+    } catch (error) {
+      console.error('deleteWorkDetail error:', error);
+      return fail(res, 500, 'Failed to delete work detail');
+    }
+  }
+
+  // API function - Save work details
+  static async saveWorkDetails(req, res) {
+    try {
+      const { user_id, token, work_detail_id, company_name, designation, start_date, end_date, currently_working, employment_type_id } = req.body;
+      
+      // Check if user_id and token are provided
+      if (!user_id || !token) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Token Mismatch Exception'
+        });
+      }
+      
+      // Decode user ID
+      const decodedUserId = idDecode(user_id);
+      if (!decodedUserId) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Invalid user ID'
+        });
+      }
+      
+      // Get user details and validate
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      if (!userRows.length) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Not A Valid User'
+        });
+      }
+      
+      const user = userRows[0];
+      
+      // Validate token
+      if (user.unique_token !== token) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Token Mismatch Exception'
+        });
+      }
+
+      // Check mandatory fields
+      if (!company_name || !designation || !start_date || !employment_type_id) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Please enter mandatory fields'
+        });
+      }
+
+      // Format dates to Y-m-d format - handle both DD-MM-YYYY and YYYY-MM-DD formats
+      let formattedStartDate, formattedEndDate;
+      
+      // Check if date is in DD-MM-YYYY format (from Flutter)
+      if (start_date && start_date.includes('-') && start_date.split('-')[0].length === 2) {
+        // Convert DD-MM-YYYY to YYYY-MM-DD
+        const [day, month, year] = start_date.split('-');
+        formattedStartDate = `${year}-${month}-${day}`;
+      } else {
+        // Assume it's already in YYYY-MM-DD format or use Date constructor
+        formattedStartDate = new Date(start_date).toISOString().split('T')[0];
+      }
+      
+      if (end_date) {
+        // Check if date is in DD-MM-YYYY format (from Flutter)
+        if (end_date.includes('-') && end_date.split('-')[0].length === 2) {
+          // Convert DD-MM-YYYY to YYYY-MM-DD
+          const [day, month, year] = end_date.split('-');
+          formattedEndDate = `${year}-${month}-${day}`;
+        } else {
+          // Assume it's already in YYYY-MM-DD format or use Date constructor
+          formattedEndDate = new Date(end_date).toISOString().split('T')[0];
+        }
+      } else {
+        formattedEndDate = null;
+      }
+
+      let finalWorkDetailId = work_detail_id || 0;
+
+      if (finalWorkDetailId == 0) {
+        // Insert new work detail
+        const result = await query(
+          `INSERT INTO user_work_details (user_id, company_name, designation, start_date, end_date, currently_working, employment_type_id) 
+           VALUES (?, ?, ?, ?, ?, ?, ?)`,
+          [decodedUserId, company_name, designation, formattedStartDate, formattedEndDate, currently_working || 0, employment_type_id]
+        );
+        finalWorkDetailId = result.insertId;
+      } else {
+        // Update existing work detail
+        const updateResult = await query(
+          `UPDATE user_work_details 
+           SET company_name = ?, designation = ?, start_date = ?, end_date = ?, currently_working = ?, employment_type_id = ?
+           WHERE work_detail_id = ? AND user_id = ?`,
+          [company_name, designation, formattedStartDate, formattedEndDate, currently_working || 0, employment_type_id, finalWorkDetailId, decodedUserId]
+        );
+        
+        if (updateResult.affectedRows === 0) {
+          return res.json({
+            status: false,
+            rcode: 500,
+            message: 'Work detail not found or access denied'
+          });
+        }
+      }
+      
+      // Return response in PHP format
+      return res.json({
+        status: true,
+        rcode: 200,
+        user_id: user_id,
+        unique_token: token,
+        work_detail_id: finalWorkDetailId.toString(),
+        message: 'Work Details saved successfully'
+      });
+      
+    } catch (error) {
+      console.error('saveWorkDetails error:', error);
+      return res.json({
+        status: false,
+        rcode: 500,
+        message: 'Failed to save work details'
       });
     }
   }
