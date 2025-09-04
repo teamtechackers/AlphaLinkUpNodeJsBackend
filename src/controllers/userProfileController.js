@@ -61,7 +61,7 @@ class UserProfileController {
       `SELECT user_id, COALESCE(full_name,'') AS full_name, COALESCE(email,'') AS email, mobile,
               COALESCE(address,'') AS address, users.city_id, COALESCE(cities.name,'') AS city,
               users.state_id, COALESCE(states.name,'') AS state, users.country_id, COALESCE(countries.name,'') AS country,
-              COALESCE(interests.name,'') AS interests, COALESCE(linkedin_url,'') AS linkedin_url, COALESCE(summary,'') AS summary,
+              users.interests, COALESCE(linkedin_url,'') AS linkedin_url, COALESCE(summary,'') AS summary,
               IF(profile_photo != '', CONCAT(?, profile_photo), '') AS profile_photo,
               IF(qr_image != '', CONCAT(?, qr_image), '') AS qr_image,
               profile_updated, card_requested, is_service_provider, is_investor
@@ -69,9 +69,22 @@ class UserProfileController {
        LEFT JOIN countries ON countries.id = users.country_id
        LEFT JOIN states ON states.id = users.state_id
        LEFT JOIN cities ON cities.id = users.city_id
-       LEFT JOIN interests ON interests.id = users.interests
          WHERE user_id = ?`, [profilePath, qrPath, decodedUserId]
       );
+      
+      // Get interest names from IDs
+      let interestNames = '';
+      if (rows.length > 0 && rows[0].interests) {
+        const interestIds = rows[0].interests.split(',').filter(id => id.trim() !== '');
+        if (interestIds.length > 0) {
+          const placeholders = interestIds.map(() => '?').join(',');
+          const interestRows = await query(
+            `SELECT name FROM interests WHERE id IN (${placeholders}) AND status = 1`,
+            interestIds
+          );
+          interestNames = interestRows.map(row => row.name).join(', ');
+        }
+      }
       
       // Get education details
       const educationRows = await query(
@@ -116,7 +129,7 @@ class UserProfileController {
         state: user.state || "",
         country_id: user.country_id ? user.country_id.toString() : "",
         country: user.country || "",
-        interests: user.interests || "",
+        interests: interestNames || "",
         linkedin_url: user.linkedin_url || "",
         summary: user.summary || "",
         profile_photo: user.profile_photo || "",
@@ -201,6 +214,8 @@ class UserProfileController {
     try {
       const { user_id, token, full_name, email, mobile, address, country_id, state_id, city_id, interests, linkedin_url, summary } = req.body;
       
+      console.log('updateProfile - Parameters:', { user_id, token, full_name, email, mobile, address, country_id, state_id, city_id, interests, linkedin_url, summary });
+      
       // Check if user_id and token are provided
       if (!user_id || !token) {
         return fail(res, 500, 'user_id and token are required');
@@ -231,10 +246,24 @@ class UserProfileController {
         profilePhoto = req.file.filename;
       }
       
+      // Process interests - handle both string and array formats
+      let processedInterests = '';
+      if (interests) {
+        if (Array.isArray(interests)) {
+          // If interests is an array, join with commas
+          processedInterests = interests.join(',');
+        } else if (typeof interests === 'string') {
+          // If interests is a string, use as is
+          processedInterests = interests;
+        }
+      }
+      
+      console.log('updateProfile - Processed interests:', processedInterests);
+      
       // Update profile with image
     await query(
         `UPDATE users SET full_name=?, email=?, mobile=?, address=?, country_id=?, state_id=?, city_id=?, interests=?, linkedin_url=?, summary=?, profile_photo=?, profile_updated=1 WHERE user_id=?`,
-        [full_name || '', email || '', mobile || '', address || '', country_id || null, state_id || null, city_id || null, interests || '', linkedin_url || '', summary || '', profilePhoto, decodedUserId]
+        [full_name || '', email || '', mobile || '', address || '', country_id || null, state_id || null, city_id || null, processedInterests, linkedin_url || '', summary || '', profilePhoto, decodedUserId]
       );
       
       // Return response in PHP format
