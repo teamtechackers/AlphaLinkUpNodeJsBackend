@@ -45,7 +45,7 @@ app.use(helmet({
 
 // CORS configuration
 app.use(cors({
-  origin: process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : ['http://localhost:3000', 'http://localhost:3001'],
+  origin: true, // Allow all origins for now
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin']
@@ -66,7 +66,7 @@ app.use(express.urlencoded({
   limit: process.env.MAX_PAYLOAD_SIZE || '10mb' 
 }));
 
-// Multipart form data middleware - removed global multer().none() to allow specific file uploads
+// Multipart form data middleware - handled per route as needed
 
 // Logging middleware
 if (process.env.NODE_ENV === 'production') {

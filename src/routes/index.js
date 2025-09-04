@@ -75,7 +75,8 @@ router.get('/version', (req, res) => {
 router.post('/Api-Send-Otp', uploadFormData.any(), AuthController.sendOtp);
 router.post('/Api-Verify-Otp', uploadFormData.any(), AuthController.verifyOtp);
 router.post('/Api-Login', ApiController.login);
-router.post('/Api-Logout', checkUser, ApiController.logout);
+router.post('/Api-Logout', uploadFormData.none(), ApiController.logout);
+router.get('/Api-Logout', ApiController.logout);
 
 // Master Data Routes
 router.get('/Api-Country-List', CountryController.getCountryList);
@@ -327,6 +328,7 @@ router.get('/check-duplicate-fund-size', AdminController.checkDuplicateFundSize)
 router.post('/check-duplicate-fund-size', uploadFormData.none(), AdminController.checkDuplicateFundSize);
 router.get('/delete-fund-size', FundController.deleteFundSize);
 router.post('/delete-fund-size', uploadFormData.none(), FundController.deleteFundSize);
+
 router.get('/list-folders', FolderController.viewFolders);
 router.post('/list-folders', uploadFormData.none(), FolderController.viewFolders);
 router.get('/submit-folders', FolderController.submitFolders);

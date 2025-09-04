@@ -1,10 +1,11 @@
 'use strict';
 
 // Load environment variables first
-require('dotenv').config();
+require('dotenv').config({ path: '../.env' });
 
 const app = require('./app');
 const { logger } = require('./utils/logger');
+const websocketService = require('./services/websocketService');
 
 // Import database connection
 const db = require('./config/db');
@@ -65,6 +66,10 @@ const startServer = async () => {
       logger.info(`📊 API version: http://localhost:${PORT}/version`);
       logger.info(`📚 API documentation: http://localhost:${PORT}/api/v1`);
       logger.info(`⏰ Started at: ${new Date().toISOString()}`);
+      
+      // Initialize WebSocket service
+      websocketService.initialize(server);
+      logger.info(`🔌 WebSocket server initialized on port: ${PORT}`);
       
                  // Log available endpoints
            logger.info('📋 Available API Endpoints:');

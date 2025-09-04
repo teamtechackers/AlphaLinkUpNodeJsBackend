@@ -28,7 +28,66 @@ const ApiController = {
 
     return ok(res, { username, role_id: user.role_id });
   },
-  async logout(req, res) { return ok(res, { message: 'Logged out' }); },
+  async logout(req, res) {
+    try {
+      // Support both query parameters and form data
+      let { user_id, token } = {
+        ...req.query,
+        ...req.body
+      };
+      
+      // URL decode user_id if it's URL encoded
+      if (user_id && typeof user_id === 'string') {
+        user_id = decodeURIComponent(user_id);
+      }
+      
+      console.log('logout - Parameters:', { user_id, token });
+      console.log('logout - Raw body:', req.body);
+      console.log('logout - Raw query:', req.query);
+      
+      // Check if user_id and token are provided
+      if (!user_id || !token || user_id === 'null' || token === 'null') {
+        return fail(res, 500, 'user_id and token are required');
+      }
+      
+      // Decode user ID
+      const decodedUserId = idDecode(user_id);
+      if (!decodedUserId) {
+        return fail(res, 500, 'Invalid user ID');
+      }
+      
+      // Get user details and validate
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      if (!userRows.length) {
+        return fail(res, 500, 'Not A Valid User');
+      }
+      
+      const user = userRows[0];
+      
+      // Validate token
+      if (user.unique_token !== token) {
+        return fail(res, 500, 'Token Mismatch Exception');
+      }
+
+      // Update logged_out_dts
+      await query(
+        'UPDATE users SET logged_out_dts = NOW() WHERE user_id = ?',
+        [decodedUserId]
+      );
+
+      return res.json({
+        status: true,
+        rcode: 200,
+        user_id: "",
+        unique_token: "",
+        message: 'User logged out successfully'
+      });
+      
+    } catch (error) {
+      console.error('logout error:', error);
+      return fail(res, 500, 'Failed to logout');
+    }
+  },
 
   async getPromotionsList(req, res) {
     try {
@@ -96,7 +155,7 @@ const ApiController = {
       
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
-        return res.json({
+      return res.json({
           status: false,
           rcode: 500,
           message: 'Not A Valid User'
@@ -106,7 +165,7 @@ const ApiController = {
       const user = userRows[0];
       
       if (user.unique_token !== token) {
-        return res.json({
+      return res.json({
           status: false,
           rcode: 500,
           message: 'Token Mismatch Exception'
@@ -153,7 +212,7 @@ const ApiController = {
       const { user_id, token } = req.query;
       
       if (!user_id || !token) {
-        return res.json({
+      return res.json({
           status: false,
           rcode: 500,
           message: 'user_id and token are required'
@@ -163,7 +222,7 @@ const ApiController = {
       // Decode user ID
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
-        return res.json({
+      return res.json({
           status: false,
           rcode: 500,
           message: 'Invalid user ID'
@@ -173,7 +232,7 @@ const ApiController = {
       // Get user details and validate
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
-        return res.json({
+      return res.json({
           status: false,
           rcode: 500,
           message: 'Not A Valid User'
@@ -184,7 +243,7 @@ const ApiController = {
       
       // Validate token
       if (user.unique_token !== token) {
-        return res.json({
+      return res.json({
           status: false,
           rcode: 500,
           message: 'Token Mismatch Exception'
@@ -211,11 +270,11 @@ const ApiController = {
       );
       
       if (serviceProviderRows.length === 0) {
-        return res.json({
-          status: true,
-          rcode: 200,
+      return res.json({
+        status: true,
+        rcode: 200,
           user_id: user_id,
-          unique_token: token,
+        unique_token: token,
           service_provider_list: {}
         });
       }
@@ -570,8 +629,8 @@ const ApiController = {
       // Decode user ID
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
-        return res.json({
-          status: false,
+      return res.json({
+        status: false,
           rcode: 500,
           message: 'Invalid user ID'
         });
@@ -726,22 +785,22 @@ const ApiController = {
                 COALESCE(interests, '') as interests,
                 COALESCE(linkedin_url, '') as linkedin_url,
                 COALESCE(summary, '') as summary,
-              IF(profile_photo != '', CONCAT(?, profile_photo), '') AS profile_photo,
-              IF(qr_image != '', CONCAT(?, qr_image), '') AS qr_image,
+                IF(profile_photo != '', CONCAT(?, profile_photo), '') AS profile_photo,
+                IF(qr_image != '', CONCAT(?, qr_image), '') AS qr_image,
                 profile_updated,
                 card_requested,
                 is_service_provider,
                 is_investor
-       FROM users
-       LEFT JOIN countries ON countries.id = users.country_id
-       LEFT JOIN states ON states.id = users.state_id
-       LEFT JOIN cities ON cities.id = users.city_id
+         FROM users
+         LEFT JOIN countries ON countries.id = users.country_id
+         LEFT JOIN states ON states.id = users.state_id
+         LEFT JOIN cities ON cities.id = users.city_id
          WHERE mobile LIKE ?`,
         [profilePhotoPath, qrCodePath, `%${mobile_no}%`]
       );
       
       if (!userProfileRows.length) {
-        return res.json({
+      return res.json({
           status: false,
           rcode: 500,
           message: 'User not found with this mobile number'
@@ -1238,11 +1297,11 @@ const ApiController = {
           const timestamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\..+/, '');
           const fileName = `business-doc-${timestamp}.${file.originalname ? file.originalname.split('.').pop() : 'pdf'}`;
           
-      await query(
+          await query(
             `INSERT INTO user_business_card_files (ubc_id, business_documents_file, status, created_dts) 
              VALUES (?, ?, 1, NOW())`,
             [ubc_id, fileName]
-      );
+          );
         }
       }
 
@@ -2691,7 +2750,7 @@ const ApiController = {
         no_of_meetings: investor.no_of_meetings || 0,
         no_of_investments: investor.no_of_investments || 0
       }));
-
+      
       // Wrap ratings in array to match PHP format
       const ratingsArray = [ratingsStats];
       
@@ -3193,12 +3252,33 @@ const ApiController = {
       );
 
       if (chatResult.insertId > 0) {
+        // Get sender details for WebSocket notification
+        const senderRows = await query('SELECT full_name, profile_photo FROM users WHERE user_id = ?', [senderId]);
+        const sender = senderRows[0] || {};
+
+        // Prepare message data for WebSocket
+        const messageData = {
+          chat_id: chatResult.insertId,
+          sender_id: senderId,
+          receiver_id: receiverId,
+          message: message,
+          sender_name: sender.full_name || '',
+          sender_image: sender.profile_photo ? `${process.env.BASE_URL || 'http://localhost:3000'}/uploads/profiles/${sender.profile_photo}` : '',
+          created_dts: new Date().toISOString(),
+          timestamp: Date.now()
+        };
+
+        // Send real-time notification via WebSocket
+        const websocketService = require('../services/websocketService');
+        websocketService.sendMessageToUser(receiverId, messageData);
+
         return res.json({
           status: true,
           rcode: 200,
           user_id: idEncode(decodedUserId),
           unique_token: token,
-          message: 'Message sent successfully.'
+          message: 'Message sent successfully.',
+          chat_id: chatResult.insertId
         });
       } else {
         return fail(res, 500, 'Failed to save chat message');
@@ -3544,7 +3624,7 @@ const ApiController = {
       }
       
       if (!investor_id || !meeting_id || !meeting_date || !meeting_time) {
-        return res.json({
+      return res.json({
           status: false,
           rcode: 500,
           message: 'Please enter mandatory fields'
@@ -3595,7 +3675,7 @@ const ApiController = {
       // Validate meeting_id
       const meetingId = parseInt(meeting_id);
       if (isNaN(meetingId) || meetingId <= 0) {
-        return res.json({
+      return res.json({
           status: false,
           rcode: 500,
           message: 'Invalid meeting ID'
@@ -3666,11 +3746,11 @@ const ApiController = {
       `, [decodedUserId, investorId, meetingId, formattedMeetingDate, meeting_time]);
 
       if (insertResult.insertId && insertResult.insertId > 0) {
-        return res.json({
-          status: true,
-          rcode: 200,
+      return res.json({
+        status: true,
+        rcode: 200,
           user_id: user_id,
-          unique_token: token,
+        unique_token: token,
           message: 'Request sent successfully'
         });
       } else {
