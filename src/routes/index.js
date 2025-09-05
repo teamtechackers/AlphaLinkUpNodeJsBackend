@@ -244,8 +244,6 @@ router.get('/list-city', AdminController.viewCities);
 router.post('/list-city', uploadFormData.none(), AdminController.viewCities);
 router.get('/submit-cities', AdminController.submitCities);
 router.post('/submit-cities', uploadFormData.none(), AdminController.submitCities);
-router.get('/list-cities-ajax', AdminController.listCitiesAjax);
-router.post('/list-cities-ajax', uploadFormData.none(), AdminController.listCitiesAjax);
 router.get('/check-duplicate-cities', AdminController.checkDuplicateCities);
 router.post('/check-duplicate-cities', uploadFormData.none(), AdminController.checkDuplicateCities);
 router.get('/delete-cities', AdminController.deleteCities);
@@ -367,6 +365,8 @@ router.get('/delete-city', CityController.deleteAdminCity);
 router.post('/delete-city', uploadFormData.none(), CityController.deleteAdminCity);
 router.get('/get-city-list', CityController.getAdminCityList);
 router.post('/get-city-list', uploadFormData.none(), CityController.getAdminCityList);
+router.get('/list-cities-ajax', CityController.listCitiesAjax);
+router.post('/list-cities-ajax', uploadFormData.none(), CityController.listCitiesAjax);
 
 // Admin Dashboard Routes
 router.get('/admin-dashboard', DashboardController.getAdminDashboard);

@@ -286,6 +286,115 @@ const CityController = {
       console.error('deleteAdminCity error:', error);
       return errorResponse(res, 'Failed to delete city', 500);
     }
+  },
+
+  // List cities AJAX (for admin panel DataTables)
+  async listCitiesAjax(req, res) {
+    try {
+      const { user_id, token, draw, start, length, search, order } = { ...req.query, ...req.body };
+
+      if (!user_id || !token) {
+        return errorResponse(res, 'user_id and token are required', 400);
+      }
+
+      // Decode user ID
+      const decodedUserId = idDecode(user_id);
+      if (!decodedUserId) {
+        return errorResponse(res, 'Invalid user_id', 400);
+      }
+
+      // Verify admin user - check in users table
+      const adminCheck = await query('SELECT user_id FROM users WHERE user_id = ? AND unique_token = ? AND deleted = 0', [decodedUserId, token]);
+      if (adminCheck.length === 0) {
+        return errorResponse(res, 'Invalid admin token', 401);
+      }
+
+      console.log('listCitiesAjax - Parameters:', { user_id, token, draw, start, length, search, order });
+
+      // DataTables parameters - match PHP format exactly
+      const drawValue = parseInt(draw || 1);
+      const startValue = parseInt(start || 0);
+      const lengthValue = parseInt(length || 10);
+      
+      // Handle search parameter like PHP (search.value)
+      let searchValue = '';
+      if (search && typeof search === 'object' && search.value) {
+        searchValue = search.value;
+      } else if (typeof search === 'string') {
+        searchValue = search;
+      }
+
+      // Get total count
+      const totalCountResult = await query('SELECT COUNT(*) as count FROM cities WHERE deleted = 0');
+      const totalCount = totalCountResult[0].count;
+
+      // Build search condition
+      let searchCondition = '';
+      let searchParams = [];
+      if (searchValue) {
+        searchCondition = ' AND (c.name LIKE ? OR s.name LIKE ?)';
+        searchParams = [`%${searchValue}%`, `%${searchValue}%`];
+      }
+
+      // Get filtered count
+      const filteredCountResult = await query(
+        `SELECT COUNT(*) as count FROM cities c 
+         LEFT JOIN states s ON c.state_id = s.id 
+         WHERE c.deleted = 0 ${searchCondition}`,
+        searchParams
+      );
+      const filteredCount = filteredCountResult[0].count;
+
+      // Handle ordering like PHP
+      let orderBy = 'ORDER BY s.name ASC, c.name ASC'; // Default order
+      if (order && Array.isArray(order) && order.length > 0) {
+        const orderColumn = order[0].column || 0;
+        const orderDir = order[0].dir || 'asc';
+        
+        // Map DataTables column indices to actual columns
+        const columnMap = ['s.name', 'c.name', 'c.status'];
+        const column = columnMap[orderColumn] || 's.name';
+        orderBy = `ORDER BY ${column} ${orderDir.toUpperCase()}`;
+      }
+
+      // Get cities with pagination
+      const cities = await query(
+        `SELECT c.id, c.name, c.status, c.state_id, s.name as state_name 
+         FROM cities c 
+         LEFT JOIN states s ON c.state_id = s.id 
+         WHERE c.deleted = 0 ${searchCondition}
+         ${orderBy}
+         LIMIT ? OFFSET ?`,
+        [...searchParams, lengthValue, startValue]
+      );
+
+      // Format data for DataTables
+      const data = [];
+      let i = startValue;
+      for (const city of cities) {
+        i++;
+        const status = city.status == 1 
+          ? '<span class="badge bg-soft-success text-success">Active</span>'
+          : '<span class="badge bg-soft-danger text-danger">Inactive</span>';
+        
+        let action = `<a href="javascript:void(0);" id="edit_${city.id}" data-id="${city.id}" data-state="${city.state_id}" data-name="${city.name}" data-status="${city.status}" onclick="viewEditDetails(${city.id});" class="action-icon"> <i class="mdi mdi-square-edit-outline"></i></a>`;
+        action += `<a href="javascript:void(0);" class="action-icon delete_info" data-id="${city.id}"> <i class="mdi mdi-delete"></i></a>`;
+        
+        data.push([i, city.state_name || '', city.name, status, action]);
+      }
+
+      // Return DataTables format response
+      return res.json({
+        draw: drawValue,
+        recordsTotal: totalCount,
+        recordsFiltered: filteredCount,
+        data: data
+      });
+
+    } catch (error) {
+      console.error('listCitiesAjax error:', error);
+      return errorResponse(res, 'Failed to get city list', 500);
+    }
   }
 };
 
