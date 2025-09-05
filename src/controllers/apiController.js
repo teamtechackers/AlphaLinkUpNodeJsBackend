@@ -2829,12 +2829,31 @@ const ApiController = {
       }
       baseQuery += ' ORDER BY uiu.created_dts DESC';
       const userLists = await query(baseQuery, queryParams);
+      
+      // Convert all integer IDs to strings to match PHP format
+      const formattedUserLists = userLists.map(user => ({
+        user_id: user.user_id.toString(),
+        investor_id: user.investor_id.toString(),
+        user_name: user.user_name || "",
+        meeting_date: user.meeting_date || "",
+        meeting_time: user.meeting_time || "",
+        request_status: user.request_status || "",
+        meeting_location: user.meeting_location || "",
+        meeting_lat: user.meeting_lat || "",
+        meeting_lng: user.meeting_lng || "",
+        meeting_url: user.meeting_url || "",
+        meeting_name: user.meeting_name || "",
+        meeting_type: user.meeting_type || "",
+        mins: user.mins || "",
+        profile_photo: user.profile_photo || ""
+      }));
+      
       return res.json({
         status: true,
         rcode: 200,
         user_id: idEncode(decodedUserId),
         unique_token: token,
-        user_lists: userLists || []
+        user_lists: formattedUserLists
       });
     } catch (error) {
       console.error('getInvestorDesk error:', error);
@@ -3346,6 +3365,80 @@ const ApiController = {
     } catch (error) {
       console.error('deleteResume error:', error);
       return fail(res, 500, 'Failed to delete resume');
+    }
+  },
+
+  async viewResumes(req, res) {
+    try {
+      const { user_id, token } = {
+        ...req.query,
+        ...req.body
+      };
+      
+      console.log('viewResumes - Parameters:', { user_id, token });
+      
+      // Check if user_id and token are provided
+      if (!user_id || !token) {
+        return fail(res, 500, 'user_id and token are required');
+      }
+      
+      // Decode user ID
+      const decodedUserId = idDecode(user_id);
+      if (!decodedUserId) {
+        return fail(res, 500, 'Invalid user ID');
+      }
+      
+      // Get user details and validate
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      if (!userRows.length) {
+        return fail(res, 500, 'Not A Valid User');
+      }
+      
+      const user = userRows[0];
+      
+      // Validate token
+      if (user.unique_token !== token) {
+        return fail(res, 500, 'Token Mismatch Exception');
+      }
+      
+      // Get base URL for resume files
+      const baseUrl = `${req.protocol}://${req.get('host')}`;
+      const resumePath = `${baseUrl}/uploads/resumes/`;
+      
+      // Get user resumes - match PHP query exactly
+      const resumeRows = await query(
+        `SELECT *, 
+                IF(resume_file != '', CONCAT(?, resume_file), '') AS resume_file, 
+                IF(resume_file != '', SUBSTRING_INDEX(resume_file, '.', -1), '') AS resume_file_extension
+         FROM user_resumes 
+         WHERE user_id = ? AND status = 1 
+         ORDER BY created_dts DESC`,
+        [resumePath, decodedUserId]
+      );
+      
+      // Convert all values to strings to match PHP format exactly
+      const formattedResumes = resumeRows.map(resume => ({
+        resume_id: resume.resume_id.toString(),
+        user_id: resume.user_id.toString(),
+        resume_title: resume.resume_title || "",
+        resume_file: resume.resume_file || "",
+        status: resume.status.toString(),
+        created_dts: resume.created_dts || "",
+        resume_file_extension: resume.resume_file_extension || ""
+      }));
+      
+      // Return response in PHP format - match exactly
+      return res.json({
+        status: true,
+        rcode: 200,
+        user_id: idEncode(decodedUserId),
+        unique_token: token,
+        resumes_list: formattedResumes
+      });
+      
+    } catch (error) {
+      console.error('viewResumes error:', error);
+      return fail(res, 500, 'Failed to retrieve resumes');
     }
   },
 

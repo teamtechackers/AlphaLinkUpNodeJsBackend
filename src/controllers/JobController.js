@@ -101,7 +101,6 @@ class JobController {
         queryParams
       );
       
-      // Format job information to match PHP response with all fields as strings
       const formattedJobs = rows.map(job => ({
         job_id: job.job_id.toString(),
         user_id: job.user_id.toString(),

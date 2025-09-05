@@ -138,6 +138,8 @@ router.get('/Api-View-Job-Information', JobController.getJobInformation);
 router.post('/Api-View-Job-Information', uploadFormData.none(), JobController.getJobInformation);
 router.post('/Api-Apply-Job', uploadResume.single('resume_file'), JobController.saveJobApplication);
 router.post('/Api-Delete-Resume', uploadFormData.none(), ApiController.deleteResume);
+router.get('/Api-View-Resumes', ApiController.viewResumes);
+router.post('/Api-View-Resumes', uploadFormData.none(), ApiController.viewResumes);
 router.get('/Api-View-Job-Details', JobController.getJobDetail);
 router.post('/Api-View-Job-Details', uploadFormData.none(), JobController.getJobDetail);
 // Removed unused job-related routes
