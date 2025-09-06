@@ -292,16 +292,16 @@ const StateController = {
     }
   },
 
-  // List state ajax - PHP compatible version
+  // List state ajax - DataTables format (PHP compatible)
   async listAdminStateAjax(req, res) {
     try {
       // Support both query parameters and form data
-      const { user_id, token } = {
+      const { user_id, token, draw, start, length, search, order } = {
         ...req.query,
         ...req.body
       };
 
-      console.log('listAdminStateAjax - Parameters:', { user_id, token });
+      console.log('listAdminStateAjax - Parameters:', { user_id, token, draw, start, length, search, order });
 
       // Check if user_id and token are provided
       if (!user_id || !token) {
@@ -323,7 +323,7 @@ const StateController = {
       }
 
       // Get user details and validate
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      const userRows = await query('SELECT user_id FROM users WHERE user_id = ? AND unique_token = ? AND deleted = 0', [decodedUserId, token]);
       if (!userRows.length) {
         return res.json({
           status: false,
@@ -332,56 +332,78 @@ const StateController = {
         });
       }
 
-      const user = userRows[0];
+      // Parse DataTables parameters
+      const drawParam = parseInt(draw) || 1;
+      const startParam = parseInt(start) || 0;
+      const lengthParam = parseInt(length) || 10;
+      const searchValue = search?.value || '';
+      const orderColumn = order?.[0]?.column || 1;
+      const orderDir = order?.[0]?.dir || 'asc';
 
-      // Validate token
-      if (user.unique_token !== token) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'Token Mismatch Exception'
-        });
+      // Get total count
+      const totalCountResult = await query('SELECT COUNT(*) as count FROM states WHERE deleted = 0');
+      const recordsTotal = totalCountResult[0].count;
+
+      // Get filtered count
+      let filteredCount = recordsTotal;
+      if (searchValue) {
+        const filteredCountResult = await query(`
+          SELECT COUNT(*) as count FROM states s 
+          LEFT JOIN countries c ON s.country_id = c.id 
+          WHERE s.deleted = 0 AND (s.name LIKE ? OR c.name LIKE ?)
+        `, [`%${searchValue}%`, `%${searchValue}%`]);
+        filteredCount = filteredCountResult[0].count;
       }
 
-      // Check if user is admin (role_id = 1 or 2)
-      const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
-      if (!adminRows.length) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'Permission denied'
-        });
-      }
+      // Build ORDER BY clause
+      const orderColumns = ['s.id', 'c.name', 's.name', 's.status'];
+      const orderByColumn = orderColumns[orderColumn] || 's.name';
+      const orderByDir = orderDir.toUpperCase() === 'DESC' ? 'DESC' : 'ASC';
 
-      // Get all states with country information (matching PHP exactly)
-      const states = await query(`
-        SELECT 
-          s.id,
-          s.country_id,
-          s.name,
-          s.status,
-          s.created_at,
-          s.created_by,
-          s.updated_at,
-          s.updated_by,
-          s.deleted,
-          s.deleted_by,
-          s.deleted_at,
-          c.name as country_name
-        FROM states s
-        LEFT JOIN countries c ON c.id = s.country_id
+      // Get states with pagination and search
+      let statesQuery = `
+        SELECT s.id, s.name, s.status, s.country_id, c.name as country_name 
+        FROM states s 
+        LEFT JOIN countries c ON s.country_id = c.id 
         WHERE s.deleted = 0
-        ORDER BY c.name ASC, s.name ASC
-      `);
+      `;
+      
+      const queryParams = [];
+      if (searchValue) {
+        statesQuery += ` AND (s.name LIKE ? OR c.name LIKE ?)`;
+        queryParams.push(`%${searchValue}%`, `%${searchValue}%`);
+      }
+      
+      statesQuery += ` ORDER BY ${orderByColumn} ${orderByDir} LIMIT ? OFFSET ?`;
+      queryParams.push(lengthParam, startParam);
 
-      // Return response in PHP format (matching exactly)
+      const states = await query(statesQuery, queryParams);
+
+      // Format data for DataTables
+      const data = states.map((state, index) => {
+        const rowNumber = startParam + index + 1;
+        const statusBadge = state.status == 1 
+          ? '<span class="badge bg-soft-success text-success">Active</span>'
+          : '<span class="badge bg-soft-danger text-danger">Inactive</span>';
+        
+        let action = `<a href="javascript:void(0);" id="edit_${state.id}" data-id="${state.id}" data-country="${state.country_id}" data-name="${state.name}" data-status="${state.status}" onclick="viewEditDetails(${state.id});" class="action-icon"> <i class="mdi mdi-square-edit-outline"></i></a>`;
+        action += `<a href="javascript:void(0);" class="action-icon delete_info" data-id="${state.id}"> <i class="mdi mdi-delete"></i></a>`;
+
+        return [
+          rowNumber,
+          state.country_name || '',
+          state.name,
+          statusBadge,
+          action
+        ];
+      });
+
+      // Return DataTables format
       return res.json({
-        status: true,
-        rcode: 200,
-        user_id: idEncode(decodedUserId),
-        unique_token: token,
-        states: states || [],
-        message: 'State list retrieved successfully'
+        draw: drawParam,
+        recordsTotal: recordsTotal,
+        recordsFiltered: filteredCount,
+        data: data
       });
 
     } catch (error) {
@@ -732,6 +754,140 @@ const StateController = {
         status: false,
         rcode: 500,
         message: 'Failed to check duplicate state'
+      });
+    }
+  },
+
+  // Simple state update by ID - Direct update API
+  async updateStateById(req, res) {
+    try {
+      // Support both query parameters and form data
+      const { user_id, token, state_id, country_id, name, status } = {
+        ...req.query,
+        ...req.body
+      };
+
+      console.log('updateStateById - Parameters:', { user_id, token, state_id, country_id, name, status });
+
+      // Check if user_id and token are provided
+      if (!user_id || !token) {
+        return res.json({
+          status: 'Error',
+          info: 'user_id and token are required'
+        });
+      }
+
+      // Check if state_id is provided
+      if (!state_id) {
+        return res.json({
+          status: 'Error',
+          info: 'state_id is required'
+        });
+      }
+
+      // Decode user ID
+      const decodedUserId = idDecode(user_id);
+      if (!decodedUserId) {
+        return res.json({
+          status: 'Error',
+          info: 'Invalid user ID'
+        });
+      }
+
+      // Get user details and validate
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      if (!userRows.length) {
+        return res.json({
+          status: 'Error',
+          info: 'Not A Valid User'
+        });
+      }
+
+      const user = userRows[0];
+
+      // Validate token
+      if (user.unique_token !== token) {
+        return res.json({
+          status: 'Error',
+          info: 'Token Mismatch Exception'
+        });
+      }
+
+      // Check if user is admin
+      const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
+      if (!adminRows.length) {
+        return res.json({
+          status: 'Error',
+          info: 'Permission denied'
+        });
+      }
+
+      const admin = adminRows[0];
+
+      // Check if state exists
+      const stateRows = await query('SELECT * FROM states WHERE id = ? AND deleted = 0', [state_id]);
+      if (!stateRows.length) {
+        return res.json({
+          status: 'Error',
+          info: 'State not found'
+        });
+      }
+
+      // Prepare update data
+      const updateData = {
+        updated_at: new Date().toISOString().slice(0, 19).replace('T', ' '),
+        updated_by: admin.role_id
+      };
+
+      // Build dynamic update query
+      let updateQuery = 'UPDATE states SET updated_at = ?, updated_by = ?';
+      let queryParams = [updateData.updated_at, updateData.updated_by];
+
+      if (country_id) {
+        updateQuery += ', country_id = ?';
+        queryParams.push(parseInt(country_id));
+      }
+
+      if (name && name.trim() !== '') {
+        updateQuery += ', name = ?';
+        queryParams.push(name.trim());
+      }
+
+      if (status !== undefined) {
+        updateQuery += ', status = ?';
+        queryParams.push(parseInt(status));
+      }
+
+      updateQuery += ' WHERE id = ?';
+      queryParams.push(state_id);
+
+      // Execute update
+      const result = await query(updateQuery, queryParams);
+
+      if (result.affectedRows === 0) {
+        return res.json({
+          status: 'Error',
+          info: 'No changes made to state'
+        });
+      }
+
+      // Return success response
+      return res.json({
+        status: 'Success',
+        info: 'State updated successfully',
+        id: parseInt(state_id),
+        updated_fields: {
+          country_id: country_id ? parseInt(country_id) : 'unchanged',
+          name: name ? name.trim() : 'unchanged',
+          status: status !== undefined ? parseInt(status) : 'unchanged'
+        }
+      });
+
+    } catch (error) {
+      console.error('updateStateById error:', error);
+      return res.json({
+        status: 'Error',
+        info: 'Failed to update state'
       });
     }
   }

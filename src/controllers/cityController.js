@@ -60,8 +60,14 @@ const CityController = {
         return errorResponse(res, 'user_id and token are required', 400);
       }
 
-      // Verify admin user
-      const adminCheck = await query('SELECT user_id FROM admin_users WHERE user_id = ? AND unique_token = ? AND deleted = 0', [user_id, token]);
+      // Decode user ID
+      const decodedUserId = idDecode(user_id);
+      if (!decodedUserId) {
+        return errorResponse(res, 'Invalid user_id', 400);
+      }
+
+      // Verify admin user - check in users table
+      const adminCheck = await query('SELECT user_id FROM users WHERE user_id = ? AND unique_token = ? AND deleted = 0', [decodedUserId, token]);
       if (adminCheck.length === 0) {
         return errorResponse(res, 'Invalid admin token', 401);
       }
@@ -108,8 +114,14 @@ const CityController = {
         return errorResponse(res, 'user_id and token are required', 400);
       }
 
-      // Verify admin user
-      const adminCheck = await query('SELECT user_id FROM admin_users WHERE user_id = ? AND unique_token = ? AND deleted = 0', [user_id, token]);
+      // Decode user ID
+      const decodedUserId = idDecode(user_id);
+      if (!decodedUserId) {
+        return errorResponse(res, 'Invalid user_id', 400);
+      }
+
+      // Verify admin user - check in users table
+      const adminCheck = await query('SELECT user_id FROM users WHERE user_id = ? AND unique_token = ? AND deleted = 0', [decodedUserId, token]);
       if (adminCheck.length === 0) {
         return errorResponse(res, 'Invalid admin token', 401);
       }
@@ -151,8 +163,14 @@ const CityController = {
         return errorResponse(res, 'user_id, token, name, and state_id are required', 400);
       }
 
-      // Verify admin user
-      const adminCheck = await query('SELECT user_id FROM admin_users WHERE user_id = ? AND unique_token = ? AND deleted = 0', [user_id, token]);
+      // Decode user ID
+      const decodedUserId = idDecode(user_id);
+      if (!decodedUserId) {
+        return errorResponse(res, 'Invalid user_id', 400);
+      }
+
+      // Verify admin user - check in users table
+      const adminCheck = await query('SELECT user_id FROM users WHERE user_id = ? AND unique_token = ? AND deleted = 0', [decodedUserId, token]);
       if (adminCheck.length === 0) {
         return errorResponse(res, 'Invalid admin token', 401);
       }
@@ -174,7 +192,7 @@ const CityController = {
       } else {
         // Insert new city (matching PHP exactly)
         const insertResult = await query(
-          'INSERT INTO cities (name, state_id, status, created_dts) VALUES (?, ?, ?, NOW())',
+          'INSERT INTO cities (name, state_id, status, created_at, deleted) VALUES (?, ?, ?, NOW(), 0)',
           [name, state_id, status || 1]
         );
 
@@ -205,8 +223,14 @@ const CityController = {
         return errorResponse(res, 'user_id, token, name, and state_id are required', 400);
       }
 
-      // Verify admin user
-      const adminCheck = await query('SELECT user_id FROM admin_users WHERE user_id = ? AND unique_token = ? AND deleted = 0', [user_id, token]);
+      // Decode user ID
+      const decodedUserId = idDecode(user_id);
+      if (!decodedUserId) {
+        return errorResponse(res, 'Invalid user_id', 400);
+      }
+
+      // Verify admin user - check in users table
+      const adminCheck = await query('SELECT user_id FROM users WHERE user_id = ? AND unique_token = ? AND deleted = 0', [decodedUserId, token]);
       if (adminCheck.length === 0) {
         return errorResponse(res, 'Invalid admin token', 401);
       }
@@ -259,8 +283,14 @@ const CityController = {
         return errorResponse(res, 'City ID is required', 400);
       }
 
-      // Verify admin user
-      const adminCheck = await query('SELECT user_id FROM admin_users WHERE user_id = ? AND unique_token = ? AND deleted = 0', [user_id, token]);
+      // Decode user ID
+      const decodedUserId = idDecode(user_id);
+      if (!decodedUserId) {
+        return errorResponse(res, 'Invalid user_id', 400);
+      }
+
+      // Verify admin user - check in users table
+      const adminCheck = await query('SELECT user_id FROM users WHERE user_id = ? AND unique_token = ? AND deleted = 0', [decodedUserId, token]);
       if (adminCheck.length === 0) {
         return errorResponse(res, 'Invalid admin token', 401);
       }

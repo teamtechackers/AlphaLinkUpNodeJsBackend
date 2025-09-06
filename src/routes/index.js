@@ -234,6 +234,8 @@ router.get('/list-state', StateController.viewAdminState);
 router.post('/list-state', uploadFormData.none(), StateController.viewAdminState);
 router.get('/submit-state', StateController.submitAdminState);
 router.post('/submit-state', uploadFormData.none(), StateController.submitAdminState);
+router.get('/update-state', StateController.updateStateById);
+router.post('/update-state', uploadFormData.none(), StateController.updateStateById);
 router.get('/list-state-ajax', StateController.listAdminStateAjax);
 router.post('/list-state-ajax', uploadFormData.none(), StateController.listAdminStateAjax);
 router.get('/check-duplicate-state', StateController.checkAdminDuplicateState);
