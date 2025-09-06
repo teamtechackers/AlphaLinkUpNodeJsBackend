@@ -731,8 +731,14 @@ class AdminController {
         });
       }
 
-      // Get all active states ordered by name (matching PHP exactly)
-      const states = await query('SELECT * FROM states WHERE status = 1 AND deleted = 0 ORDER BY name ASC');
+      // Get all cities with state names (matching PHP exactly)
+      const cities = await query(`
+        SELECT c.id, c.name, c.status, c.state_id, s.name as state_name 
+        FROM cities c 
+        LEFT JOIN states s ON c.state_id = s.id 
+        WHERE c.deleted = 0 
+        ORDER BY s.name ASC, c.name ASC
+      `);
 
       // Return response in PHP format (matching exactly)
       return res.json({
@@ -740,7 +746,7 @@ class AdminController {
         rcode: 200,
         user_id: idEncode(decodedUserId),
         unique_token: token,
-        list_state: states || [],
+        cities: cities || [],
         message: 'City list view data retrieved successfully'
       });
 

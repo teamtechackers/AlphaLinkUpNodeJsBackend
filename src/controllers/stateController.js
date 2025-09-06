@@ -145,8 +145,14 @@ const StateController = {
         });
       }
 
-      // Get all countries for dropdown (matching PHP exactly)
-      const countries = await query('SELECT * FROM countries WHERE deleted = 0 ORDER BY name ASC');
+      // Get all states with country names (matching PHP exactly)
+      const states = await query(`
+        SELECT s.id, s.name, s.status, s.country_id, c.name as country_name 
+        FROM states s 
+        LEFT JOIN countries c ON s.country_id = c.id 
+        WHERE s.deleted = 0 
+        ORDER BY c.name ASC, s.name ASC
+      `);
 
       // Return response in PHP format (matching exactly)
       return res.json({
@@ -154,7 +160,7 @@ const StateController = {
         rcode: 200,
         user_id: idEncode(decodedUserId),
         unique_token: token,
-        countries: countries || [],
+        states: states || [],
         message: 'State list view data retrieved successfully'
       });
 
@@ -393,6 +399,7 @@ const StateController = {
           rowNumber,
           state.country_name || '',
           state.name,
+          state.id.toString(),  // State ID add karna
           statusBadge,
           action
         ];

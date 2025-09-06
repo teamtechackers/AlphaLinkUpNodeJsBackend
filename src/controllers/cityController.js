@@ -410,7 +410,7 @@ const CityController = {
         let action = `<a href="javascript:void(0);" id="edit_${city.id}" data-id="${city.id}" data-state="${city.state_id}" data-name="${city.name}" data-status="${city.status}" onclick="viewEditDetails(${city.id});" class="action-icon"> <i class="mdi mdi-square-edit-outline"></i></a>`;
         action += `<a href="javascript:void(0);" class="action-icon delete_info" data-id="${city.id}"> <i class="mdi mdi-delete"></i></a>`;
         
-        data.push([i, city.state_name || '', city.name, status, action]);
+        data.push([i, city.state_name || '', city.name, city.id.toString(), status, action]);
       }
 
       // Return DataTables format response
