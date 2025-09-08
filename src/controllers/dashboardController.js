@@ -9,7 +9,7 @@ const DashboardController = {
   // Dashboard function for mobile API (Flutter compatible)
   async dashboard(req, res) {
     try {
-      const { user_id, token, location, lat, long, limit, filter_type } = { ...req.query, ...req.body };
+      const { user_id, token, location, lat, long, limit, start, length, filter_type } = { ...req.query, ...req.body };
       
       if (!user_id || !token) {
         return errorResponse(res, 'user_id and token are required', 400);
@@ -26,6 +26,24 @@ const DashboardController = {
       if (userCheck.length === 0) {
         return errorResponse(res, 'Invalid token or user not found', 401);
       }
+
+      let paginationStart = 0;
+      let paginationLength = 20; // Default limit
+      
+      if (start !== undefined && start !== null && start !== '') {
+        paginationStart = parseInt(start) || 0;
+      }
+      
+      if (length !== undefined && length !== null && length !== '') {
+        paginationLength = parseInt(length) || 20;
+      } else if (limit !== undefined && limit !== null && limit !== '') {
+        // Fallback to limit parameter for backward compatibility
+        paginationLength = parseInt(limit) || 20;
+      }
+      
+      // Ensure pagination values are valid
+      paginationStart = Math.max(0, paginationStart);
+      paginationLength = Math.max(1, Math.min(100, paginationLength)); // Max 100 items per request
 
       // Validation: Check if coordinates are provided
       // If lat/lng are 0,0, show all events/jobs without location filtering
@@ -90,7 +108,7 @@ const DashboardController = {
           JOIN event_mode ON event_mode.id = user_event_details.event_mode_id
           JOIN event_type ON event_type.id = user_event_details.event_type_id
           LEFT JOIN event_attendees ON event_attendees.event_id = user_event_details.event_id
-          WHERE user_event_details.user_id != ?
+          WHERE user_event_details.user_id != ? AND user_event_details.deleted = 0
         `;
         
         const eventsParams = [lat, long, lat, decodedUserId];
@@ -108,12 +126,9 @@ const DashboardController = {
         
         eventsQuery += ' GROUP BY user_event_details.event_id HAVING distance_in_km <= ? OR (user_event_details.event_lat = 0 AND user_event_details.event_lng = 0 AND user_event_details.event_link != "") ORDER BY user_event_details.event_date DESC';
         
-        if (limit && limit > 0) {
-          eventsQuery += ' LIMIT ?';
-          eventsParams.push(radius, parseInt(limit));
-        } else {
-          eventsParams.push(radius);
-        }
+        // Add pagination
+        eventsQuery += ' LIMIT ? OFFSET ?';
+        eventsParams.push(radius, paginationLength, paginationStart);
         
         const eventsRows = await query(eventsQuery, eventsParams);
         
@@ -182,12 +197,9 @@ const DashboardController = {
         
         eventsQuery += ' GROUP BY user_event_details.event_id ORDER BY user_event_details.created_dts DESC';
         
-        if (limit && limit > 0) {
-          eventsQuery += ' LIMIT ?';
-          eventsParams.push(parseInt(limit));
-        } else {
-          eventsQuery += ' LIMIT 20'; // Default limit when no coordinates
-        }
+        // Add pagination
+        eventsQuery += ' LIMIT ? OFFSET ?';
+        eventsParams.push(paginationLength, paginationStart);
         
         const eventsRows = await query(eventsQuery, eventsParams);
         
@@ -270,12 +282,9 @@ const DashboardController = {
         
         jobsQuery += ' GROUP BY user_job_details.job_id HAVING distance_in_km <= ? ORDER BY user_job_details.created_dts DESC';
         
-        if (limit && limit > 0) {
-          jobsQuery += ' LIMIT ?';
-          jobsParams.push(radius, parseInt(limit));
-        } else {
-          jobsParams.push(radius);
-        }
+        // Add pagination
+        jobsQuery += ' LIMIT ? OFFSET ?';
+        jobsParams.push(radius, paginationLength, paginationStart);
         
         const jobsRows = await query(jobsQuery, jobsParams);
         
@@ -359,12 +368,9 @@ const DashboardController = {
         
         jobsQuery += ' GROUP BY user_job_details.job_id ORDER BY user_job_details.created_dts DESC';
         
-        if (limit && limit > 0) {
-          jobsQuery += ' LIMIT ?';
-          jobsParams.push(parseInt(limit));
-        } else {
-          jobsQuery += ' LIMIT 20'; // Default limit when no coordinates
-        }
+        // Add pagination
+        jobsQuery += ' LIMIT ? OFFSET ?';
+        jobsParams.push(paginationLength, paginationStart);
         
         const jobsRows = await query(jobsQuery, jobsParams);
         
@@ -414,14 +420,22 @@ const DashboardController = {
         });
       }
 
-      // Return Flutter compatible response format
+      // Return Flutter compatible response format with pagination info
       return res.json({
         status: true,
         rcode: 200,
         user_id: user_id,
         unique_token: token,
         events_list: eventsList,
-        jobs_list: jobsList
+        jobs_list: jobsList,
+        pagination: {
+          start: paginationStart,
+          length: paginationLength,
+          events_count: eventsList.length,
+          jobs_count: jobsList.length,
+          has_more_events: eventsList.length === paginationLength,
+          has_more_jobs: jobsList.length === paginationLength
+        }
       });
 
     } catch (error) {

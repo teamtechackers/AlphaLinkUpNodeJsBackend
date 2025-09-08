@@ -51,6 +51,481 @@ const CityController = {
 
   // ===== ADMIN CONTROLLER FUNCTIONS =====
 
+  // View cities - PHP compatible version
+  async viewCities(req, res) {
+    try {
+      // Support both query parameters and form data
+      const { user_id, token } = {
+        ...req.query,
+        ...req.body
+      };
+
+      console.log('viewCities - Parameters:', { user_id, token });
+
+      // Check if user_id and token are provided
+      if (!user_id || !token) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'user_id and token are required'
+        });
+      }
+
+      // Decode user ID
+      const decodedUserId = idDecode(user_id);
+      if (!decodedUserId) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Invalid user ID'
+        });
+      }
+
+      // Get user details and validate
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      if (!userRows.length) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Not A Valid User'
+        });
+      }
+
+      const user = userRows[0];
+
+      // Validate token
+      if (user.unique_token !== token) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Token Mismatch Exception'
+        });
+      }
+
+      // Check if user is admin (role_id = 1 or 2)
+      const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
+      if (!adminRows.length) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Permission denied'
+        });
+      }
+
+      // Get cities with state names - with LIMIT to prevent large responses
+      const limit = 1000; // Default limit to prevent 3.9MB responses
+      const cities = await query(`
+        SELECT c.id, c.name, c.status, c.state_id, s.name as state_name 
+        FROM cities c 
+        LEFT JOIN states s ON c.state_id = s.id 
+        WHERE c.deleted = 0 
+        ORDER BY s.name ASC, c.name ASC
+        LIMIT ?
+      `, [limit]);
+
+      // Return response in PHP format (matching exactly)
+      return res.json({
+        status: true,
+        rcode: 200,
+        user_id: idEncode(decodedUserId),
+        unique_token: token,
+        cities: cities || [],
+        message: 'City list view data retrieved successfully',
+        limit: limit,
+        total_returned: cities ? cities.length : 0
+      });
+
+    } catch (error) {
+      console.error('viewCities error:', error);
+      return res.json({
+        status: false,
+        rcode: 500,
+        message: 'Failed to retrieve city list view data'
+      });
+    }
+  },
+
+  // Submit cities - PHP compatible version
+  async submitCities(req, res) {
+    try {
+      // Support both query parameters and form data
+      const { user_id, token, row_id, state_id, name, status } = {
+        ...req.query,
+        ...req.body
+      };
+
+      console.log('submitCities - Parameters:', { user_id, token, row_id, state_id, name, status });
+
+      // Check if user_id and token are provided
+      if (!user_id || !token) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'user_id and token are required'
+        });
+      }
+
+      // Decode user ID
+      const decodedUserId = idDecode(user_id);
+      if (!decodedUserId) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Invalid user ID'
+        });
+      }
+
+      // Get user details and validate
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      if (!userRows.length) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Not A Valid User'
+        });
+      }
+
+      const user = userRows[0];
+
+      // Validate token
+      if (user.unique_token !== token) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Token Mismatch Exception'
+        });
+      }
+
+      // Check if user is admin (role_id = 1 or 2)
+      const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
+      if (!adminRows.length) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Permission denied'
+        });
+      }
+
+      // Check if required fields are provided
+      if (!state_id || !name) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'state_id and name are required'
+        });
+      }
+
+      // Get admin role_id
+      const admin = adminRows[0];
+
+      if (!row_id || row_id === '') {
+        // Insert new city (matching PHP exactly)
+        const insertData = {
+          state_id: state_id,
+          name: name.trim(),
+          status: status !== undefined ? parseInt(status) : 1,
+          created_at: new Date().toISOString().slice(0, 19).replace('T', ' '),
+          created_by: admin.role_id
+        };
+
+        await query(
+          'INSERT INTO cities (state_id, name, status, created_at, created_by, deleted) VALUES (?, ?, ?, ?, ?, 0)',
+          [insertData.state_id, insertData.name, insertData.status, insertData.created_at, insertData.created_by]
+        );
+
+        const info = 'Data Created Successfully';
+
+        // Return response in PHP format (matching exactly)
+        return res.json({
+          status: 'Success',
+          info: info
+        });
+
+      } else {
+        // Update existing city (matching PHP exactly)
+        const updateData = {
+          state_id: state_id,
+          name: name.trim(),
+          status: status !== undefined ? parseInt(status) : 1,
+          updated_at: new Date().toISOString().slice(0, 19).replace('T', ' '),
+          updated_by: admin.role_id
+        };
+
+        await query(
+          'UPDATE cities SET state_id = ?, name = ?, status = ?, updated_at = ?, updated_by = ? WHERE id = ?',
+          [updateData.state_id, updateData.name, updateData.status, updateData.updated_at, updateData.updated_by, row_id]
+        );
+
+        const info = 'Data Updated Successfully';
+
+        // Return response in PHP format (matching exactly)
+        return res.json({
+          status: 'Success',
+          info: info
+        });
+      }
+
+    } catch (error) {
+      console.error('submitCities error:', error);
+      return res.json({
+        status: 'Error',
+        info: 'Failed to submit city'
+      });
+    }
+  },
+
+  // List cities ajax - PHP compatible version
+  async listCitiesAjax(req, res) {
+    try {
+      // Support both query parameters and form data
+      const { user_id, token } = {
+        ...req.query,
+        ...req.body
+      };
+
+      console.log('listCitiesAjax - Parameters:', { user_id, token });
+
+      // Check if user_id and token are provided
+      if (!user_id || !token) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'user_id and token are required'
+        });
+      }
+
+      // Decode user ID
+      const decodedUserId = idDecode(user_id);
+      if (!decodedUserId) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Invalid user ID'
+        });
+      }
+
+      // Get user details and validate
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      if (!userRows.length) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Not A Valid User'
+        });
+      }
+
+      const user = userRows[0];
+
+      // Validate token
+      if (user.unique_token !== token) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Token Mismatch Exception'
+        });
+      }
+
+      // Check if user is admin (role_id = 1 or 2)
+      const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
+      if (!adminRows.length) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Permission denied'
+        });
+      }
+
+      // DataTables parameters
+      const drawValue = parseInt(req.body.draw || req.query.draw || 1);
+      const startValue = parseInt(req.body.start || req.query.start || 0);
+      const lengthValue = parseInt(req.body.length || req.query.length || 10);
+      const searchValue = req.body.search?.value || req.query.search || '';
+
+      // Get total count
+      const totalCountResult = await query('SELECT COUNT(*) as count FROM cities WHERE deleted = 0');
+      const totalCount = totalCountResult[0]?.count || 0;
+
+      // Build search query
+      let searchQuery = '';
+      let searchParams = [];
+      if (searchValue) {
+        searchQuery = 'WHERE (cities.name LIKE ? OR states.name LIKE ?) AND cities.deleted = 0';
+        searchParams.push(`%${searchValue}%`, `%${searchValue}%`);
+      } else {
+        searchQuery = 'WHERE cities.deleted = 0';
+      }
+
+      // Get filtered count
+      let filteredCountQuery = `
+        SELECT COUNT(*) as count
+        FROM cities
+        LEFT JOIN states ON cities.state_id = states.id
+        ${searchQuery}
+      `;
+      const filteredCountResult = await query(filteredCountQuery, searchParams);
+      const filteredCount = filteredCountResult[0]?.count || 0;
+
+      // Get paginated data with state names
+      let dataQuery = `
+        SELECT
+          cities.id,
+          cities.name,
+          cities.state_id,
+          cities.status,
+          states.name as state_name
+        FROM cities
+        LEFT JOIN states ON cities.state_id = states.id
+        ${searchQuery}
+        ORDER BY cities.id DESC
+        LIMIT ?, ?
+      `;
+      const dataParams = [...searchParams, startValue, lengthValue];
+      const cities = await query(dataQuery, dataParams);
+
+      // Format data for DataTables (matching PHP exactly)
+      const data = [];
+      let i = startValue;
+      for (const row of cities) {
+        i++;
+
+        // Status badge (matching PHP exactly)
+        let status = '<span class="badge bg-soft-success text-success">Active</span>';
+        if (row.status == 0) {
+          status = '<span class="badge bg-soft-danger text-danger">Inactive</span>';
+        }
+
+        // Action buttons (matching PHP exactly)
+        const action = `<a href="javascript:void(0);" id="edit_${row.id}" data-id="${row.id}" data-state="${row.state_id}" data-name="${row.name}" data-status="${row.status}" onclick="viewEditDetails(${row.id});" class="action-icon"> <i class="mdi mdi-square-edit-outline"></i></a>
+                        <a href="javascript:void(0);" class="action-icon delete_info" data-id="${row.id}"> <i class="mdi mdi-delete"></i></a>`;
+
+        data.push([i, row.state_name, row.name, status, row.id.toString(), action]);
+      }
+
+      // Return response in DataTables format (matching PHP exactly)
+      return res.json({
+        draw: drawValue,
+        recordsTotal: totalCount,
+        recordsFiltered: filteredCount,
+        data: data
+      });
+
+    } catch (error) {
+      console.error('listCitiesAjax error:', error);
+      return res.json({
+        status: false,
+        rcode: 500,
+          message: 'Failed to retrieve city list'
+      });
+    }
+  },
+
+  // Check duplicate cities - PHP compatible version
+  async checkDuplicateCities(req, res) {
+    try {
+      // Support both query parameters and form data
+      const { user_id, token, sid, name, id } = {
+        ...req.query,
+        ...req.body
+      };
+
+      console.log('checkDuplicateCities - Parameters:', { user_id, token, sid, name, id });
+
+      // Check if user_id and token are provided
+      if (!user_id || !token) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'user_id and token are required'
+        });
+      }
+
+      // Decode user ID
+      const decodedUserId = idDecode(user_id);
+      if (!decodedUserId) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Invalid user ID'
+        });
+      }
+
+      // Get user details and validate
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      if (!userRows.length) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Not A Valid User'
+        });
+      }
+
+      const user = userRows[0];
+
+      // Validate token
+      if (user.unique_token !== token) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Token Mismatch Exception'
+        });
+      }
+
+      // Check if user is admin (role_id = 1 or 2)
+      const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
+      if (!adminRows.length) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Permission denied'
+        });
+      }
+
+      // Check if required fields are provided
+      if (!sid || !name) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'sid and name are required'
+        });
+      }
+
+      // Build condition for duplicate check (matching PHP exactly)
+      let condition = '';
+      let params = [];
+
+      if (parseInt(id) > 0) {
+        // Editing existing city - exclude current record and check within same state
+        condition = 'id != ? AND deleted = 0 AND state_id = ? AND name = ?';
+        params = [id, sid, name];
+      } else {
+        // Adding new city - check within same state
+        condition = 'deleted = 0 AND state_id = ? AND name = ?';
+        params = [sid, name];
+      }
+
+      // Check for duplicate city name within the same state
+      const duplicateRows = await query(
+        `SELECT COUNT(*) as count FROM cities WHERE ${condition}`,
+        params
+      );
+
+      const hasDuplicate = duplicateRows[0]?.count > 0;
+
+      // Return response in PHP format (matching exactly)
+      return res.json({
+        validate: hasDuplicate
+      });
+
+    } catch (error) {
+      console.error('checkDuplicateCities error:', error);
+      return res.json({
+        status: false,
+        rcode: 500,
+        message: 'Failed to check duplicate city'
+      });
+    }
+  },
+
   // Get city list for admin panel
   async getAdminCityList(req, res) {
     try {

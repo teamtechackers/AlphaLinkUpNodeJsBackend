@@ -279,7 +279,7 @@ class FundController {
         ...req.body
       };
 
-      console.log('listFundSizeAjax - Parameters:', { user_id, token });
+      console.log('FUND_CONTROLLER - listFundSizeAjax - Parameters:', { user_id, token });
 
       // Check if user_id and token are provided
       if (!user_id || !token) {

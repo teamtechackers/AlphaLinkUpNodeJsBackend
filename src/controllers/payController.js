@@ -374,7 +374,7 @@ class PayController {
         const action = `<a href="javascript:void(0);" id="edit_${row.id}" data-id="${row.id}" data-name="${row.name}" data-status="${row.status}" onclick="viewEditDetails(${row.id});" class="action-icon"> <i class="mdi mdi-square-edit-outline"></i></a>`;
         const deleteAction = `<a href="javascript:void(0);" class="action-icon delete_info" data-id="${row.id}"> <i class="mdi mdi-delete"></i></a>`;
 
-        data.push([i, row.name, status, action + deleteAction]);
+        data.push([i, row.name, status, row.id.toString(), action + deleteAction]);
       }
 
       // Return response in PHP format (matching exactly)

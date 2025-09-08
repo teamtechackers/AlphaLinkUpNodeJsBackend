@@ -372,7 +372,7 @@ class InterestController {
         const action = `<a href="javascript:void(0);" id="edit_${row.id}" data-id="${row.id}" data-name="${row.name}" data-status="${row.status}" onclick="viewEditDetails(${row.id});" class="action-icon"> <i class="mdi mdi-square-edit-outline"></i></a>`;
         const deleteAction = `<a href="javascript:void(0);" class="action-icon delete_info" data-id="${row.id}"> <i class="mdi mdi-delete"></i></a>`;
 
-        data.push([i, row.name, status, action + deleteAction]);
+        data.push([i, row.name, status, row.id.toString(), action + deleteAction]);
       }
 
       // Return response in PHP format (matching exactly)
@@ -562,6 +562,421 @@ class InterestController {
       await query(
         'UPDATE interests SET deleted = ?, deleted_at = ?, deleted_by = ? WHERE id = ?',
         [1, currentTime, decodedUserId, keys]
+      );
+
+      // Return response in PHP format (matching exactly)
+      return res.json({
+        status: 'Success',
+        info: 'Interest Deleted Successfully'
+      });
+
+    } catch (error) {
+      console.error('deleteInterest error:', error);
+      return res.json({
+        status: 'Error',
+        info: 'Failed to delete interest'
+      });
+    }
+  }
+
+  // View interests - PHP compatible version
+  static async viewInterests(req, res) {
+    try {
+      // Support both query parameters and form data
+      const { user_id, token } = {
+        ...req.query,
+        ...req.body
+      };
+
+      console.log('viewInterests - Parameters:', { user_id, token });
+
+      // Check if user_id and token are provided
+      if (!user_id || !token) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'user_id and token are required'
+        });
+      }
+
+      // Decode user ID
+      const decodedUserId = idDecode(user_id);
+      if (!decodedUserId) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Invalid user ID'
+        });
+      }
+
+      // Get user details and validate
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      if (!userRows.length) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Not A Valid User'
+        });
+      }
+
+      const user = userRows[0];
+
+      // Validate token
+      if (user.unique_token !== token) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Token Mismatch Exception'
+        });
+      }
+
+      // Check if user is admin (role_id = 1 or 2)
+      const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
+      if (!adminRows.length) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Permission denied'
+        });
+      }
+
+      // Get all interests ordered by name (matching PHP exactly)
+      const interests = await query('SELECT * FROM interests WHERE deleted = 0 ORDER BY name ASC');
+
+      // Return response in PHP format (matching exactly)
+      return res.json({
+        status: true,
+        rcode: 200,
+        user_id: idEncode(decodedUserId),
+        unique_token: token,
+        interests_list: interests || [],
+        message: 'Interests list view data retrieved successfully'
+      });
+
+    } catch (error) {
+      console.error('viewInterests error:', error);
+      return res.json({
+        status: false,
+        rcode: 500,
+        message: 'Failed to retrieve interests list view data'
+      });
+    }
+  }
+
+  // Submit interest - PHP compatible version
+  static async submitInterest(req, res) {
+    try {
+      // Support both query parameters and form data
+      const { user_id, token, row_id, name, status } = {
+        ...req.query,
+        ...req.body
+      };
+
+      console.log('submitInterest - Parameters:', { user_id, token, row_id, name, status });
+
+      // Check if user_id and token are provided
+      if (!user_id || !token) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'user_id and token are required'
+        });
+      }
+
+      // Decode user ID
+      const decodedUserId = idDecode(user_id);
+      if (!decodedUserId) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Invalid user ID'
+        });
+      }
+
+      // Get user details and validate
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      if (!userRows.length) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Not A Valid User'
+        });
+      }
+
+      const user = userRows[0];
+
+      // Validate token
+      if (user.unique_token !== token) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Token Mismatch Exception'
+        });
+      }
+
+      // Check if user is admin (role_id = 1 or 2)
+      const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
+      if (!adminRows.length) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Permission denied'
+        });
+      }
+
+      // Check if required fields are provided
+      if (!name) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'name is required'
+        });
+      }
+
+      // Get admin role_id
+      const admin = adminRows[0];
+
+      if (!row_id || row_id === '') {
+        // Insert new interest (matching PHP exactly)
+        const insertData = {
+          name: name.trim(),
+          status: status !== undefined ? parseInt(status) : 1,
+          created_at: new Date().toISOString().slice(0, 19).replace('T', ' '),
+          created_by: admin.role_id
+        };
+
+        await query(
+          'INSERT INTO interests (name, status, created_at, created_by, deleted) VALUES (?, ?, ?, ?, 0)',
+          [insertData.name, insertData.status, insertData.created_at, insertData.created_by]
+        );
+
+        const info = 'Data Created Successfully';
+
+        // Return response in PHP format (matching exactly)
+        return res.json({
+          status: 'Success',
+          info: info
+        });
+
+      } else {
+        // Update existing interest (matching PHP exactly)
+        const updateData = {
+          name: name.trim(),
+          status: status !== undefined ? parseInt(status) : 1,
+          updated_at: new Date().toISOString().slice(0, 19).replace('T', ' '),
+          updated_by: admin.role_id
+        };
+
+        await query(
+          'UPDATE interests SET name = ?, status = ?, updated_at = ?, updated_by = ? WHERE id = ?',
+          [updateData.name, updateData.status, updateData.updated_at, updateData.updated_by, row_id]
+        );
+
+        const info = 'Data Updated Successfully';
+
+        // Return response in PHP format (matching exactly)
+        return res.json({
+          status: 'Success',
+          info: info
+        });
+      }
+
+    } catch (error) {
+      console.error('submitInterest error:', error);
+      return res.json({
+        status: 'Error',
+        info: 'Failed to submit interest'
+      });
+    }
+  }
+
+  // Check duplicate interest - PHP compatible version
+  static async checkDuplicateInterest(req, res) {
+    try {
+      // Support both query parameters and form data
+      const { user_id, token, name, id } = {
+        ...req.query,
+        ...req.body
+      };
+
+      console.log('checkDuplicateInterest - Parameters:', { user_id, token, name, id });
+
+      // Check if user_id and token are provided
+      if (!user_id || !token) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'user_id and token are required'
+        });
+      }
+
+      // Decode user ID
+      const decodedUserId = idDecode(user_id);
+      if (!decodedUserId) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Invalid user ID'
+        });
+      }
+
+      // Get user details and validate
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      if (!userRows.length) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Not A Valid User'
+        });
+      }
+
+      const user = userRows[0];
+
+      // Validate token
+      if (user.unique_token !== token) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Token Mismatch Exception'
+        });
+      }
+
+      // Check if user is admin (role_id = 1 or 2)
+      const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
+      if (!adminRows.length) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Permission denied'
+        });
+      }
+
+      // Check if required fields are provided
+      if (!name) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'name is required'
+        });
+      }
+
+      // Build condition for duplicate check (matching PHP exactly)
+      let condition = '';
+      let params = [];
+
+      if (parseInt(id) > 0) {
+        // Editing existing interest - exclude current record
+        condition = 'id != ? AND deleted = 0 AND name = ?';
+        params = [id, name];
+      } else {
+        // Adding new interest
+        condition = 'deleted = 0 AND name = ?';
+        params = [name];
+      }
+
+      // Check for duplicate interest name
+      const duplicateRows = await query(
+        `SELECT COUNT(*) as count FROM interests WHERE ${condition}`,
+        params
+      );
+
+      const hasDuplicate = duplicateRows[0]?.count > 0;
+
+      // Return response in PHP format (matching exactly)
+      return res.json({
+        validate: hasDuplicate
+      });
+
+    } catch (error) {
+      console.error('checkDuplicateInterest error:', error);
+      return res.json({
+        status: false,
+        rcode: 500,
+        message: 'Failed to check duplicate interest'
+      });
+    }
+  }
+
+  // Delete interest - PHP compatible version
+  static async deleteInterest(req, res) {
+    try {
+      // Support both query parameters and form data
+      const { user_id, token, keys } = {
+        ...req.query,
+        ...req.body
+      };
+
+      console.log('deleteInterest - Parameters:', { user_id, token, keys });
+
+      // Check if user_id and token are provided
+      if (!user_id || !token) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'user_id and token are required'
+        });
+      }
+
+      // Decode user ID
+      const decodedUserId = idDecode(user_id);
+      if (!decodedUserId) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Invalid user ID'
+        });
+      }
+
+      // Get user details and validate
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      if (!userRows.length) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Not A Valid User'
+        });
+      }
+
+      const user = userRows[0];
+
+      // Validate token
+      if (user.unique_token !== token) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Token Mismatch Exception'
+        });
+      }
+
+      // Check if user is admin (role_id = 1 or 2)
+      const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
+      if (!adminRows.length) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Permission denied'
+        });
+      }
+
+      // Check if keys (interest ID) is provided
+      if (!keys) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Interest ID is required'
+        });
+      }
+
+      // Soft delete the interest (matching PHP exactly)
+      const deleteData = {
+        deleted: 1,
+        deleted_at: new Date().toISOString().slice(0, 19).replace('T', ' '),
+        deleted_by: adminRows[0].role_id
+      };
+
+      await query(
+        'UPDATE interests SET deleted = ?, deleted_at = ?, deleted_by = ? WHERE id = ?',
+        [deleteData.deleted, deleteData.deleted_at, deleteData.deleted_by, keys]
       );
 
       // Return response in PHP format (matching exactly)

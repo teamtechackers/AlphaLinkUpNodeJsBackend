@@ -3,6 +3,7 @@
 const { query } = require('../config/db');
 const { ok, fail } = require('../utils/response');
 const { idEncode, idDecode } = require('../utils/idCodec');
+const websocketService = require('../services/websocketService');
 
 class EventController {
   
@@ -540,6 +541,35 @@ class EventController {
           'INSERT INTO event_organisers (event_id, user_id) VALUES (?, ?)',
           [finalEventId, decodedUserId]
       );
+      
+      // Broadcast new event to all connected users
+      try {
+        const newEventData = {
+          event_id: finalEventId,
+          event_name: eventData.event_name,
+          industry_type: eventData.industry_type,
+          country_id: eventData.country_id,
+          state_id: eventData.state_id,
+          city_id: eventData.city_id,
+          event_venue: eventData.event_venue,
+          event_link: eventData.event_link,
+          event_lat: eventData.event_lat,
+          event_lng: eventData.event_lng,
+          event_geo_address: eventData.event_geo_address,
+          event_date: eventData.event_date,
+          event_start_time: eventData.event_start_time,
+          event_end_time: eventData.event_end_time,
+          event_mode_id: eventData.event_mode_id,
+          event_type_id: eventData.event_type_id,
+          event_details: eventData.event_details,
+          event_banner: eventBanner || 'default_event_banner.jpg',
+          created_by: decodedUserId
+        };
+        
+        websocketService.broadcastDashboardUpdate('new_event', newEventData);
+      } catch (wsError) {
+        console.error('WebSocket broadcast error:', wsError);
+      }
     } else {
         // Update existing event
         if (eventBanner) {
@@ -567,6 +597,35 @@ class EventController {
           `UPDATE user_event_details SET ${updateFields.join(', ')} WHERE event_id = ? AND user_id = ?`,
           updateValues
         );
+        
+        // Broadcast event update to all connected users
+        try {
+          const updateEventData = {
+            event_id: event_id,
+            event_name: eventData.event_name,
+            industry_type: eventData.industry_type,
+            country_id: eventData.country_id,
+            state_id: eventData.state_id,
+            city_id: eventData.city_id,
+            event_venue: eventData.event_venue,
+            event_link: eventData.event_link,
+            event_lat: eventData.event_lat,
+            event_lng: eventData.event_lng,
+            event_geo_address: eventData.event_geo_address,
+            event_date: eventData.event_date,
+            event_start_time: eventData.event_start_time,
+            event_end_time: eventData.event_end_time,
+            event_mode_id: eventData.event_mode_id,
+            event_type_id: eventData.event_type_id,
+            event_details: eventData.event_details,
+            event_banner: eventBanner || 'default_event_banner.jpg',
+            updated_by: decodedUserId
+          };
+          
+          websocketService.broadcastDashboardUpdate('event_updated', updateEventData);
+        } catch (wsError) {
+          console.error('WebSocket broadcast error:', wsError);
+        }
       }
       
       // Handle event organisers
@@ -1193,6 +1252,665 @@ class EventController {
     } catch (error) {
       console.error('deleteEventAttendee error:', error);
       return fail(res, 500, 'Failed to delete event attendee');
+    }
+  }
+
+  // ===== ADMIN CONTROLLER FUNCTIONS =====
+
+  // View events - PHP compatible version
+  static async viewEvents(req, res) {
+    try {
+      // Support both query parameters and form data
+      const { user_id, token } = {
+        ...req.query,
+        ...req.body
+      };
+
+      // Check if user_id and token are provided
+      if (!user_id || !token) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'user_id and token are required'
+        });
+      }
+
+      // Decode user ID
+      const decodedUserId = idDecode(user_id);
+      if (!decodedUserId) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Invalid user ID'
+        });
+      }
+
+      // Check if user exists
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      if (!userRows.length) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'User not found'
+        });
+      }
+
+      // Check if user is admin (role_id = 1 or 2)
+      const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
+      if (!adminRows.length) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Permission denied'
+        });
+      }
+
+      // Get users list (matching PHP exactly)
+      const users = await query('SELECT * FROM users WHERE deleted = 0 ORDER BY full_name ASC');
+
+      // Get countries list (matching PHP exactly)
+      const countries = await query('SELECT * FROM countries WHERE status = 1 ORDER BY name ASC');
+
+      // Get event modes list (matching PHP exactly)
+      const eventModes = await query('SELECT * FROM event_mode WHERE status = 1 AND deleted = 0 ORDER BY name ASC');
+
+      // Get event types list (matching PHP exactly)
+      const eventTypes = await query('SELECT * FROM event_type WHERE status = 1 AND deleted = 0 ORDER BY name ASC');
+
+      // Get industry types list (matching PHP exactly)
+      const industryTypes = await query('SELECT * FROM industry_type WHERE status = 1 AND deleted = 0 ORDER BY name ASC');
+
+      return res.json({
+        status: true,
+        rcode: 200,
+        user_id: user_id,
+        unique_token: token,
+        list_users: users,
+        list_country: countries,
+        list_event_mode: eventModes,
+        list_event_type: eventTypes,
+        list_industry_type: industryTypes,
+        message: 'Events list view data retrieved successfully'
+      });
+
+    } catch (error) {
+      console.error('viewEvents error:', error);
+      return res.json({
+        status: false,
+        rcode: 500,
+        message: 'Failed to retrieve events list view data'
+      });
+    }
+  }
+
+  // Submit events - PHP compatible version
+  static async submitEvents(req, res) {
+    try {
+      // Support both query parameters and form data
+      const { user_id, token, row_id, user_id: event_user_id, event_name, industry_type, country_id, state_id, city_id, event_venue, event_link, event_lat, event_lng, event_geo_address, event_date, event_start_time, event_end_time, event_mode_id, event_type_id, event_details, status } = {
+        ...req.query,
+        ...req.body
+      };
+      
+      // Extract event user_id from body (different from admin user_id)
+      const eventUserId = req.body.user_id;
+      
+      // Ensure admin user_id comes from query parameters
+      const adminUserId = req.query.user_id;
+
+      console.log('submitEvents - Parameters:', { user_id, token, row_id, eventUserId, event_name, industry_type, country_id, state_id, city_id, event_venue, event_link, event_lat, event_lng, event_geo_address, event_date, event_start_time, event_end_time, event_mode_id, event_type_id, event_details, status });
+
+      // Check if user_id and token are provided
+      if (!adminUserId || !token) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'user_id and token are required'
+        });
+      }
+
+      // Decode user ID
+      const decodedUserId = idDecode(adminUserId);
+      if (!decodedUserId) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Invalid user ID'
+        });
+      }
+
+      // Check if user exists
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      if (!userRows.length) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'User not found'
+        });
+      }
+
+      // Check if user is admin (role_id = 1 or 2)
+      const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
+      if (!adminRows.length) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Permission denied'
+        });
+      }
+
+      // Check if required fields are provided
+      if (!eventUserId) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'user_id is required'
+        });
+      }
+
+      // Get admin role_id
+      const admin = adminRows[0];
+
+      if (!row_id || row_id === '') {
+        // Insert new event (matching PHP exactly)
+        const insertData = {
+          user_id: parseInt(eventUserId),
+          event_name: event_name ? event_name.trim() : '',
+          industry_type: industry_type ? industry_type.trim() : '',
+          country_id: country_id ? parseInt(country_id) : 166, // Default to Pakistan
+          state_id: state_id ? parseInt(state_id) : 2728, // Default to Punjab
+          city_id: city_id ? parseInt(city_id) : 31439, // Default to Lahore
+          event_venue: event_venue ? event_venue.trim() : '',
+          event_link: event_link ? event_link.trim() : '',
+          event_lat: event_lat ? event_lat.toString() : '',
+          event_lng: event_lng ? event_lng.toString() : '',
+          event_geo_address: event_geo_address ? event_geo_address.trim() : '',
+          event_date: event_date ? event_date.trim() : null,
+          event_start_time: event_start_time ? event_start_time.trim() : null,
+          event_end_time: event_end_time ? event_end_time.trim() : null,
+          event_mode_id: event_mode_id ? parseInt(event_mode_id) : null,
+          event_type_id: event_type_id ? parseInt(event_type_id) : null,
+          event_details: event_details ? event_details.trim() : '',
+          event_banner: '', // Default empty string for event_banner
+          status: status !== undefined ? parseInt(status) : 1,
+          deleted: 0,
+          created_dts: new Date().toISOString().slice(0, 19).replace('T', ' '),
+          created_by: admin.role_id
+        };
+
+        await query(
+          'INSERT INTO user_event_details (user_id, event_name, industry_type, country_id, state_id, city_id, event_venue, event_link, event_lat, event_lng, event_geo_address, event_date, event_start_time, event_end_time, event_mode_id, event_type_id, event_details, event_banner, status, deleted, created_dts, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+          [insertData.user_id, insertData.event_name, insertData.industry_type, insertData.country_id, insertData.state_id, insertData.city_id, insertData.event_venue, insertData.event_link, insertData.event_lat, insertData.event_lng, insertData.event_geo_address, insertData.event_date, insertData.event_start_time, insertData.event_end_time, insertData.event_mode_id, insertData.event_type_id, insertData.event_details, insertData.event_banner, insertData.status, insertData.deleted, insertData.created_dts, insertData.created_by]
+        );
+
+        return res.json({
+          status: 'Success',
+          info: 'Event Created Successfully'
+        });
+
+      } else {
+        // Update existing event (matching PHP exactly)
+        const updateData = {
+          user_id: parseInt(eventUserId),
+          event_name: event_name ? event_name.trim() : '',
+          industry_type: industry_type ? industry_type.trim() : '',
+          country_id: country_id ? parseInt(country_id) : 166, // Default to Pakistan
+          state_id: state_id ? parseInt(state_id) : 2728, // Default to Punjab
+          city_id: city_id ? parseInt(city_id) : 31439, // Default to Lahore
+          event_venue: event_venue ? event_venue.trim() : '',
+          event_link: event_link ? event_link.trim() : '',
+          event_lat: event_lat ? event_lat.toString() : '',
+          event_lng: event_lng ? event_lng.toString() : '',
+          event_geo_address: event_geo_address ? event_geo_address.trim() : '',
+          event_date: event_date ? event_date.trim() : null,
+          event_start_time: event_start_time ? event_start_time.trim() : null,
+          event_end_time: event_end_time ? event_end_time.trim() : null,
+          event_mode_id: event_mode_id ? parseInt(event_mode_id) : null,
+          event_type_id: event_type_id ? parseInt(event_type_id) : null,
+          event_details: event_details ? event_details.trim() : '',
+          status: status !== undefined ? parseInt(status) : 1,
+          updated_at: new Date().toISOString().slice(0, 19).replace('T', ' '),
+          updated_by: admin.role_id
+        };
+
+        await query(
+          'UPDATE user_event_details SET user_id = ?, event_name = ?, industry_type = ?, country_id = ?, state_id = ?, city_id = ?, event_venue = ?, event_link = ?, event_lat = ?, event_lng = ?, event_geo_address = ?, event_date = ?, event_start_time = ?, event_end_time = ?, event_mode_id = ?, event_type_id = ?, event_details = ?, status = ?, updated_at = ?, updated_by = ? WHERE event_id = ?',
+          [updateData.user_id, updateData.event_name, updateData.industry_type, updateData.country_id, updateData.state_id, updateData.city_id, updateData.event_venue, updateData.event_link, updateData.event_lat, updateData.event_lng, updateData.event_geo_address, updateData.event_date, updateData.event_start_time, updateData.event_end_time, updateData.event_mode_id, updateData.event_type_id, updateData.event_details, updateData.status, updateData.updated_at, updateData.updated_by, row_id]
+        );
+
+        return res.json({
+          status: 'Success',
+          info: 'Event Updated Successfully'
+        });
+      }
+
+    } catch (error) {
+      console.error('submitEvents error:', error);
+      return res.json({
+        status: 'Error',
+        info: 'Failed to submit event'
+      });
+    }
+  }
+
+  // List events ajax - PHP compatible version
+  static async listEventsAjax(req, res) {
+    try {
+      // Support both query parameters and form data
+      const { user_id, token, draw, start, length, search, order, columns } = {
+        ...req.query,
+        ...req.body
+      };
+
+      // Check if user_id and token are provided
+      if (!user_id || !token) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'user_id and token are required'
+        });
+      }
+
+      // Decode user ID
+      const decodedUserId = idDecode(user_id);
+      if (!decodedUserId) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Invalid user ID'
+        });
+      }
+
+      // Check if user exists
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      if (!userRows.length) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'User not found'
+        });
+      }
+
+      // Check if user is admin (role_id = 1 or 2)
+      const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
+      if (!adminRows.length) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Permission denied'
+        });
+      }
+
+      // Build base query (matching PHP model exactly)
+      let baseQuery = `
+        SELECT users.full_name, user_event_details.*
+        FROM user_event_details
+        LEFT JOIN users ON users.user_id = user_event_details.user_id
+        WHERE user_event_details.deleted = 0
+      `;
+
+      // Add search functionality (matching PHP model exactly)
+      const searchableColumns = ['users.full_name', 'user_event_details.event_name', 'user_event_details.event_venue', 'user_event_details.status'];
+      if (search && search.value) {
+        const searchConditions = searchableColumns.map(col => `${col} LIKE ?`).join(' OR ');
+        baseQuery += ` AND (${searchConditions})`;
+      }
+
+      // Get total count
+      const countQuery = baseQuery.replace('SELECT users.full_name, user_event_details.*', 'SELECT COUNT(*) as total');
+      const countResult = await query(countQuery, search && search.value ? searchableColumns.map(() => `%${search.value}%`) : []);
+      const totalRecords = countResult[0].total;
+
+      // Add ordering (matching PHP model exactly)
+      const orderColumns = [null, 'users.full_name', 'user_event_details.event_name', 'user_event_details.event_venue', 'user_event_details.status'];
+      if (order && order[0]) {
+        const orderColumn = orderColumns[order[0].column];
+        const orderDir = order[0].dir;
+        if (orderColumn) {
+          baseQuery += ` ORDER BY ${orderColumn} ${orderDir}`;
+        }
+      } else {
+        baseQuery += ' ORDER BY users.full_name ASC';
+      }
+
+      // Add pagination
+      if (length && length !== -1) {
+        baseQuery += ` LIMIT ${parseInt(start) || 0}, ${parseInt(length)}`;
+      }
+
+      // Execute query
+      const events = await query(baseQuery, search && search.value ? searchableColumns.map(() => `%${search.value}%`) : []);
+
+      // Format data for DataTables (matching PHP exactly)
+      const data = events.map((row, index) => {
+        const i = (parseInt(start) || 0) + index + 1;
+
+        // Format status (matching PHP exactly)
+        const status = row.status == 1 ? '<span class="badge bg-soft-success text-success">Active</span>' : '<span class="badge bg-soft-danger text-danger">Inactive</span>';
+
+        // Format action buttons (matching PHP exactly)
+        const action = `
+          <a href="javascript:void(0);" data-id="${row.event_id}" class="action-icon edit_info"><i class="mdi mdi-square-edit-outline"></i></a>
+          <a href="javascript:void(0);" data-id="${row.event_id}" class="action-icon view_info"><i class="mdi mdi-eye"></i></a>
+          <a href="javascript:void(0);" data-id="${row.event_id}" class="action-icon delete_info"><i class="mdi mdi-delete"></i></a>
+        `;
+
+        return [i, row.full_name, row.event_name, row.event_venue, status, action];
+      });
+
+      return res.json({
+        draw: parseInt(draw) || 1,
+        recordsTotal: totalRecords,
+        recordsFiltered: totalRecords,
+        data: data
+      });
+
+    } catch (error) {
+      console.error('listEventsAjax error:', error);
+      return res.json({
+        status: false,
+        rcode: 500,
+        message: 'Failed to retrieve events list'
+      });
+    }
+  }
+
+  // Edit events - PHP compatible version
+  static async editEvents(req, res) {
+    try {
+      // Support both query parameters and form data
+      const { user_id, token, keys } = {
+        ...req.query,
+        ...req.body
+      };
+
+      // Check if user_id and token are provided
+      if (!user_id || !token) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'user_id and token are required'
+        });
+      }
+
+      // Decode user ID
+      const decodedUserId = idDecode(user_id);
+      if (!decodedUserId) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Invalid user ID'
+        });
+      }
+
+      // Check if user exists
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      if (!userRows.length) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'User not found'
+        });
+      }
+
+      // Check if user is admin (role_id = 1 or 2)
+      const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
+      if (!adminRows.length) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Permission denied'
+        });
+      }
+
+      // Check if keys is provided
+      if (!keys) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Event ID is required'
+        });
+      }
+
+      // Get event details (matching PHP exactly)
+      const eventRows = await query('SELECT * FROM user_event_details WHERE event_id = ? LIMIT 1', [keys]);
+      if (!eventRows.length) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Event not found'
+        });
+      }
+
+      const details = eventRows[0];
+
+      // Get state list (matching PHP exactly)
+      const stateRows = await query('SELECT * FROM states WHERE country_id = ? ORDER BY name ASC', [details.country_id]);
+      let listState = '<option value="">Select State</option>';
+      stateRows.forEach(state => {
+        const selected = state.id == details.state_id ? 'selected' : '';
+        listState += `<option value="${state.id}" ${selected}>${state.name}</option>`;
+      });
+
+      // Get city list if state_id exists (matching PHP exactly)
+      let listCities = '<option value="">Select City</option>';
+      if (details.state_id) {
+        const cityRows = await query('SELECT * FROM cities WHERE state_id = ? ORDER BY name ASC', [details.state_id]);
+        cityRows.forEach(city => {
+          const selected = city.id == details.city_id ? 'selected' : '';
+          listCities += `<option value="${city.id}" ${selected}>${city.name}</option>`;
+        });
+      }
+
+      // Add dropdown lists to details
+      details.list_state = listState;
+      details.list_cities = listCities;
+
+      // Add event banner URL if exists (matching PHP exactly)
+      if (details.event_banner) {
+        details.event_banner = `http://localhost:3000/uploads/events/${details.event_banner}`;
+      }
+
+      return res.json(details);
+
+    } catch (error) {
+      console.error('editEvents error:', error);
+      return res.json({
+        status: false,
+        rcode: 500,
+        message: 'Failed to retrieve event details'
+      });
+    }
+  }
+
+  // Delete events - PHP compatible version
+  static async deleteEvents(req, res) {
+    try {
+      // Support both query parameters and form data
+      const { user_id, token, keys } = {
+        ...req.query,
+        ...req.body
+      };
+
+      // Check if user_id and token are provided
+      if (!user_id || !token) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'user_id and token are required'
+        });
+      }
+
+      // Decode user ID
+      const decodedUserId = idDecode(user_id);
+      if (!decodedUserId) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Invalid user ID'
+        });
+      }
+
+      // Check if user exists
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      if (!userRows.length) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'User not found'
+        });
+      }
+
+      // Check if user is admin (role_id = 1 or 2)
+      const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
+      if (!adminRows.length) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Permission denied'
+        });
+      }
+
+      // Check if keys is provided
+      if (!keys) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Event ID is required'
+        });
+      }
+
+      // Get admin role_id
+      const admin = adminRows[0];
+
+      // Soft delete event (matching PHP exactly)
+      await query(
+        'UPDATE user_event_details SET deleted = 1, deleted_at = ?, deleted_by = ? WHERE event_id = ?',
+        [new Date().toISOString().slice(0, 19).replace('T', ' '), admin.role_id, keys]
+      );
+
+      return res.json({
+        status: 'Success',
+        info: 'Event Deleted Successfully'
+      });
+
+    } catch (error) {
+      console.error('deleteEvents error:', error);
+      return res.json({
+        status: 'Error',
+        info: 'Failed to delete event'
+      });
+    }
+  }
+
+  // View events details - PHP compatible version
+  static async viewEventsDetails(req, res) {
+    try {
+      // Support both query parameters and form data
+      const { user_id, token, keys } = {
+        ...req.query,
+        ...req.body
+      };
+
+      // Check if user_id and token are provided
+      if (!user_id || !token) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'user_id and token are required'
+        });
+      }
+
+      // Decode user ID
+      const decodedUserId = idDecode(user_id);
+      if (!decodedUserId) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Invalid user ID'
+        });
+      }
+
+      // Check if user exists
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      if (!userRows.length) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'User not found'
+        });
+      }
+
+      // Check if user is admin (role_id = 1 or 2)
+      const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
+      if (!adminRows.length) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Permission denied'
+        });
+      }
+
+      // Check if keys is provided
+      if (!keys) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Event ID is required'
+        });
+      }
+
+      // Get event details with joins (matching PHP exactly)
+      const detailsRows = await query(`
+        SELECT user_event_details.*, countries.name as country_name, states.name as state_name, cities.name as city_name, users.full_name, event_mode.name as event_mode_name, event_type.name as event_type_name, industry_type.name as industry_name
+        FROM user_event_details
+        LEFT JOIN countries ON countries.id = user_event_details.country_id
+        LEFT JOIN states ON states.id = user_event_details.state_id
+        LEFT JOIN cities ON cities.id = user_event_details.city_id
+        LEFT JOIN users ON users.user_id = user_event_details.user_id
+        LEFT JOIN event_mode ON event_mode.id = user_event_details.event_mode_id
+        LEFT JOIN event_type ON event_type.id = user_event_details.event_type_id
+        LEFT JOIN industry_type ON industry_type.id = user_event_details.industry_type
+        WHERE user_event_details.event_id = ?
+        LIMIT 1
+      `, [keys]);
+
+      if (!detailsRows.length) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Event not found'
+        });
+      }
+
+      const details = detailsRows[0];
+
+      // Format dates and times (matching PHP exactly)
+      if (details.event_date) {
+        const date = new Date(details.event_date);
+        details.event_date = date.toLocaleDateString('en-GB'); // dd-mm-yyyy format
+      }
+      if (details.event_start_time) {
+        const time = new Date(`2000-01-01T${details.event_start_time}`);
+        details.event_start_time = time.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+      }
+      if (details.event_end_time) {
+        const time = new Date(`2000-01-01T${details.event_end_time}`);
+        details.event_end_time = time.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+      }
+      if (details.event_banner) {
+        details.event_banner = `http://localhost:3000/uploads/events/${details.event_banner}`;
+      }
+
+      return res.json(details);
+
+    } catch (error) {
+      console.error('viewEventsDetails error:', error);
+      return res.json({
+        status: false,
+        rcode: 500,
+        message: 'Failed to retrieve event details'
+      });
     }
   }
 

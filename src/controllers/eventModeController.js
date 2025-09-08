@@ -214,89 +214,125 @@ class EventModeController {
   // Admin function - List event mode ajax
   static async adminListEventModeAjax(req, res) {
     try {
-      const { user_id, token, start, length, search, order, columns } = req.body;
-      
+      // Support both query parameters and form data
+      const { user_id, token } = {
+        ...req.query,
+        ...req.body
+      };
+
+      console.log('adminListEventModeAjax - Parameters:', { user_id, token });
+
+      // Check if user_id and token are provided
       if (!user_id || !token) {
-        return res.status(400).json({
+        return res.json({
           status: false,
-          rcode: 400,
-          message: 'User ID and token are required'
+          rcode: 500,
+          message: 'user_id and token are required'
         });
       }
 
-      console.log('adminListEventModeAjax - Parameters:', { user_id, token, start, length, search, order, columns });
-
-      // Verify admin user
-      const adminUser = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [user_id]);
-      if (!adminUser.length) {
-        return res.status(400).json({
+      // Decode user ID
+      const decodedUserId = idDecode(user_id);
+      if (!decodedUserId) {
+        return res.json({
           status: false,
-          rcode: 400,
-          message: 'Invalid user'
+          rcode: 500,
+          message: 'Invalid user ID'
         });
       }
 
-      const adminUserData = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [user_id]);
-      if (!adminUserData.length) {
-        return res.status(400).json({
+      // Get user details and validate
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      if (!userRows.length) {
+        return res.json({
           status: false,
-          rcode: 400,
-          message: 'Invalid admin user'
+          rcode: 500,
+          message: 'Not A Valid User'
         });
       }
+
+      const user = userRows[0];
+
+      // Validate token
+      if (user.unique_token !== token) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Token Mismatch Exception'
+        });
+      }
+
+      // Check if user is admin (role_id = 1 or 2)
+      const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
+      if (!adminRows.length) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Permission denied'
+        });
+      }
+
+      // Get DataTable parameters
+      const draw = parseInt(req.body.draw) || 1;
+      const start = parseInt(req.body.start) || 0;
+      const length = parseInt(req.body.length) || 10;
+      const searchValue = req.body.search?.value || '';
 
       // Get total count
       const totalCountResult = await query('SELECT COUNT(*) as count FROM event_mode WHERE deleted = 0');
       const totalCount = totalCountResult[0].count;
 
-      // Build search condition
-      let searchCondition = 'deleted = 0';
-      let searchParams = [];
-
-      if (search && search.value && search.value.trim() !== '') {
-        searchCondition += ' AND name LIKE ?';
-        searchParams.push(`%${search.value.trim()}%`);
-      }
-
-      // Build order clause
-      let orderClause = 'ORDER BY name ASC';
-      if (order && order.length > 0 && columns) {
-        const orderColumn = columns[order[0].column];
-        const orderDir = order[0].dir.toUpperCase();
-        orderClause = `ORDER BY ${orderColumn.data} ${orderDir}`;
-      }
-
-      // Build data query
-      const dataQuery = `
-        SELECT id, name, status, created_at, created_by, updated_at, updated_by
+      // Build query for filtered data
+      let dataQuery = `
         FROM event_mode
-        WHERE ${searchCondition}
-        ${orderClause}
+        WHERE deleted = 0
+      `;
+      let dataParams = [];
+
+      // Add search filter
+      if (searchValue) {
+        dataQuery += ' AND name LIKE ?';
+        dataParams.push(`%${searchValue}%`);
+      }
+
+      // Get filtered count
+      const filteredCountResult = await query(`SELECT COUNT(*) as count ${dataQuery}`, dataParams);
+      const filteredCount = filteredCountResult[0].count;
+
+      // Get data with pagination
+      dataQuery = `
+        SELECT * ${dataQuery}
+        ORDER BY name ASC
         LIMIT ? OFFSET ?
       `;
-      const dataParams = [...searchParams, parseInt(length), parseInt(start)];
+      dataParams.push(length, start);
 
       const eventModes = await query(dataQuery, dataParams);
 
-      // Format response data
-      const formattedData = [];
+      // Format data for DataTable
+      const data = [];
       for (const row of eventModes) {
-        formattedData.push({
-          id: row.id,
-          name: row.name || '',
-          status: row.status || 0,
-          created_at: row.created_at || '',
-          created_by: row.created_by || '',
-          updated_at: row.updated_at || '',
-          updated_by: row.updated_by || ''
-        });
+        const i = data.length + 1;
+        
+        // Format status
+        let status = '<span class="badge bg-soft-success text-success">Active</span>';
+        if (row.status == 0) {
+          status = '<span class="badge bg-soft-danger text-danger">Inactive</span>';
+        }
+
+        // Format action buttons
+        const action = `<a href="javascript:void(0);" id="edit_${row.id}" data-id="${row.id}" data-name="${row.name}" data-status="${row.status}" onclick="viewEditDetails(${row.id});" class="action-icon"> <i class="mdi mdi-square-edit-outline"></i></a>`;
+        const deleteAction = `<a href="javascript:void(0);" class="action-icon delete_info" data-id="${row.id}"> <i class="mdi mdi-delete"></i></a>`;
+
+        data.push([i, row.name, status, row.id.toString(), action + deleteAction]);
       }
 
+      // Return response in PHP format (matching exactly)
       return res.json({
-        draw: parseInt(req.body.draw) || 1,
+        draw: draw,
         recordsTotal: totalCount,
-        recordsFiltered: totalCount,
-        data: formattedData
+        recordsFiltered: filteredCount,
+        data: data
       });
     } catch (error) {
       console.error('adminListEventModeAjax error:', error);

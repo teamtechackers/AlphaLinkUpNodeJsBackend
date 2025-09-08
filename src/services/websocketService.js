@@ -178,6 +178,37 @@ class WebSocketService {
     this.io.emit('broadcast_message', messageData);
   }
 
+  // Method to broadcast dashboard updates to all connected users
+  broadcastDashboardUpdate(updateType, data) {
+    const updateData = {
+      type: 'dashboard_update',
+      update_type: updateType, // 'new_job', 'new_event', 'job_updated', 'event_updated', etc.
+      data: data,
+      timestamp: Date.now()
+    };
+    
+    this.io.emit('dashboard_update', updateData);
+    logger.info(`📊 Dashboard update broadcasted: ${updateType}`);
+  }
+
+  // Method to send dashboard update to specific user
+  sendDashboardUpdateToUser(userId, updateType, data) {
+    const socketId = this.connectedUsers.get(userId);
+    if (socketId) {
+      const updateData = {
+        type: 'dashboard_update',
+        update_type: updateType,
+        data: data,
+        timestamp: Date.now()
+      };
+      
+      this.io.to(socketId).emit('dashboard_update', updateData);
+      logger.info(`📊 Dashboard update sent to user ${userId}: ${updateType}`);
+      return true;
+    }
+    return false;
+  }
+
   // Get connected users count
   getConnectedUsersCount() {
     return this.connectedUsers.size;

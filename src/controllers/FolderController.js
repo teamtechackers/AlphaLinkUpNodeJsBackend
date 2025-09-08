@@ -137,7 +137,7 @@ class FolderController {
         // First try to get folders with contacts count
         foldersList = await query(
           `SELECT uf.user_folder_id, uf.folder_name, uf.master_folder_id, uf.type,
-                  COALESCE(COUNT(uc.contact_id), 0) as contacts_count
+                  COALESCE(COUNT(uc.contact_user_id), 0) as contacts_count
            FROM user_folders uf
            LEFT JOIN user_contacts uc ON uf.user_folder_id = uc.user_folder_id AND uc.status = 1
            WHERE uf.user_id = ? AND uf.type = ? AND uf.status = 1
@@ -177,7 +177,7 @@ class FolderController {
       try {
         const visitingCardsList = await query(
           `SELECT user_folder_id, COUNT(*) as visiting_cards_count 
-           FROM user_visiting_cards 
+           FROM user_contacts_visiting_cards 
            WHERE user_id = ? AND status = 1 
            GROUP BY user_folder_id`,
           [decodedUserId]
@@ -386,7 +386,7 @@ class FolderController {
       try {
         const visitingCardsList = await query(
           `SELECT user_sub_folder_id, COUNT(*) as visiting_cards_count 
-           FROM user_visiting_cards 
+           FROM user_contacts_visiting_cards 
            WHERE user_id = ? AND status = 1 
            GROUP BY user_sub_folder_id`,
           [decodedUserId]
@@ -409,7 +409,7 @@ class FolderController {
       try {
         subFoldersList = await query(
           `SELECT usf.user_sub_folder_id, usf.folder_name, usf.user_folder_id,
-                  COALESCE(COUNT(uc.contact_id), 0) as contacts_count
+                  COALESCE(COUNT(uc.contact_user_id), 0) as contacts_count
            FROM user_sub_folders usf
            LEFT JOIN user_contacts uc ON usf.user_sub_folder_id = uc.user_sub_folder_id AND uc.status = 1
            WHERE usf.user_id = ? AND usf.user_folder_id = ? AND usf.status = 1
@@ -1050,7 +1050,7 @@ class FolderController {
         const action = `<a href="javascript:void(0);" id="edit_${row.id}" data-id="${row.id}" data-name="${row.name}" data-status="${row.status}" onclick="viewEditDetails(${row.id});" class="action-icon"> <i class="mdi mdi-square-edit-outline"></i></a>
                         <a href="javascript:void(0);" class="action-icon delete_info" data-id="${row.id}"> <i class="mdi mdi-delete"></i></a>`;
 
-        data.push([i, row.name, status, action]);
+        data.push([i, row.name, status, row.id.toString(), action]);
       }
 
       // Return DataTables response (matching PHP exactly)

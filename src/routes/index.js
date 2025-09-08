@@ -242,12 +242,10 @@ router.get('/check-duplicate-state', StateController.checkAdminDuplicateState);
 router.post('/check-duplicate-state', uploadFormData.none(), StateController.checkAdminDuplicateState);
 router.get('/delete-state', StateController.deleteAdminState);
 router.post('/delete-state', uploadFormData.none(), StateController.deleteAdminState);
-router.get('/list-city', AdminController.viewCities);
-router.post('/list-city', uploadFormData.none(), AdminController.viewCities);
-router.get('/submit-cities', AdminController.submitCities);
-router.post('/submit-cities', uploadFormData.none(), AdminController.submitCities);
-router.get('/check-duplicate-cities', AdminController.checkDuplicateCities);
-router.post('/check-duplicate-cities', uploadFormData.none(), AdminController.checkDuplicateCities);
+router.get('/submit-cities', CityController.submitCities);
+router.post('/submit-cities', uploadFormData.none(), CityController.submitCities);
+router.get('/check-duplicate-cities', CityController.checkDuplicateCities);
+router.post('/check-duplicate-cities', uploadFormData.none(), CityController.checkDuplicateCities);
 router.get('/delete-cities', AdminController.deleteCities);
 router.post('/delete-cities', uploadFormData.none(), AdminController.deleteCities);
 router.get('/list-employment-type', EmploymentTypeController.adminViewEmploymentType);
@@ -260,16 +258,16 @@ router.get('/check-duplicate-employment-type', EmploymentTypeController.adminChe
 router.post('/check-duplicate-employment-type', uploadFormData.none(), EmploymentTypeController.adminCheckDuplicateEmploymentType);
 router.get('/delete-employment-type', EmploymentTypeController.adminDeleteEmploymentType);
 router.post('/delete-employment-type', uploadFormData.none(), EmploymentTypeController.adminDeleteEmploymentType);
-router.get('/list-interests', InterestController.adminViewInterests);
-router.post('/list-interests', uploadFormData.none(), InterestController.adminViewInterests);
-router.get('/submit-interest', InterestController.adminSubmitInterest);
-router.post('/submit-interest', uploadFormData.none(), InterestController.adminSubmitInterest);
-router.get('/list-interest-ajax', InterestController.adminListInterestAjax);
-router.post('/list-interest-ajax', uploadFormData.none(), InterestController.adminListInterestAjax);
-router.get('/check-duplicate-interest', InterestController.adminCheckDuplicateInterest);
-router.post('/check-duplicate-interest', uploadFormData.none(), InterestController.adminCheckDuplicateInterest);
-router.get('/delete-interest', InterestController.adminDeleteInterest);
-router.post('/delete-interest', uploadFormData.none(), InterestController.adminDeleteInterest);
+router.get('/list-interests', InterestController.viewInterests);
+router.post('/list-interests', uploadFormData.none(), InterestController.viewInterests);
+router.get('/submit-interest', InterestController.submitInterest);
+router.post('/submit-interest', uploadFormData.none(), InterestController.submitInterest);
+router.get('/list-interest-ajax', InterestController.listInterestAjax);
+router.post('/list-interest-ajax', uploadFormData.none(), InterestController.listInterestAjax);
+router.get('/check-duplicate-interest', InterestController.checkDuplicateInterest);
+router.post('/check-duplicate-interest', uploadFormData.none(), InterestController.checkDuplicateInterest);
+router.get('/delete-interest', InterestController.deleteInterest);
+router.post('/delete-interest', uploadFormData.none(), InterestController.deleteInterest);
 router.get('/list-job-type', JobTypeController.adminViewJobType);
 router.post('/list-job-type', uploadFormData.none(), JobTypeController.adminViewJobType);
 router.get('/submit-job-type', JobTypeController.adminSubmitJobType);
@@ -357,8 +355,8 @@ router.get('/get-state-list', StateController.getAdminStateList);
 router.post('/get-state-list', uploadFormData.none(), StateController.getAdminStateList);
 
 // Admin City Routes
-router.get('/list-city', CityController.viewAdminCity);
-router.post('/list-city', uploadFormData.none(), CityController.viewAdminCity);
+router.get('/list-city', CityController.viewCities);
+router.post('/list-city', uploadFormData.none(), CityController.viewCities);
 router.get('/submit-city', CityController.submitAdminCity);
 router.post('/submit-city', uploadFormData.none(), CityController.submitAdminCity);
 router.get('/check-duplicate-city', CityController.checkAdminDuplicateCity);
@@ -369,6 +367,8 @@ router.get('/get-city-list', CityController.getAdminCityList);
 router.post('/get-city-list', uploadFormData.none(), CityController.getAdminCityList);
 router.get('/list-cities-ajax', CityController.listCitiesAjax);
 router.post('/list-cities-ajax', uploadFormData.none(), CityController.listCitiesAjax);
+router.get('/list_cities_ajax', CityController.listCitiesAjax);
+router.post('/list_cities_ajax', uploadFormData.none(), CityController.listCitiesAjax);
 
 // Admin Dashboard Routes
 router.get('/admin-dashboard', DashboardController.getAdminDashboard);
@@ -408,6 +408,8 @@ router.get('/list-investors', AdminController.viewInvestors);
 router.post('/list-investors', uploadFormData.none(), AdminController.viewInvestors);
 router.get('/list-investors-ajax', AdminController.listInvestorsAjax);
 router.post('/list-investors-ajax', uploadFormData.none(), AdminController.listInvestorsAjax);
+router.get('/list_investors_ajax', AdminController.listInvestorsAjax);
+router.post('/list_investors_ajax', uploadFormData.none(), AdminController.listInvestorsAjax);
 router.get('/submit-investors', AdminController.submitInvestors);
 router.post('/submit-investors', uploadFormData.none(), AdminController.submitInvestors);
 router.get('/edit-investors', AdminController.editInvestors);
@@ -420,8 +422,10 @@ router.post('/view-investors-details', uploadFormData.none(), AdminController.vi
 // Jobs admin routes
 router.get('/list-jobs', JobController.adminViewJobs);
 router.post('/list-jobs', uploadFormData.none(), JobController.adminViewJobs);
-router.get('/list-jobs-ajax', JobController.adminListJobsAjax);
-router.post('/list-jobs-ajax', uploadFormData.none(), JobController.adminListJobsAjax);
+router.get('/list-jobs-ajax', AdminController.listJobsAjax);
+router.post('/list-jobs-ajax', uploadFormData.none(), AdminController.listJobsAjax);
+router.get('/list_jobs_ajax', AdminController.listJobsAjax);
+router.post('/list_jobs_ajax', uploadFormData.none(), AdminController.listJobsAjax);
 router.get('/submit-jobs', JobController.adminSubmitJobs);
 router.post('/submit-jobs', uploadFormData.none(), JobController.adminSubmitJobs);
 router.get('/edit-jobs', JobController.adminEditJobs);
@@ -432,18 +436,20 @@ router.get('/view-jobs-details', JobController.adminViewJobsDetails);
 router.post('/view-jobs-details', uploadFormData.none(), JobController.adminViewJobsDetails);
 
 // Events admin routes
-router.get('/list-events', AdminController.viewEvents);
-router.post('/list-events', uploadFormData.none(), AdminController.viewEvents);
-router.get('/list-events-ajax', AdminController.listEventsAjax);
-router.post('/list-events-ajax', uploadFormData.none(), AdminController.listEventsAjax);
-router.get('/submit-events', AdminController.submitEvents);
-router.post('/submit-events', uploadFormData.none(), AdminController.submitEvents);
-router.get('/edit-events', AdminController.editEvents);
-router.post('/edit-events', uploadFormData.none(), AdminController.editEvents);
-router.get('/delete-events', AdminController.deleteEvents);
-router.post('/delete-events', uploadFormData.none(), AdminController.deleteEvents);
-router.get('/view-events-details', AdminController.viewEventsDetails);
-router.post('/view-events-details', uploadFormData.none(), AdminController.viewEventsDetails);
+router.get('/list-events', EventController.viewEvents);
+router.post('/list-events', uploadFormData.none(), EventController.viewEvents);
+router.get('/list-events-ajax', EventController.listEventsAjax);
+router.post('/list-events-ajax', uploadFormData.none(), EventController.listEventsAjax);
+router.get('/list_events_ajax', EventController.listEventsAjax);
+router.post('/list_events_ajax', uploadFormData.none(), EventController.listEventsAjax);
+router.get('/submit-events', EventController.submitEvents);
+router.post('/submit-events', uploadFormData.none(), EventController.submitEvents);
+router.get('/edit-events', EventController.editEvents);
+router.post('/edit-events', uploadFormData.none(), EventController.editEvents);
+router.get('/delete-events', EventController.deleteEvents);
+router.post('/delete-events', uploadFormData.none(), EventController.deleteEvents);
+router.get('/view-events-details', EventController.viewEventsDetails);
+router.post('/view-events-details', uploadFormData.none(), EventController.viewEventsDetails);
 
 // Frontend Routes - Temporarily disabled
 // router.get('/legal-terms', ApiController.legalTerms);

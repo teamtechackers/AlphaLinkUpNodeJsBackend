@@ -3,6 +3,7 @@
 const { query } = require('../config/db');
 const { ok, fail } = require('../utils/response');
 const { idEncode, idDecode } = require('../utils/idCodec');
+const websocketService = require('../services/websocketService');
 
 class JobController {
   // API function - Get job information with search filters
@@ -438,12 +439,60 @@ class JobController {
           [jobData.user_id, jobData.job_title, jobData.company_name, jobData.country_id, jobData.state_id, jobData.city_id, jobData.address, jobData.job_lat, jobData.job_lng, jobData.job_type_id, jobData.pay_id, jobData.job_description, jobData.skill_ids]
         );
         finalJobId = result.insertId;
+        
+        // Broadcast new job to all connected users
+        try {
+          const newJobData = {
+            job_id: finalJobId,
+            job_title: jobData.job_title,
+            company_name: jobData.company_name,
+            country_id: jobData.country_id,
+            state_id: jobData.state_id,
+            city_id: jobData.city_id,
+            address: jobData.address,
+            job_lat: jobData.job_lat,
+            job_lng: jobData.job_lng,
+            job_type_id: jobData.job_type_id,
+            pay_id: jobData.pay_id,
+            job_description: jobData.job_description,
+            skill_ids: jobData.skill_ids,
+            created_by: decodedUserId
+          };
+          
+          websocketService.broadcastDashboardUpdate('new_job', newJobData);
+        } catch (wsError) {
+          console.error('WebSocket broadcast error:', wsError);
+        }
       } else {
         // Update existing job
         await query(
           'UPDATE user_job_details SET job_title=?, company_name=?, country_id=?, state_id=?, city_id=?, address=?, job_lat=?, job_lng=?, job_type_id=?, pay_id=?, job_description=?, skill_ids=? WHERE job_id=? AND user_id=?',
           [jobData.job_title, jobData.company_name, jobData.country_id, jobData.state_id, jobData.city_id, jobData.address, jobData.job_lat, jobData.job_lng, jobData.job_type_id, jobData.pay_id, jobData.job_description, jobData.skill_ids, job_id, decodedUserId]
         );
+        
+        // Broadcast job update to all connected users
+        try {
+          const updateData = {
+            job_id: job_id,
+            job_title: jobData.job_title,
+            company_name: jobData.company_name,
+            country_id: jobData.country_id,
+            state_id: jobData.state_id,
+            city_id: jobData.city_id,
+            address: jobData.address,
+            job_lat: jobData.job_lat,
+            job_lng: jobData.job_lng,
+            job_type_id: jobData.job_type_id,
+            pay_id: jobData.pay_id,
+            job_description: jobData.job_description,
+            skill_ids: jobData.skill_ids,
+            updated_by: decodedUserId
+          };
+          
+          websocketService.broadcastDashboardUpdate('job_updated', updateData);
+        } catch (wsError) {
+          console.error('WebSocket broadcast error:', wsError);
+        }
       }
       
       // Return response in PHP format - exact match
