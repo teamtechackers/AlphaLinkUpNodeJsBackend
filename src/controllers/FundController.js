@@ -501,6 +501,93 @@ class FundController {
       });
     }
   }
+
+  // Check duplicate fund size - PHP compatible version
+  static async checkDuplicateFundSize(req, res) {
+    try {
+      // Support both query parameters and form data
+      const { user_id, token, name, id } = {
+        ...req.query,
+        ...req.body
+      };
+
+      console.log('checkDuplicateFundSize - Parameters:', { user_id, token, name, id });
+
+      // Check if user_id and token are provided
+      if (!user_id || !token) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Token Mismatch Exception'
+        });
+      }
+      
+      // Check if name is provided
+      if (!name || name.trim() === '') {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Please enter mandatory fields'
+        });
+      }
+      
+      // Decode user ID
+      const decodedUserId = idDecode(user_id);
+      if (!decodedUserId) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Invalid user ID'
+        });
+      }
+      
+      // Get user details and validate
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      if (!userRows.length) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Not A Valid User'
+        });
+      }
+      
+      const user = userRows[0];
+      
+      // Validate token
+      if (user.unique_token !== token) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Token Mismatch Exception'
+        });
+      }
+
+      // Check for duplicate name (matching PHP exactly)
+      let duplicateCheckQuery = 'SELECT COUNT(*) as count FROM fund_size WHERE investment_range = ? AND deleted = 0';
+      let duplicateCheckParams = [name.trim()];
+      
+      if (id && id > 0) {
+        duplicateCheckQuery += ' AND id != ?';
+        duplicateCheckParams.push(id);
+      }
+      
+      const duplicateResult = await query(duplicateCheckQuery, duplicateCheckParams);
+      const isDuplicate = duplicateResult[0].count > 0;
+
+      // Return response matching PHP exactly
+      return res.json({
+        validate: isDuplicate
+      });
+
+    } catch (error) {
+      console.error('checkDuplicateFundSize error:', error);
+      return res.json({
+        status: false,
+        rcode: 500,
+        message: 'Failed to check duplicate fund size'
+      });
+    }
+  }
 }
 
 module.exports = FundController;
