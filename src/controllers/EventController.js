@@ -3,7 +3,7 @@
 const { query } = require('../config/db');
 const { ok, fail } = require('../utils/response');
 const { idEncode, idDecode } = require('../utils/idCodec');
-const websocketService = require('../services/websocketService');
+const websocketService = require('../services/WebSocketService');
 
 class EventController {
   
@@ -1438,10 +1438,25 @@ class EventController {
           created_by: admin.role_id
         };
 
-        await query(
+        const result = await query(
           'INSERT INTO user_event_details (user_id, event_name, industry_type, country_id, state_id, city_id, event_venue, event_link, event_lat, event_lng, event_geo_address, event_date, event_start_time, event_end_time, event_mode_id, event_type_id, event_details, event_banner, status, deleted, created_dts, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
           [insertData.user_id, insertData.event_name, insertData.industry_type, insertData.country_id, insertData.state_id, insertData.city_id, insertData.event_venue, insertData.event_link, insertData.event_lat, insertData.event_lng, insertData.event_geo_address, insertData.event_date, insertData.event_start_time, insertData.event_end_time, insertData.event_mode_id, insertData.event_type_id, insertData.event_details, insertData.event_banner, insertData.status, insertData.deleted, insertData.created_dts, insertData.created_by]
         );
+
+        // Send notification for new event
+        try {
+          const NotificationService = require('../notification/NotificationService');
+          const eventData = {
+            event_id: result.insertId,
+            title: insertData.event_name,
+            location: insertData.event_venue,
+            event_date: insertData.event_date
+          };
+          await NotificationService.sendEventNotification(eventData);
+        } catch (notificationError) {
+          console.error('Event notification error:', notificationError);
+          // Don't fail the event creation if notification fails
+        }
 
         return res.json({
           status: 'Success',

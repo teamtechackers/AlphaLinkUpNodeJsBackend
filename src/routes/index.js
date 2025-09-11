@@ -23,6 +23,7 @@ const EventController = require('../controllers/EventController');
 const UserProfileController = require('../controllers/userProfileController');
 const JobController = require('../controllers/JobController');
 const FolderController = require('../controllers/FolderController');
+const FCMTokenController = require('../controllers/FCMTokenController');
 
 // Import middlewares
 const authenticate = require('../middlewares/authenticate');
@@ -325,7 +326,7 @@ router.post('/submit-fund-size', uploadFormData.none(), FundController.submitFun
 router.get('/list-fund-size-ajax', FundController.listFundSizeAjax);
 router.post('/list-fund-size-ajax', uploadFormData.none(), FundController.listFundSizeAjax);
 router.get('/check-duplicate-fund-size', FundController.checkDuplicateFundSize);
-router.post('/check-duplicate-fund-size', uploadFormData.none(), FundController.checkDuplicateFundSize);
+router.post('/check-duplicate-fund-size', uploadFormData.none(), FundController.checkDuplicateFundSize); 
 router.get('/delete-fund-size', FundController.deleteFundSize);
 router.post('/delete-fund-size', uploadFormData.none(), FundController.deleteFundSize);
 
@@ -499,6 +500,13 @@ router.use('*', (req, res) => {
     }
   });
 });
+
+// ===== FCM TOKEN ROUTES =====
+router.get('/Api-Update-FCM-Token', uploadFormData.none(), FCMTokenController.updateFCMToken);
+router.post('/Api-Update-FCM-Token', uploadFormData.none(), FCMTokenController.updateFCMToken);
+router.get('/Api-Get-FCM-Token', uploadFormData.none(), FCMTokenController.getFCMToken);
+router.post('/Api-Get-FCM-Token', uploadFormData.none(), FCMTokenController.getFCMToken);
+
 
 module.exports = router;
 

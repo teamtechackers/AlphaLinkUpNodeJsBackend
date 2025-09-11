@@ -1006,13 +1006,11 @@ class AdminController {
         });
 
       } else {
-        // Update existing user (matching PHP exactly)
+        // Update existing user - mobile number cannot be changed
         let hasConflict = false;
 
-        if (mobileCheck.length > 0 && mobileCheck[0].user_id != row_id) {
-          hasConflict = true;
-        }
-        
+        // No conflict check for updates - user can keep same email or change to different email
+        // Only check if email is being used by a different user
         if (emailCheck.length > 0 && emailCheck[0].user_id != row_id) {
           hasConflict = true;
         }
@@ -1020,26 +1018,23 @@ class AdminController {
         if (hasConflict) {
           return res.json({
             status: 'Error',
-            info: 'Mobile or Email Already Added'
+            info: 'Email Already Added'
           });
         }
 
-        const updateData = {
-          full_name: full_name.trim(),
-          mobile: mobile.trim(),
-          email: email.trim(),
-          address: address ? address.trim() : '',
-          country_id: country_id ? parseInt(country_id) : null,
-          state_id: state_id ? parseInt(state_id) : null,
-          city_id: city_id ? parseInt(city_id) : null,
-          status: status !== undefined ? parseInt(status) : 1,
-          updated_at: new Date().toISOString().slice(0, 19).replace('T', ' '),
-          updated_by: admin.role_id
-        };
+        // Get current mobile number from database (don't update mobile)
+        const currentUser = await query('SELECT mobile FROM users WHERE user_id = ?', [row_id]);
+        if (!currentUser.length) {
+          return res.json({
+            status: 'Error',
+            info: 'User not found'
+          });
+        }
 
+        // Update without mobile number (mobile stays same)
         await query(
-          'UPDATE users SET full_name = ?, mobile = ?, email = ?, address = ?, country_id = ?, state_id = ?, city_id = ?, status = ?, updated_at = ?, updated_by = ? WHERE user_id = ?',
-          [updateData.full_name, updateData.mobile, updateData.email, updateData.address, updateData.country_id, updateData.state_id, updateData.city_id, updateData.status, updateData.updated_at, updateData.updated_by, row_id]
+          'UPDATE users SET full_name = ?, email = ?, address = ?, country_id = ?, state_id = ?, city_id = ?, status = ?, updated_at = ?, updated_by = ? WHERE user_id = ?',
+          [full_name.trim(), email.trim(), address ? address.trim() : '', country_id ? parseInt(country_id) : null, state_id ? parseInt(state_id) : null, city_id ? parseInt(city_id) : null, status !== undefined ? parseInt(status) : 1, new Date().toISOString().slice(0, 19).replace('T', ' '), admin.role_id, row_id]
         );
 
         return res.json({
@@ -1151,6 +1146,7 @@ class AdminController {
       `;
       const dataParams = [...searchParams, startValue, lengthValue];
       const users = await query(dataQuery, dataParams);
+      console.log('Database query result:', users[0]);
 
       // Format data for DataTables (matching PHP exactly)
       const data = [];
@@ -1168,7 +1164,7 @@ class AdminController {
         const action = `<a href="javascript:void(0);" data-id="${row.user_id}" class="action-icon edit_info"><i class="mdi mdi-square-edit-outline"></i></a>
                         <a href="javascript:void(0);" data-id="${row.user_id}" class="action-icon delete_info"><i class="mdi mdi-delete"></i></a>`;
 
-        data.push([i, row.full_name, row.mobile, row.email, status, action]);
+        data.push([i, String(row.user_id), row.full_name, row.mobile, row.email, status, action]);
       }
 
       // Return DataTables response (matching PHP exactly)

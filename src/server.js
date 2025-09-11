@@ -5,7 +5,7 @@ require('dotenv').config({ path: '../.env' });
 
 const app = require('./app');
 const { logger } = require('./utils/logger');
-const websocketService = require('./services/websocketService');
+const websocketService = require('./services/WebSocketService');
 
 // Import database connection
 const db = require('./config/db');

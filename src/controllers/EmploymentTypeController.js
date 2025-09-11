@@ -357,6 +357,7 @@ class EmploymentTypeController {
       const data = [];
       for (const row of employmentTypes) {
         const i = data.length + 1;
+        console.log('Row ID type:', typeof row.id, 'Value:', row.id);
         
         // Format status
         let status = '<span class="badge bg-soft-success text-success">Active</span>';
@@ -368,7 +369,7 @@ class EmploymentTypeController {
         const action = `<a href="javascript:void(0);" id="edit_${row.id}" data-id="${row.id}" data-name="${row.name}" data-status="${row.status}" onclick="viewEditDetails(${row.id});" class="action-icon"> <i class="mdi mdi-square-edit-outline"></i></a>`;
         const deleteAction = `<a href="javascript:void(0);" class="action-icon delete_info" data-id="${row.id}"> <i class="mdi mdi-delete"></i></a>`;
 
-        data.push([i, row.name, status, action + deleteAction]);
+        data.push([i, String(row.id), row.name, status, action + deleteAction]);
       }
 
       // Return response in PHP format (matching exactly)

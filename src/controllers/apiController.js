@@ -3218,6 +3218,7 @@ const ApiController = {
     }
   },
   async saveChat(req, res) {
+    console.log('🚀 saveChat function called');
     try {
       // Support both query parameters and form data
       const { user_id, token, sender_id, receiver_id, message } = {
@@ -3225,7 +3226,9 @@ const ApiController = {
         ...req.body
       };
       
-      console.log('saveChat - Parameters:', { user_id, token, sender_id, receiver_id, message });
+      console.log('💬 saveChat - Parameters:', { user_id, token, sender_id, receiver_id, message });
+      console.log('💬 saveChat - Request body:', req.body);
+      console.log('💬 saveChat - Request query:', req.query);
       
       // Check if user_id and token are provided
       if (!user_id || !token) {
@@ -3270,7 +3273,13 @@ const ApiController = {
         [senderId, receiverId, message]
       );
 
+      console.log(`💾 Chat insert result:`, chatResult);
+      console.log(`💾 Chat insertId:`, chatResult.insertId);
+      console.log(`💾 Chat insertId type:`, typeof chatResult.insertId);
+      console.log(`💾 Chat insertId > 0:`, chatResult.insertId > 0);
+
       if (chatResult.insertId > 0) {
+        console.log(`✅ Chat insert successful, proceeding with WebSocket check`);
         // Get sender details for WebSocket notification
         const senderRows = await query('SELECT full_name, profile_photo FROM users WHERE user_id = ?', [senderId]);
         const sender = senderRows[0] || {};
@@ -3287,9 +3296,68 @@ const ApiController = {
           timestamp: Date.now()
         };
 
-        // Send real-time notification via WebSocket
-        const websocketService = require('../services/websocketService');
-        websocketService.sendMessageToUser(receiverId, messageData);
+        // Check if receiver is connected via WebSocket
+        const websocketService = require('../services/WebSocketService');
+        console.log(`🔌 WebSocket service loaded:`, websocketService);
+        console.log(`🔌 Connected users map:`, websocketService.connectedUsers);
+        console.log(`🔌 WebSocket service methods:`, Object.getOwnPropertyNames(Object.getPrototypeOf(websocketService)));
+        
+        // Check WebSocket connected users info
+        console.log(`🔌 Total Connected Users: ${websocketService.connectedUsers.size}`);
+        console.log(`🔌 Connected Users List:`, Array.from(websocketService.connectedUsers.keys()));
+        console.log(`🔌 User Sockets List:`, Array.from(websocketService.userSockets.keys()));
+        console.log(`🔌 Total Socket Connections: ${websocketService.io.sockets.sockets.size}`);
+        
+        // Check if receiver is connected via WebSocket (direct fallback)
+        const isReceiverConnected = websocketService.connectedUsers.has(receiverId);
+        console.log(`🔌 Receiver ${receiverId} WebSocket connection status: ${isReceiverConnected ? 'CONNECTED' : 'DISCONNECTED'}`);
+        
+        // Send message to receiver via WebSocket (if connected)
+        let messageSent = false;
+        if (isReceiverConnected) {
+          try {
+            messageSent = websocketService.sendMessageToUser(receiverId, messageData);
+            console.log(`🔌 WebSocket message sent: ${messageSent}`);
+          } catch (wsError) {
+            console.log(`❌ WebSocket send error:`, wsError.message);
+            messageSent = false;
+          }
+        }
+        
+        // If receiver is not connected via WebSocket, send FCM notification to receiver
+        if (!messageSent) {
+          try {
+            const NotificationService = require('../notification/NotificationService');
+            
+            // Get receiver's FCM token
+            const receiverRows = await query('SELECT fcm_token, full_name FROM users WHERE user_id = ?', [receiverId]);
+            const receiver = receiverRows[0] || {};
+            
+            if (receiver.fcm_token) {
+              const notificationData = {
+                title: `New message from ${sender.full_name || 'Someone'}`,
+                body: message,
+                data: {
+                  type: 'chat_message',
+                  sender_id: senderId.toString(),
+                  receiver_id: receiverId.toString(),
+                  chat_id: chatResult.insertId.toString(),
+                  sender_name: sender.full_name || '',
+                  message: message
+                }
+              };
+              
+              await NotificationService.sendNotification(receiverId, notificationData.title, notificationData.body, notificationData.data);
+              console.log(`📱 FCM notification sent to receiver ${receiverId} (not connected via WebSocket)`);
+            } else {
+              console.log(`❌ No FCM token found for receiver ${receiverId}`);
+            }
+          } catch (notificationError) {
+            console.error('Error sending FCM notification to receiver:', notificationError);
+          }
+        } else {
+          console.log(`🔌 Receiver ${receiverId} is connected via WebSocket - message sent via WebSocket`);
+        }
 
         return res.json({
           status: true,
@@ -3300,6 +3368,7 @@ const ApiController = {
           chat_id: chatResult.insertId
         });
       } else {
+        console.log(`❌ Chat insert failed - insertId: ${chatResult.insertId}`);
         return fail(res, 500, 'Failed to save chat message');
       }
       

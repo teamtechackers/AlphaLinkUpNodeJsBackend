@@ -3,10 +3,11 @@
 const { query } = require('../config/db');
 const { ok, fail } = require('../utils/response');
 const { idEncode, idDecode } = require('../utils/idCodec');
-const websocketService = require('../services/websocketService');
+const websocketService = require('../services/WebSocketService');
+const NotificationService = require('../notification/NotificationService');
+
 
 class JobController {
-  // API function - Get job information with search filters
   static async getJobInformation(req, res) {
     try {
       const { user_id, token, keyword, job_type, skill, location, pay } = {
@@ -14,7 +15,6 @@ class JobController {
         ...req.body
       };
       
-      // Check if user_id and token are provided
       if (!user_id || !token) {
         return res.json({
           status: false,
@@ -23,7 +23,6 @@ class JobController {
         });
       }
       
-      // Decode user ID
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
         return res.json({
@@ -33,7 +32,6 @@ class JobController {
         });
       }
       
-      // Get user details and validate
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return res.json({
@@ -45,7 +43,6 @@ class JobController {
       
       const user = userRows[0];
       
-      // Validate token
       if (user.unique_token !== token) {
         return res.json({
           status: false,
@@ -54,7 +51,6 @@ class JobController {
         });
       }
       
-      // Build search conditions
       let whereConditions = ['user_job_details.user_id = ?'];
       let queryParams = [decodedUserId];
       
@@ -85,7 +81,6 @@ class JobController {
       
       const whereClause = whereConditions.join(' AND ');
       
-      // Execute query with search conditions
       const rows = await query(
         `SELECT user_job_details.*, job_type.name AS job_type, pay.name AS pay, countries.name AS country, states.name AS state, cities.name AS city,
                 GROUP_CONCAT(skills.name SEPARATOR ', ') AS skill_names
@@ -133,7 +128,6 @@ class JobController {
         skill_names: job.skill_names || ""
       }));
       
-      // Return response in PHP format
       return res.json({
         status: true,
         rcode: 200,
@@ -152,7 +146,6 @@ class JobController {
     }
   }
 
-  // API function - Get job details with applicants
   static async getJobDetail(req, res) {
     try {
       const { user_id, token, job_id } = {
@@ -160,7 +153,6 @@ class JobController {
         ...req.body
       };
       
-      // Check if user_id, token, and job_id are provided
       if (!user_id || !token || !job_id) {
         return res.json({
           status: false,
@@ -169,7 +161,6 @@ class JobController {
         });
       }
       
-      // Decode user ID
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
         return res.json({
@@ -179,7 +170,6 @@ class JobController {
         });
       }
       
-      // Get user details and validate
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return res.json({
@@ -191,7 +181,6 @@ class JobController {
       
       const user = userRows[0];
       
-      // Validate token
       if (user.unique_token !== token) {
         return res.json({
           status: false,
@@ -200,7 +189,6 @@ class JobController {
         });
       }
       
-      // Get job detail with joins (matching PHP implementation)
       const jobRows = await query(
         `SELECT user_job_details.*, 
                 job_type.name as job_type,
@@ -229,7 +217,6 @@ class JobController {
         });
       }
       
-      // Process skills mapping (matching PHP implementation)
       const jobData = jobRows[0];
       let mappedSkills = [];
       if (jobData.skills && jobData.skill_ids) {
@@ -244,7 +231,6 @@ class JobController {
         }
       }
       
-      // Convert all integer values to strings for job_detail
       const jobDetail = [{
         job_id: jobData.job_id.toString(),
         user_id: jobData.user_id.toString(),
@@ -277,7 +263,6 @@ class JobController {
         mapped_skills: mappedSkills
       }];
       
-      // Get job applicants list
       const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
       const profilePath = `${baseUrl}/uploads/profiles/`;
       const resumePath = `${baseUrl}/uploads/resumes/`;
@@ -298,10 +283,8 @@ class JobController {
         [profilePath, resumePath, job_id]
       );
       
-      // Check if user has applied for this job (ensure proper type comparison)
       const hasApplied = applicantsRows.some(applicant => parseInt(applicant.applicant_id) === parseInt(decodedUserId));
       
-      // Convert all integer values to strings for applicants_list
       const applicantsList = applicantsRows.map(row => ({
         applicant_id: row.applicant_id.toString(),
         first_name: row.first_name || "",
@@ -313,7 +296,6 @@ class JobController {
         resume_file: row.resume_file || ""
       }));
       
-      // Return response in PHP format
       return res.json({
         status: true,
         rcode: 200,
@@ -334,7 +316,6 @@ class JobController {
     }
   }
 
-  // API function - Save job information
   static async saveJobInformation(req, res) {
     try {
       // Handle both JSON and form data
@@ -354,18 +335,15 @@ class JobController {
       const job_lat = req.body.job_lat || req.body['job_lat'];
       const job_lng = req.body.job_lng || req.body['job_lng'];
       
-      // Check if user_id and token are provided
       if (!user_id || !token) {
         return fail(res, 500, 'user_id and token are required');
       }
       
-      // Decode user ID
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
         return fail(res, 500, 'Invalid user ID');
       }
       
-      // Get user details and validate
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return fail(res, 500, 'Not A Valid User');
@@ -373,37 +351,30 @@ class JobController {
       
       const user = userRows[0];
       
-      // Validate token
       if (user.unique_token !== token) {
         return fail(res, 500, 'Token Mismatch Exception');
       }
       
-      // Check mandatory fields - match PHP validation exactly
       if (job_title === "" || company_name === "" || country_id === "" || state_id === "" || city_id === "" || address === "" || job_type_id === "" || pay_id === "" || job_description === "" || job_lat === "" || job_lng === "") {
         return fail(res, 500, 'Please enter mandatory fields');
       }
       
-      // Check if skills are provided
       if (!skills || skills === "" || skills.trim() === "") {
         return fail(res, 500, 'Skills are not added please add skills');
       }
       
       let existingSkillIds = [];
       
-      // Handle skills management
       if (skills) {
         const skillsArray = skills.split(',').map(skill => skill.trim()).filter(skill => skill.length > 0);
         
         if (skillsArray.length > 0) {
-          // Get existing skills
           const existingSkills = await query('SELECT id, name FROM skills WHERE name IN (?)', [skillsArray]);
           const existingSkillNames = existingSkills.map(skill => skill.name);
           existingSkillIds = existingSkills.map(skill => skill.id);
           
-          // Find new skills that don't exist
           const newSkills = skillsArray.filter(skill => !existingSkillNames.includes(skill));
           
-          // Insert new skills and get their IDs
           if (newSkills.length > 0) {
             for (const skill of newSkills) {
               const result = await query('INSERT INTO skills (name) VALUES (?)', [skill]);
@@ -413,7 +384,6 @@ class JobController {
         }
       }
       
-      // Prepare job data
       const jobData = {
         job_title,
         company_name,
@@ -432,7 +402,6 @@ class JobController {
       let finalJobId = job_id;
       
       if (job_id == 0) {
-        // Insert new job
         jobData.user_id = decodedUserId;
         const result = await query(
           'INSERT INTO user_job_details (user_id, job_title, company_name, country_id, state_id, city_id, address, job_lat, job_lng, job_type_id, pay_id, job_description, skill_ids, deleted, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 1)',
@@ -440,7 +409,6 @@ class JobController {
         );
         finalJobId = result.insertId;
         
-        // Broadcast new job to all connected users
         try {
           const newJobData = {
             job_id: finalJobId,
@@ -464,13 +432,11 @@ class JobController {
           console.error('WebSocket broadcast error:', wsError);
         }
       } else {
-        // Update existing job
         await query(
           'UPDATE user_job_details SET job_title=?, company_name=?, country_id=?, state_id=?, city_id=?, address=?, job_lat=?, job_lng=?, job_type_id=?, pay_id=?, job_description=?, skill_ids=? WHERE job_id=? AND user_id=?',
           [jobData.job_title, jobData.company_name, jobData.country_id, jobData.state_id, jobData.city_id, jobData.address, jobData.job_lat, jobData.job_lng, jobData.job_type_id, jobData.pay_id, jobData.job_description, jobData.skill_ids, job_id, decodedUserId]
         );
         
-        // Broadcast job update to all connected users
         try {
           const updateData = {
             job_id: job_id,
@@ -495,7 +461,16 @@ class JobController {
         }
       }
       
-      // Return response in PHP format - exact match
+      try {
+        await NotificationService.sendTopicNotification('job-notifications', 'New Job Available!', `${job_title} - ${address || 'Location not specified'}`, {
+          type: 'job',
+          jobId: finalJobId.toString(),
+          timestamp: new Date().toISOString()
+        });
+      } catch (notificationError) {
+        console.error('Job topic notification error:', notificationError);
+      }
+      
       return res.json({
         status: true,
         rcode: 200,
@@ -511,10 +486,8 @@ class JobController {
     }
   }
 
-  // API function - Apply for job
   static async saveJobApplication(req, res) {
     try {
-      // Support both query parameters and form data
       const { user_id, token, job_id, first_name, last_name, email, mobile, skills, resume_id, resume_title, resume_file } = {
         ...req.query,
         ...req.body
@@ -524,18 +497,15 @@ class JobController {
         user_id, token, job_id, first_name, last_name, email, mobile, skills, resume_id, resume_title, resume_file
       });
       
-      // Check if user_id and token are provided
       if (!user_id || !token) {
         return fail(res, 500, 'user_id and token are required');
       }
       
-      // Decode user ID
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
         return fail(res, 500, 'Invalid user ID');
       }
       
-      // Get user details and validate
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return fail(res, 500, 'Not A Valid User');
@@ -543,17 +513,14 @@ class JobController {
       
       const user = userRows[0];
       
-      // Validate token
       if (user.unique_token !== token) {
         return fail(res, 500, 'Token Mismatch Exception');
       }
       
-      // Check if job_id is provided
       if (!job_id) {
         return fail(res, 500, 'job_id is required');
       }
       
-      // Check if user has already applied for this job
       const existingApplication = await query(
         'SELECT * FROM user_job_applications WHERE user_id = ? AND job_id = ?',
         [decodedUserId, job_id]
@@ -563,10 +530,8 @@ class JobController {
         return fail(res, 500, 'You have already applied for this job');
       }
       
-      // Handle resume file upload
       let finalResumeId = resume_id;
       if (req.file && req.file.filename) {
-        // Save resume file information
         const resumeResult = await query(
           'INSERT INTO user_resumes (user_id, resume_title, resume_file, created_dts) VALUES (?, ?, ?, NOW())',
           [decodedUserId, resume_title || 'Job Application Resume', req.file.filename]
@@ -574,13 +539,11 @@ class JobController {
         finalResumeId = resumeResult.insertId;
       }
       
-      // Save job application
       const applicationResult = await query(
         'INSERT INTO user_job_applications (user_id, job_id, first_name, last_name, email, mobile, skills, resume_id, created_dts) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())',
         [decodedUserId, job_id, first_name || '', last_name || '', email || '', mobile || '', skills || '', finalResumeId]
       );
       
-      // Return response in PHP format
       return res.json({
         status: true,
         rcode: 200,
@@ -596,10 +559,8 @@ class JobController {
     }
   }
 
-  // Admin function - View jobs
   static async adminViewJobs(req, res) {
     try {
-      // Support both query parameters and form data
       const { user_id, token } = {
         ...req.query,
         ...req.body
@@ -607,7 +568,6 @@ class JobController {
 
       console.log('adminViewJobs - Parameters:', { user_id, token });
 
-      // Check if user_id and token are provided
       if (!user_id || !token) {
         return res.json({
           status: false,
@@ -616,7 +576,6 @@ class JobController {
         });
       }
 
-      // Decode user ID
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
         return res.json({
@@ -626,7 +585,6 @@ class JobController {
         });
       }
 
-      // Check if user exists
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return res.json({
@@ -636,7 +594,6 @@ class JobController {
         });
       }
 
-      // Check if user is admin
       const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
       if (!adminRows.length) {
         return res.json({
@@ -664,10 +621,8 @@ class JobController {
     }
   }
 
-  // Admin function - Edit jobs
   static async adminEditJobs(req, res) {
     try {
-      // Support both query parameters and form data
       const { user_id, token, row_id } = {
         ...req.query,
         ...req.body
@@ -675,7 +630,6 @@ class JobController {
 
       console.log('adminEditJobs - Parameters:', { user_id, token, row_id });
 
-      // Check if user_id and token are provided
       if (!user_id || !token) {
         return res.json({
           status: false,
@@ -684,7 +638,6 @@ class JobController {
         });
       }
 
-      // Decode user ID
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
         return res.json({
@@ -694,7 +647,6 @@ class JobController {
         });
       }
 
-      // Check if user exists
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return res.json({
@@ -704,7 +656,6 @@ class JobController {
         });
       }
 
-      // Check if user is admin
       const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
       if (!adminRows.length) {
         return res.json({
@@ -732,24 +683,19 @@ class JobController {
     }
   }
 
-  // Admin function - Submit jobs
   static async adminSubmitJobs(req, res) {
     try {
-      // Support both query parameters and form data
       const { user_id, token, row_id, user_id: job_user_id, job_title, company_name, country_id, state_id, city_id, address, job_lat, job_lng, job_type_id, pay_id, job_description, status } = {
         ...req.query,
         ...req.body
       };
       
-      // Extract job user_id from body (different from admin user_id)
       const jobUserId = req.body.user_id;
       
-      // Ensure admin user_id comes from query parameters
       const adminUserId = req.query.user_id;
 
       console.log('adminSubmitJobs - Parameters:', { user_id, token, row_id, jobUserId, job_title, company_name, country_id, state_id, city_id, address, job_lat, job_lng, job_type_id, pay_id, job_description, status });
 
-      // Check if user_id and token are provided
       if (!adminUserId || !token) {
         return res.json({
           status: false,
@@ -758,7 +704,6 @@ class JobController {
         });
       }
 
-      // Decode user ID
       const decodedUserId = idDecode(adminUserId);
       if (!decodedUserId) {
         return res.json({
@@ -768,7 +713,6 @@ class JobController {
         });
       }
 
-      // Check if user exists
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return res.json({
@@ -778,7 +722,6 @@ class JobController {
         });
       }
 
-      // Check if user is admin (role_id = 1 or 2)
       const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
       if (!adminRows.length) {
         return res.json({
@@ -788,7 +731,6 @@ class JobController {
         });
       }
 
-      // Check if required fields are provided
       if (!jobUserId) {
         return res.json({
           status: false,
@@ -797,11 +739,9 @@ class JobController {
         });
       }
 
-      // Get admin role_id
       const admin = adminRows[0];
 
       if (!row_id || row_id === '') {
-        // Insert new job (matching PHP exactly)
         const insertData = {
           user_id: parseInt(jobUserId),
           job_title: job_title ? job_title.trim() : '',
@@ -821,10 +761,24 @@ class JobController {
           created_by: admin.role_id
         };
 
-        await query(
+        const result = await query(
           'INSERT INTO user_job_details (user_id, job_title, company_name, country_id, state_id, city_id, address, job_lat, job_lng, job_type_id, pay_id, job_description, status, deleted, created_dts, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
           [insertData.user_id, insertData.job_title, insertData.company_name, insertData.country_id, insertData.state_id, insertData.city_id, insertData.address, insertData.job_lat, insertData.job_lng, insertData.job_type_id, insertData.pay_id, insertData.job_description, insertData.status, insertData.deleted, insertData.created_dts, insertData.created_by]
         );
+
+        try {
+          const NotificationService = require('../notification/NotificationService');
+          const jobData = {
+            job_id: result.insertId,
+            title: insertData.job_title,
+            location: insertData.address,
+            company_name: insertData.company_name
+          };
+          await NotificationService.sendJobNotification(jobData);
+        } catch (notificationError) {
+          console.error('Job notification error:', notificationError);
+         
+        }
 
         return res.json({
           status: 'Success',
@@ -832,7 +786,6 @@ class JobController {
         });
 
       } else {
-        // Update existing job (matching PHP exactly)
         const updateData = {
           user_id: parseInt(jobUserId),
           job_title: job_title ? job_title.trim() : '',
@@ -871,10 +824,8 @@ class JobController {
     }
   }
 
-  // Admin function - List jobs (AJAX)
   static async adminListJobsAjax(req, res) {
     try {
-      // Support both query parameters and form data
       const { user_id, token } = {
         ...req.query,
         ...req.body
@@ -882,7 +833,6 @@ class JobController {
 
       console.log('adminListJobsAjax - Parameters:', { user_id, token });
 
-      // Check if user_id and token are provided
       if (!user_id || !token) {
         return res.json({
           status: false,
@@ -891,7 +841,6 @@ class JobController {
         });
       }
 
-      // Decode user ID
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
         return res.json({
@@ -901,7 +850,6 @@ class JobController {
         });
       }
 
-      // Check if user exists
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return res.json({
@@ -911,7 +859,6 @@ class JobController {
         });
       }
 
-      // Check if user is admin
       const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
       if (!adminRows.length) {
         return res.json({
@@ -921,7 +868,6 @@ class JobController {
         });
       }
 
-      // Get jobs list with user details
       const jobsList = await query(`
         SELECT 
           ujd.job_id,
@@ -964,7 +910,6 @@ class JobController {
         ORDER BY ujd.job_id DESC
       `);
 
-      // Format jobs list
       const formattedJobsList = jobsList.map(job => ({
         job_id: job.job_id.toString(),
         user_id: job.user_id.toString(),
@@ -1015,10 +960,8 @@ class JobController {
     }
   }
 
-  // Admin function - Delete jobs
   static async adminDeleteJobs(req, res) {
     try {
-      // Support both query parameters and form data
       const { user_id, token, row_id } = {
         ...req.query,
         ...req.body
@@ -1026,7 +969,6 @@ class JobController {
 
       console.log('adminDeleteJobs - Parameters:', { user_id, token, row_id });
 
-      // Check if user_id and token are provided
       if (!user_id || !token) {
         return res.json({
           status: false,
@@ -1043,7 +985,6 @@ class JobController {
         });
       }
 
-      // Decode user ID
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
         return res.json({
@@ -1053,7 +994,6 @@ class JobController {
         });
       }
 
-      // Check if user exists
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return res.json({
@@ -1063,7 +1003,6 @@ class JobController {
         });
       }
 
-      // Check if user is admin
       const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
       if (!adminRows.length) {
         return res.json({
@@ -1073,7 +1012,6 @@ class JobController {
         });
       }
 
-      // Soft delete job
       await query(
         'UPDATE user_job_details SET deleted = 1, deleted_by = ?, deleted_at = NOW() WHERE job_id = ?',
         [decodedUserId, row_id]
@@ -1093,7 +1031,6 @@ class JobController {
     }
   }
 
-  // Admin function - View jobs details
   static async adminViewJobsDetails(req, res) {
     try {
       // Support both query parameters and form data
@@ -1183,7 +1120,6 @@ class JobController {
 
       const job = jobDetails[0];
 
-      // Format job details
       const formattedJobDetails = {
         job_id: job.job_id.toString(),
         user_id: job.user_id.toString(),
