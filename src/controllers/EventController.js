@@ -1556,28 +1556,55 @@ class EventController {
         });
       }
 
-      // Build base query (matching PHP model exactly)
+      // Build base query with all required fields
       let baseQuery = `
-        SELECT users.full_name, user_event_details.*
-        FROM user_event_details
-        LEFT JOIN users ON users.user_id = user_event_details.user_id
-        WHERE user_event_details.deleted = 0
+        SELECT 
+          ued.event_id,
+          ued.user_id,
+          ued.event_name,
+          ued.industry_type,
+          ued.country_id,
+          ued.state_id,
+          ued.city_id,
+          ued.event_venue,
+          ued.event_link,
+          ued.event_lat,
+          ued.event_lng,
+          ued.event_geo_address,
+          ued.event_date,
+          ued.event_start_time,
+          ued.event_end_time,
+          ued.event_mode_id,
+          ued.event_type_id,
+          ued.event_details,
+          ued.event_banner,
+          ued.status,
+          u.full_name as user_name,
+          c.name as country_name,
+          s.name as state_name,
+          ci.name as city_name
+        FROM user_event_details ued
+        LEFT JOIN users u ON ued.user_id = u.user_id
+        LEFT JOIN countries c ON ued.country_id = c.id
+        LEFT JOIN states s ON ued.state_id = s.id
+        LEFT JOIN cities ci ON ued.city_id = ci.id
+        WHERE ued.deleted = 0
       `;
 
-      // Add search functionality (matching PHP model exactly)
-      const searchableColumns = ['users.full_name', 'user_event_details.event_name', 'user_event_details.event_venue', 'user_event_details.status'];
+      // Add search functionality
+      const searchableColumns = ['u.full_name', 'ued.event_name', 'ued.event_venue', 'ued.status'];
       if (search && search.value) {
         const searchConditions = searchableColumns.map(col => `${col} LIKE ?`).join(' OR ');
         baseQuery += ` AND (${searchConditions})`;
       }
 
       // Get total count
-      const countQuery = baseQuery.replace('SELECT users.full_name, user_event_details.*', 'SELECT COUNT(*) as total');
+      const countQuery = baseQuery.replace(/SELECT[\s\S]*?FROM/, 'SELECT COUNT(*) as total FROM');
       const countResult = await query(countQuery, search && search.value ? searchableColumns.map(() => `%${search.value}%`) : []);
       const totalRecords = countResult[0].total;
 
-      // Add ordering (matching PHP model exactly)
-      const orderColumns = [null, 'users.full_name', 'user_event_details.event_name', 'user_event_details.event_venue', 'user_event_details.status'];
+      // Add ordering
+      const orderColumns = [null, 'u.full_name', 'ued.event_name', 'ued.event_venue', 'ued.status'];
       if (order && order[0]) {
         const orderColumn = orderColumns[order[0].column];
         const orderDir = order[0].dir;
@@ -1585,7 +1612,7 @@ class EventController {
           baseQuery += ` ORDER BY ${orderColumn} ${orderDir}`;
         }
       } else {
-        baseQuery += ' ORDER BY users.full_name ASC';
+        baseQuery += ' ORDER BY ued.event_id DESC';
       }
 
       // Add pagination
@@ -1596,28 +1623,46 @@ class EventController {
       // Execute query
       const events = await query(baseQuery, search && search.value ? searchableColumns.map(() => `%${search.value}%`) : []);
 
-      // Format data for DataTables (matching PHP exactly)
-      const data = events.map((row, index) => {
-        const i = (parseInt(start) || 0) + index + 1;
-
-        // Format status (matching PHP exactly)
-        const status = row.status == 1 ? '<span class="badge bg-soft-success text-success">Active</span>' : '<span class="badge bg-soft-danger text-danger">Inactive</span>';
-
-        // Format action buttons (matching PHP exactly)
-        const action = `
-          <a href="javascript:void(0);" data-id="${row.event_id}" class="action-icon edit_info"><i class="mdi mdi-square-edit-outline"></i></a>
-          <a href="javascript:void(0);" data-id="${row.event_id}" class="action-icon view_info"><i class="mdi mdi-eye"></i></a>
-          <a href="javascript:void(0);" data-id="${row.event_id}" class="action-icon delete_info"><i class="mdi mdi-delete"></i></a>
-        `;
-
-        return [i, row.full_name, row.event_name, row.event_venue, status, action];
-      });
+      // Format data as objects
+      const formattedEventsList = events.map((event, index) => ({
+        row_id: (parseInt(start) || 0) + index + 1,
+        user_id: String(event.user_id),
+        user_name: event.user_name || "",
+        event_name: event.event_name || "",
+        industry_id: "",
+        industry_name: event.industry_type || "",
+        country_id: event.country_id ? String(event.country_id) : "",
+        country_name: event.country_name || "",
+        state_id: event.state_id ? String(event.state_id) : "",
+        state_name: event.state_name || "",
+        city_id: event.city_id ? String(event.city_id) : "",
+        city_name: event.city_name || "",
+        event_venue: event.event_venue || "",
+        event_link: event.event_link || "",
+        latitude: event.event_lat ? String(event.event_lat) : "",
+        longitude: event.event_lng ? String(event.event_lng) : "",
+        event_geo_address: event.event_geo_address || "",
+        date: event.event_date || "",
+        start_time: event.event_start_time || "",
+        end_time: event.event_end_time || "",
+        event_mode_id: event.event_mode_id ? String(event.event_mode_id) : "",
+        event_mode_name: "",
+        event_type_id: event.event_type_id ? String(event.event_type_id) : "",
+        event_type_name: "",
+        event_details: event.event_details || "",
+        event_banner: event.event_banner || "",
+        status: event.status == 1 ? "Active" : "Inactive"
+      }));
 
       return res.json({
+        status: true,
+        rcode: 200,
+        user_id: user_id,
+        unique_token: token,
         draw: parseInt(draw) || 1,
         recordsTotal: totalRecords,
         recordsFiltered: totalRecords,
-        data: data
+        events_list: formattedEventsList
       });
 
     } catch (error) {

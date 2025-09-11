@@ -826,12 +826,12 @@ class JobController {
 
   static async adminListJobsAjax(req, res) {
     try {
-      const { user_id, token } = {
+      const { user_id, token, draw, start, length, search, job_id } = {
         ...req.query,
         ...req.body
       };
 
-      console.log('adminListJobsAjax - Parameters:', { user_id, token });
+      console.log('adminListJobsAjax - Parameters:', { user_id, token, draw, start, length, search, job_id });
 
       if (!user_id || !token) {
         return res.json({
@@ -868,6 +868,40 @@ class JobController {
         });
       }
 
+      // Pagination parameters
+      const startValue = parseInt(start) || 0;
+      const lengthValue = parseInt(length) || 10;
+      const drawValue = parseInt(draw) || 1;
+
+      // Search query
+      let searchQuery = '';
+      let searchParams = [];
+      if (search && search.value) {
+        searchQuery = `AND (ujd.job_title LIKE ? OR ujd.company_name LIKE ? OR u.full_name LIKE ?)`;
+        const searchTerm = `%${search.value}%`;
+        searchParams = [searchTerm, searchTerm, searchTerm];
+      }
+
+      // Job ID filter
+      if (job_id) {
+        searchQuery += ` AND ujd.job_id = ?`;
+        searchParams.push(job_id);
+      }
+
+      // Get total count
+      const countQuery = `
+        SELECT COUNT(*) as total
+        FROM user_job_details ujd
+        LEFT JOIN users u ON ujd.user_id = u.user_id
+        WHERE ujd.deleted = 0 ${searchQuery}
+      `;
+      const countResult = await query(countQuery, searchParams);
+      const totalRecords = countResult[0].total;
+
+      // Get filtered count
+      const filteredCount = totalRecords;
+
+      // Get paginated data
       const jobsList = await query(`
         SELECT 
           ujd.job_id,
@@ -906,40 +940,32 @@ class JobController {
         LEFT JOIN cities ci ON ujd.city_id = ci.id
         LEFT JOIN job_type jt ON ujd.job_type_id = jt.id
         LEFT JOIN pay p ON ujd.pay_id = p.id
-        WHERE ujd.deleted = 0
+        WHERE ujd.deleted = 0 ${searchQuery}
         ORDER BY ujd.job_id DESC
-      `);
+        LIMIT ?, ?
+      `, [...searchParams, startValue, lengthValue]);
 
+      // Format data as objects
       const formattedJobsList = jobsList.map(job => ({
-        job_id: job.job_id.toString(),
-        user_id: job.user_id.toString(),
-        job_title: job.job_title || "",
-        company_name: job.company_name || "",
-        country_id: job.country_id ? job.country_id.toString() : "",
-        state_id: job.state_id ? job.state_id.toString() : "",
-        city_id: job.city_id ? job.city_id.toString() : "",
-        address: job.address || "",
-        job_lat: job.job_lat ? job.job_lat.toString() : "",
-        job_lng: job.job_lng ? job.job_lng.toString() : "",
-        job_type_id: job.job_type_id ? job.job_type_id.toString() : "",
-        pay_id: job.pay_id ? job.pay_id.toString() : "",
-        job_description: job.job_description || "",
-        status: job.status ? job.status.toString() : "0",
-        created_dts: job.created_dts || "",
-        created_by: job.created_by ? job.created_by.toString() : "",
-        updated_at: job.updated_at || "",
-        updated_by: job.updated_by ? job.updated_by.toString() : "",
-        deleted: job.deleted ? job.deleted.toString() : "0",
-        deleted_by: job.deleted_by ? job.deleted_by.toString() : "",
-        deleted_at: job.deleted_at || "",
+        row_id: jobsList.indexOf(job) + 1 + startValue,
+        job_id: String(job.job_id),
+        user_id: String(job.user_id),
         user_name: job.user_name || "",
-        user_email: job.user_email || "",
-        user_mobile: job.user_mobile || "",
+        company_name: job.company_name || "",
+        country_id: job.country_id ? String(job.country_id) : "",
         country_name: job.country_name || "",
+        state_id: job.state_id ? String(job.state_id) : "",
         state_name: job.state_name || "",
+        city_id: job.city_id ? String(job.city_id) : "",
         city_name: job.city_name || "",
+        address: job.address || "",
+        latitude: job.job_lat ? String(job.job_lat) : "",
+        longitude: job.job_lng ? String(job.job_lng) : "",
+        job_type_id: job.job_type_id ? String(job.job_type_id) : "",
         job_type_name: job.job_type_name || "",
-        pay_name: job.pay_name || ""
+        pay_id: job.pay_id ? String(job.pay_id) : "",
+        pay_name: job.pay_name || "",
+        status: job.status == 1 ? "Active" : "Inactive"
       }));
 
       return res.json({
@@ -947,6 +973,9 @@ class JobController {
         rcode: 200,
         user_id: user_id,
         unique_token: token,
+        draw: drawValue,
+        recordsTotal: totalRecords,
+        recordsFiltered: filteredCount,
         jobs_list: formattedJobsList
       });
 

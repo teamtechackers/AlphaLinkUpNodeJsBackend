@@ -23,12 +23,7 @@ const EventController = require('../controllers/EventController');
 const UserProfileController = require('../controllers/userProfileController');
 const JobController = require('../controllers/JobController');
 const FolderController = require('../controllers/FolderController');
-<<<<<<< HEAD
 const FCMTokenController = require('../controllers/FCMTokenController');
-
-// Import middlewares
-=======
->>>>>>> 700320f99bc2a27bd61505a561dba5ddde81d470
 const authenticate = require('../middlewares/authenticate');
 const adminAuth = require('../middlewares/adminAuth');
 const validate = require('../middlewares/validation');

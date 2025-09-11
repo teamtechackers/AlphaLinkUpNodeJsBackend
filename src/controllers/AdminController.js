@@ -1134,45 +1134,57 @@ class AdminController {
       // Get paginated data
       let dataQuery = `
         SELECT
-          user_id,
-          full_name,
-          mobile,
-          email,
-          status
-        FROM users
-        ${searchQuery}
-        ORDER BY user_id DESC
+          u.user_id,
+          u.full_name,
+          u.mobile,
+          u.email,
+          u.profile_photo,
+          u.address,
+          u.country_id,
+          u.state_id,
+          u.city_id,
+          u.status,
+          c.name as country_name,
+          s.name as state_name,
+          ci.name as city_name
+        FROM users u
+        LEFT JOIN countries c ON u.country_id = c.id
+        LEFT JOIN states s ON u.state_id = s.id
+        LEFT JOIN cities ci ON u.city_id = ci.id
+        ${searchQuery.replace('WHERE deleted = 0', 'WHERE u.deleted = 0')}
+        ORDER BY u.user_id DESC
         LIMIT ?, ?
       `;
       const dataParams = [...searchParams, startValue, lengthValue];
       const users = await query(dataQuery, dataParams);
-      console.log('Database query result:', users[0]);
 
-      // Format data for DataTables (matching PHP exactly)
-      const data = [];
-      let i = startValue;
-      for (const row of users) {
-        i++;
+      // Format data as objects
+      const formattedUsersList = users.map((user, index) => ({
+        row_id: startValue + index + 1,
+        user_id: String(user.user_id),
+        user_name: user.full_name || "",
+        phone_number: user.mobile || "",
+        email_address: user.email || "",
+        profile_photo: user.profile_photo || "",
+        address: user.address || "",
+        country_id: user.country_id ? String(user.country_id) : "",
+        country_name: user.country_name || "",
+        state_id: user.state_id ? String(user.state_id) : "",
+        state_name: user.state_name || "",
+        city_id: user.city_id ? String(user.city_id) : "",
+        city_name: user.city_name || "",
+        status: user.status == 1 ? "Active" : "Inactive"
+      }));
 
-        // Status badge (matching PHP exactly)
-        let status = '<span class="badge bg-soft-success text-success">Active</span>';
-        if (row.status == 0) {
-          status = '<span class="badge bg-soft-danger text-danger">Inactive</span>';
-        }
-
-        // Action buttons (matching PHP exactly)
-        const action = `<a href="javascript:void(0);" data-id="${row.user_id}" class="action-icon edit_info"><i class="mdi mdi-square-edit-outline"></i></a>
-                        <a href="javascript:void(0);" data-id="${row.user_id}" class="action-icon delete_info"><i class="mdi mdi-delete"></i></a>`;
-
-        data.push([i, String(row.user_id), row.full_name, row.mobile, row.email, status, action]);
-      }
-
-      // Return DataTables response (matching PHP exactly)
       return res.json({
+        status: true,
+        rcode: 200,
+        user_id: user_id,
+        unique_token: token,
         draw: drawValue,
         recordsTotal: totalCount,
         recordsFiltered: filteredCount,
-        data: data
+        users_list: formattedUsersList
       });
 
     } catch (error) {
@@ -1789,55 +1801,60 @@ class AdminController {
       const filteredCountResult = await query(filteredCountQuery, searchParams);
       const filteredCount = filteredCountResult[0]?.count || 0;
 
-      // Get paginated data
+      // Get paginated data with all required fields
       let dataQuery = `
         SELECT
-          users.full_name,
-          user_service_provider.*
-        FROM user_service_provider
-        LEFT JOIN users ON users.user_id = user_service_provider.user_id
-        ${searchQuery}
-        ORDER BY users.full_name ASC
+          usp.sp_id,
+          usp.user_id,
+          usp.country_id,
+          usp.state_id,
+          usp.city_id,
+          usp.description,
+          usp.avg_sp_rating as sp_rating,
+          usp.approval_status,
+          usp.status,
+          u.full_name as user_name,
+          c.name as country_name,
+          s.name as state_name,
+          ci.name as city_name
+        FROM user_service_provider usp
+        LEFT JOIN users u ON usp.user_id = u.user_id
+        LEFT JOIN countries c ON usp.country_id = c.id
+        LEFT JOIN states s ON usp.state_id = s.id
+        LEFT JOIN cities ci ON usp.city_id = ci.id
+        ${searchQuery.replace('user_service_provider', 'usp').replace('users', 'u')}
+        ORDER BY usp.sp_id DESC
         LIMIT ?, ?
       `;
       const dataParams = [...searchParams, startValue, lengthValue];
       const serviceProviders = await query(dataQuery, dataParams);
 
-      // Format data for DataTables (matching PHP exactly)
-      const data = [];
-      let i = startValue;
-      for (const row of serviceProviders) {
-        i++;
+      // Format data as objects
+      const formattedServiceProvidersList = serviceProviders.map((provider, index) => ({
+        row_id: startValue + index + 1,
+        user_id: String(provider.user_id),
+        user_name: provider.user_name || "",
+        country_id: provider.country_id ? String(provider.country_id) : "",
+        country_name: provider.country_name || "",
+        state_id: provider.state_id ? String(provider.state_id) : "",
+        state_name: provider.state_name || "",
+        city_id: provider.city_id ? String(provider.city_id) : "",
+        city_name: provider.city_name || "",
+        description: provider.description || "",
+        sp_rating: provider.sp_rating ? String(provider.sp_rating) : "0",
+        approval_status: provider.approval_status == 1 ? "Pending" : provider.approval_status == 2 ? "Approved" : "Rejected",
+        status: provider.status == 1 ? "Active" : "Inactive"
+      }));
 
-        // Approval status badge (matching PHP exactly)
-        let appStatus = '<span class="badge bg-soft-warning text-warning">Pending</span>';
-        if (row.approval_status == 2) {
-          appStatus = '<span class="badge bg-soft-success text-success">Approved</span>';
-        } else if (row.approval_status == 3) {
-          appStatus = '<span class="badge bg-soft-danger text-danger">Rejected</span>';
-        }
-
-        // Status badge (matching PHP exactly)
-        let status = '<span class="badge bg-soft-success text-success">Active</span>';
-        if (row.status == 0) {
-          status = '<span class="badge bg-soft-danger text-danger">Inactive</span>';
-        }
-
-        // Action buttons (matching PHP exactly)
-        const action = `<a href="javascript:void(0);" data-id="${row.sp_id}" class="action-icon edit_info"><i class="mdi mdi-square-edit-outline"></i></a>
-                        <a href="javascript:void(0);" data-id="${row.sp_id}" class="action-icon view_info"><i class="mdi mdi-eye"></i></a>
-                        <a href="javascript:void(0);" data-id="${row.sp_id}" class="action-icon services_info"><i class="mdi mdi-server-network"></i></a>
-                        <a href="javascript:void(0);" data-id="${row.sp_id}" class="action-icon delete_info"><i class="mdi mdi-delete"></i></a>`;
-
-        data.push([i, row.full_name, row.description, appStatus, status, action]);
-      }
-
-      // Return DataTables response (matching PHP exactly)
       return res.json({
+        status: true,
+        rcode: 200,
+        user_id: user_id,
+        unique_token: token,
         draw: drawValue,
         recordsTotal: totalCount,
         recordsFiltered: filteredCount,
-        data: data
+        service_providers_list: formattedServiceProvidersList
       });
 
     } catch (error) {
@@ -2600,53 +2617,66 @@ class AdminController {
       const filteredCountResult = await query(filteredCountQuery, searchParams);
       const filteredCount = filteredCountResult[0]?.count || 0;
 
-      // Get paginated data
+      // Get paginated data with all required fields
       let dataQuery = `
         SELECT
-          users.full_name,
-          user_business_cards.*
-        FROM user_business_cards
-        LEFT JOIN users ON users.user_id = user_business_cards.user_id
-        ${searchQuery}
-        ORDER BY users.full_name ASC
+          ubc.ubc_id,
+          ubc.user_id,
+          ubc.name as card_activation_name,
+          ubc.business_name,
+          ubc.business_location,
+          ubc.country_id,
+          ubc.state_id,
+          ubc.city_id,
+          ubc.description,
+          ubc.card_number,
+          ubc.card_status,
+          ubc.status,
+          u.full_name as user_name,
+          c.name as country_name,
+          s.name as state_name,
+          ci.name as city_name
+        FROM user_business_cards ubc
+        LEFT JOIN users u ON ubc.user_id = u.user_id
+        LEFT JOIN countries c ON ubc.country_id = c.id
+        LEFT JOIN states s ON ubc.state_id = s.id
+        LEFT JOIN cities ci ON ubc.city_id = ci.id
+        ${searchQuery.replace('user_business_cards', 'ubc').replace('users', 'u')}
+        ORDER BY ubc.ubc_id DESC
         LIMIT ?, ?
       `;
       const dataParams = [...searchParams, startValue, lengthValue];
       const cardActivationRequests = await query(dataQuery, dataParams);
 
-      // Format data for DataTables (matching PHP exactly)
-      const data = [];
-      let i = startValue;
-      for (const row of cardActivationRequests) {
-        i++;
+      // Format data as objects
+      const formattedCardActivationRequestsList = cardActivationRequests.map((card, index) => ({
+        row_id: startValue + index + 1,
+        user_id: String(card.user_id),
+        user_name: card.user_name || "",
+        card_activation_name: card.card_activation_name || "",
+        business_name: card.business_name || "",
+        business_location: card.business_location || "",
+        country_id: card.country_id ? String(card.country_id) : "",
+        country_name: card.country_name || "",
+        state_id: card.state_id ? String(card.state_id) : "",
+        state_name: card.state_name || "",
+        city_id: card.city_id ? String(card.city_id) : "",
+        city_name: card.city_name || "",
+        description: card.description || "",
+        card_number: card.card_number || "",
+        card_status: card.card_status == 1 ? "Pending" : card.card_status == 2 ? "Approved" : "Rejected",
+        status: card.status == 1 ? "Active" : "Inactive"
+      }));
 
-        // Card status badge (matching PHP exactly)
-        let cardStatus = '<span class="badge bg-soft-warning text-warning">Pending</span>';
-        if (row.card_status == 2) {
-          cardStatus = '<span class="badge bg-soft-success text-success">Approved</span>';
-        } else if (row.card_status == 3) {
-          cardStatus = '<span class="badge bg-soft-danger text-danger">Rejected</span>';
-        }
-
-        // Status badge (matching PHP exactly)
-        let status = '<span class="badge bg-soft-success text-success">Active</span>';
-        if (row.status == 0) {
-          status = '<span class="badge bg-soft-danger text-danger">Inactive</span>';
-        }
-
-        // Action buttons (matching PHP exactly)
-        const action = `<a href="javascript:void(0);" data-id="${row.ubc_id}" class="action-icon edit_info"><i class="mdi mdi-square-edit-outline"></i></a>
-                        <a href="javascript:void(0);" data-id="${row.ubc_id}" class="action-icon delete_info"><i class="mdi mdi-delete"></i></a>`;
-
-        data.push([i, row.full_name, row.description, cardStatus, status, action]);
-      }
-
-      // Return DataTables response (matching PHP exactly)
       return res.json({
+        status: true,
+        rcode: 200,
+        user_id: user_id,
+        unique_token: token,
         draw: drawValue,
         recordsTotal: totalCount,
         recordsFiltered: filteredCount,
-        data: data
+        card_activation_requests_list: formattedCardActivationRequestsList
       });
 
     } catch (error) {
@@ -3348,76 +3378,107 @@ class AdminController {
         });
       }
 
-      // Build base query (matching PHP model exactly)
-      let baseQuery = `
-        SELECT users.full_name, user_investor.*
-        FROM user_investor
-        LEFT JOIN users ON users.user_id = user_investor.user_id
-        WHERE user_investor.deleted = 0
-      `;
+      // Get DataTables parameters
+      const drawValue = parseInt(draw || 1);
+      const startValue = parseInt(start || 0);
+      const lengthValue = parseInt(length || 10);
+      const searchValue = search?.value || '';
 
-      // Add search functionality (matching PHP model exactly)
-      const searchableColumns = ['users.full_name', 'user_investor.reference_no', 'user_investor.name', 'user_investor.approval_status', 'user_investor.status'];
-      if (search && search.value) {
-        const searchConditions = searchableColumns.map(col => `${col} LIKE ?`).join(' OR ');
-        baseQuery += ` AND (${searchConditions})`;
+      // Build search query
+      let searchQuery = '';
+      let searchParams = [];
+      const searchableColumns = ['u.full_name', 'ui.reference_no', 'ui.name', 'ui.approval_status', 'ui.status'];
+      if (searchValue) {
+        searchQuery = `AND (${searchableColumns.map(col => `${col} LIKE ?`).join(' OR ')})`;
+        searchParams = searchableColumns.map(() => `%${searchValue}%`);
       }
 
       // Get total count
-      const countQuery = baseQuery.replace('SELECT users.full_name, user_investor.*', 'SELECT COUNT(*) as total');
-      const countResult = await query(countQuery, search && search.value ? searchableColumns.map(() => `%${search.value}%`) : []);
-      const totalRecords = countResult[0].total;
+      const totalCountResult = await query(`
+        SELECT COUNT(*) as total
+        FROM user_investor ui
+        LEFT JOIN users u ON ui.user_id = u.user_id
+        WHERE ui.deleted = 0 ${searchQuery}
+      `, searchParams);
+      const totalRecords = totalCountResult[0]?.total || 0;
 
-      // Add ordering (matching PHP model exactly)
-      const orderColumns = [null, 'users.full_name', 'user_investor.reference_no', 'user_investor.name', 'user_investor.approval_status', 'user_investor.status'];
-      if (order && order[0]) {
-        const orderColumn = orderColumns[order[0].column];
-        const orderDir = order[0].dir;
-        if (orderColumn) {
-          baseQuery += ` ORDER BY ${orderColumn} ${orderDir}`;
-        }
-      } else {
-        baseQuery += ' ORDER BY users.full_name ASC';
-      }
+      // Get filtered count (same as total if no specific filters beyond search)
+      const filteredCount = totalRecords;
 
-      // Add pagination
-      if (length && length !== -1) {
-        baseQuery += ` LIMIT ${parseInt(start) || 0}, ${parseInt(length)}`;
-      }
+      // Get paginated data with all required fields
+      let dataQuery = `
+        SELECT
+          ui.investor_id,
+          ui.user_id,
+          ui.country_id,
+          ui.state_id,
+          ui.city_id,
+          ui.fund_size_id,
+          ui.linkedin_url,
+          ui.bio,
+          ui.image,
+          ui.profile,
+          ui.investment_stage,
+          ui.availability,
+          ui.meeting_city,
+          ui.countries_to_invest,
+          ui.investment_industry,
+          ui.language,
+          ui.approval_status,
+          ui.status,
+          u.full_name as user_name,
+          c.name as country_name,
+          s.name as state_name,
+          ci.name as city_name,
+          fs.investment_range as fund_size
+        FROM user_investor ui
+        LEFT JOIN users u ON ui.user_id = u.user_id
+        LEFT JOIN countries c ON ui.country_id = c.id
+        LEFT JOIN states s ON ui.state_id = s.id
+        LEFT JOIN cities ci ON ui.city_id = ci.id
+        LEFT JOIN fund_size fs ON ui.fund_size_id = fs.id
+        WHERE ui.deleted = 0 ${searchQuery}
+        ORDER BY ui.investor_id DESC
+        LIMIT ?, ?
+      `;
+      const dataParams = [...searchParams, startValue, lengthValue];
+      const investors = await query(dataQuery, dataParams);
 
-      // Execute query
-      const investors = await query(baseQuery, search && search.value ? searchableColumns.map(() => `%${search.value}%`) : []);
-
-      // Format data for DataTables (matching PHP exactly)
-      const data = investors.map((row, index) => {
-        const i = (parseInt(start) || 0) + index + 1;
-
-        // Format approval status (matching PHP exactly)
-        let appStatus = '<span class="badge bg-soft-warning text-warning">Pending</span>';
-        if (row.approval_status == 2) {
-          appStatus = '<span class="badge bg-soft-success text-success">Approved</span>';
-        } else if (row.approval_status == 3) {
-          appStatus = '<span class="badge bg-soft-danger text-danger">Rejected</span>';
-        }
-
-        // Format status (matching PHP exactly)
-        const status = row.status == 1 ? '<span class="badge bg-soft-success text-success">Active</span>' : '<span class="badge bg-soft-danger text-danger">Inactive</span>';
-
-        // Format action buttons (matching PHP exactly)
-        const action = `
-          <a href="javascript:void(0);" data-id="${row.investor_id}" class="action-icon edit_info"><i class="mdi mdi-square-edit-outline"></i></a>
-          <a href="javascript:void(0);" data-id="${row.investor_id}" class="action-icon view_info"><i class="mdi mdi-eye"></i></a>
-          <a href="javascript:void(0);" data-id="${row.investor_id}" class="action-icon delete_info"><i class="mdi mdi-delete"></i></a>
-        `;
-
-        return [i, row.full_name, row.reference_no, row.name, appStatus, status, action];
-      });
+      // Format data as objects
+      const formattedInvestorsList = investors.map((investor, index) => ({
+        row_id: startValue + index + 1,
+        user_id: String(investor.user_id),
+        user_name: investor.user_name || "",
+        country_id: investor.country_id ? String(investor.country_id) : "",
+        country_name: investor.country_name || "",
+        state_id: investor.state_id ? String(investor.state_id) : "",
+        state_name: investor.state_name || "",
+        city_id: investor.city_id ? String(investor.city_id) : "",
+        city_name: investor.city_name || "",
+        fund_size: investor.fund_size || "",
+        linked_url: investor.linkedin_url || "",
+        bio: investor.bio || "",
+        profile_image_url: investor.image || "",
+        availability_status: investor.availability || "",
+        profile: investor.profile || "",
+        investment_stage: investor.investment_stage || "",
+        meeting_city: investor.meeting_city || "",
+        countries_to_invest: investor.countries_to_invest || "",
+        investment_industry: investor.investment_industry || "",
+        language: investor.language || "",
+        approval_status: investor.approval_status == 1 ? "Pending" : investor.approval_status == 2 ? "Approved" : "Rejected",
+        status: investor.status == 1 ? "Active" : "Inactive"
+      }));
 
       return res.json({
-        draw: parseInt(draw) || 1,
+        status: true,
+        rcode: 200,
+        user_id: user_id,
+        unique_token: token,
+        draw: drawValue,
         recordsTotal: totalRecords,
-        recordsFiltered: totalRecords,
-        data: data
+        recordsFiltered: filteredCount,
+        investors_list: formattedInvestorsList
       });
 
     } catch (error) {
