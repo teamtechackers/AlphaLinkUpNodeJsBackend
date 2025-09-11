@@ -23,19 +23,20 @@ const EventController = require('../controllers/EventController');
 const UserProfileController = require('../controllers/userProfileController');
 const JobController = require('../controllers/JobController');
 const FolderController = require('../controllers/FolderController');
+<<<<<<< HEAD
 const FCMTokenController = require('../controllers/FCMTokenController');
 
 // Import middlewares
+=======
+>>>>>>> 700320f99bc2a27bd61505a561dba5ddde81d470
 const authenticate = require('../middlewares/authenticate');
 const adminAuth = require('../middlewares/adminAuth');
 const validate = require('../middlewares/validation');
 const rateLimiter = require('../middlewares/rateLimiter');
 const { checkUser } = require('../middlewares/checkUser');
 const { uploadProfilePhoto, uploadFormData, uploadEvents, uploadResume, uploadInvestor, uploadVisitingCards, uploadServices, uploadProjectLogo } = require('../middlewares/upload');
-
 // Serve static files (images, uploads)
 router.use('/uploads', express.static(path.join(__dirname, '../../uploads')));
-
 // Health check endpoint
 router.get('/health', (req, res) => {
   res.status(200).json({
@@ -70,7 +71,6 @@ router.get('/version', (req, res) => {
     ]
   });
 });
-
 // PHP Aligned API Routes - Exact match with routes.php
 // Authentication Routes
 router.post('/Api-Send-Otp', uploadFormData.any(), AuthController.sendOtp);
@@ -78,7 +78,6 @@ router.post('/Api-Verify-Otp', uploadFormData.any(), AuthController.verifyOtp);
 router.post('/Api-Login', ApiController.login);
 router.post('/Api-Logout', uploadFormData.none(), ApiController.logout);
 router.get('/Api-Logout', ApiController.logout);
-
 // Master Data Routes
 router.get('/Api-Country-List', CountryController.getCountryList);
 router.post('/Api-Country-List', uploadFormData.none(), CountryController.getCountryList);
@@ -86,7 +85,6 @@ router.get('/Api-State-List', StateController.getStateList);
 router.post('/Api-State-List', uploadFormData.none(), StateController.getStateList);
 router.get('/Api-City-List', CityController.getCityList);
 router.post('/Api-City-List', uploadFormData.none(), CityController.getCityList);
-
 router.get('/Api-Interests-List', InterestController.getInterestsList);
 router.post('/Api-Interests-List', uploadFormData.none(), InterestController.getInterestsList);
 router.get('/Api-Employment-Type-List', EmploymentTypeController.getEmploymentTypeList);
@@ -101,7 +99,6 @@ router.get('/Api-Event-Type-List', EventTypeController.getEventTypeList);
 router.post('/Api-Event-Type-List', uploadFormData.none(), EventTypeController.getEventTypeList);
 router.get('/Api-Fund-Size-List', FundController.getFundSizeList);
 router.post('/Api-Fund-Size-List', uploadFormData.none(), FundController.getFundSizeList);
-
 // Profile Routes
 router.post('/Api-Update-Profile', uploadProfilePhoto.single('profile_photo'), UserProfileController.updateProfile);
 router.get('/Api-View-Profile', UserProfileController.getProfile);
@@ -126,13 +123,10 @@ router.post('/Api-Delete-Event-Organiser', uploadFormData.none(), EventControlle
 router.post('/Api-Save-Event-Attendee', uploadFormData.none(), EventController.saveEventAttendee);
 router.post('/Api-Delete-Event-Attendee', uploadFormData.none(), EventController.deleteEventAttendee);
 router.get('/Api-View-User-Detail-By-Qrcode', checkUser, UserProfileController.getUserDetailByQrCode);
-
-
 // Dashboard Route - Support both GET and POST for form data
 router.get('/Api-Dashboard', DashboardController.dashboard);
 router.post('/Api-Dashboard', DashboardController.dashboard);
 router.get('/Api-Legal-Terms', ApiController.legalTerms);
-
 // Job Routes
 router.post('/Api-Save-Job-Information', uploadFormData.none(), JobController.saveJobInformation);
 router.get('/Api-View-Job-Information', JobController.getJobInformation);
@@ -144,7 +138,6 @@ router.post('/Api-View-Resumes', uploadFormData.none(), ApiController.viewResume
 router.get('/Api-View-Job-Details', JobController.getJobDetail);
 router.post('/Api-View-Job-Details', uploadFormData.none(), JobController.getJobDetail);
 // Removed unused job-related routes
-
 // Event Routes
 router.post('/Api-Save-Event-Information', uploadEvents.single('event_banner_file'), EventController.saveEventInformation);
 router.get('/Api-View-Event-Information', EventController.getEventInformation);
@@ -163,14 +156,12 @@ router.get('/Api-View-Events-Organised', EventController.getEventsOrganisedList)
 router.post('/Api-View-Events-Organised', uploadFormData.none(), EventController.getEventsOrganisedList);
 router.post('/Api-Save-Event-Attendee', uploadFormData.none(), EventController.saveEventAttendee);
 router.post('/Api-Delete-Event-Attendee', uploadFormData.none(), EventController.deleteEventAttendee);
-
 // Folder Management Routes
 router.get('/Api-Folders-List-By-Type', FolderController.getFoldersListByType);
 router.post('/Api-Add-Folder-By-Type', uploadFormData.none(), FolderController.saveFolderByType);
 router.get('/Api-Sub-Folders-List', FolderController.getSubFoldersList);
 router.post('/Api-Add-Sub-Folder', uploadFormData.none(), FolderController.saveSubFolder);
 router.post('/Api-Delete-Sub-Folder', uploadFormData.none(), FolderController.deleteSubFolder);
-
 // Contact Management Routes
 router.get('/Api-Contacts-List', FolderController.getContactsList);
 router.post('/Api-Add-Contact', uploadFormData.none(), ApiController.saveContact);
@@ -179,40 +170,31 @@ router.post('/Api-Add-Contact-Visiting-Card', uploadVisitingCards.fields([
   { name: 'visiting_card_back', maxCount: 1 }
 ]), ApiController.saveContactVisitingCard);
 router.get('/Api-View-Contact-Visiting-Card', FolderController.getContactVisitingCardInformation);
-
 // Business Card Routes
 router.get('/Api-Activate-Card', ApiController.activateCard);
 router.post('/Api-Activate-Card', uploadFormData.array('business_documents_file', 10), ApiController.activateCard);
-
 // Promotions Routes
 router.get('/Api-Promotions-List', ApiController.getPromotionsList);
-
 // Services Master Routes
 router.get('/Api-Service-Master-List', ApiController.getServicesMasterList);
 router.post('/Api-Service-Master-List', uploadFormData.none(), ApiController.getServicesMasterList);
-
 // Services List Routes
 router.get('/Api-Services-List', ApiController.getServicesList);
 router.get('/Api-All-Services-List', ApiController.getAllServicesList);
 router.post('/Api-All-Services-List', uploadFormData.none(), ApiController.getAllServicesList);
-
 // Service Provider Routes
 router.post('/Api-Save-Service-Provider', uploadFormData.none(), ApiController.saveServiceProvider);
-
 // Review Rating Routes
 router.post('/Api-Add-Review-Rating', uploadFormData.none(), ApiController.saveReviewRating);
-
 // Service Details Routes
 router.post('/Api-Save-Service-Details', uploadServices.fields([{ name: 'service_image', maxCount: 1 }]), ApiController.saveServiceDetails);
 router.get('/Api-View-Service-Details', ApiController.getServiceDetail);
 router.post('/Api-View-Service-Details', uploadFormData.none(), ApiController.getServiceDetail);
-
 // Service Unlock Routes
 router.get('/Api-Service-Unlock', ApiController.serviceUnlock);
 router.post('/Api-Service-Unlock', uploadFormData.none(), ApiController.serviceUnlock);
 router.get('/Api-All-Service-Unlock-List', ApiController.getAllServiceUnlockList);
 router.post('/Api-All-Service-Unlock-List', uploadFormData.none(), ApiController.getAllServiceUnlockList);
-
 // Admin Routes
 router.get('/admin-login', AdminController.adminLogin);
 router.post('/admin-login', uploadFormData.none(), AdminController.adminLogin);
@@ -435,7 +417,6 @@ router.get('/delete-jobs', JobController.adminDeleteJobs);
 router.post('/delete-jobs', uploadFormData.none(), JobController.adminDeleteJobs);
 router.get('/view-jobs-details', JobController.adminViewJobsDetails);
 router.post('/view-jobs-details', uploadFormData.none(), JobController.adminViewJobsDetails);
-
 // Events admin routes
 router.get('/list-events', EventController.viewEvents);
 router.post('/list-events', uploadFormData.none(), EventController.viewEvents);
@@ -457,7 +438,6 @@ router.post('/view-events-details', uploadFormData.none(), EventController.viewE
 // router.get('/delete-request', ApiController.deleteRequest);
 // router.get('/thank-you', ApiController.thankYou);
 // router.post('/thank-you', uploadFormData.none(), ApiController.thankYou);
-
 // Investor Routes
 router.post('/Api-Save-Investor', uploadInvestor.single('image'), ApiController.saveInvestor);
 router.get('/Api-All-Investors-List', ApiController.getAllInvestorsList);
@@ -472,7 +452,6 @@ router.post('/Api-My-Investor-Profile', uploadFormData.none(), ApiController.get
 router.get('/Api-My-Investor-Meets', ApiController.getInvestorMeets);
 router.post('/Api-My-Investor-Meets', uploadFormData.none(), ApiController.getInvestorMeets);
 router.get('/Api-Investor-Desk', ApiController.getInvestorDesk);
-
 // Chat Routes
 router.post('/Api-Save-Chat', uploadFormData.none(), ApiController.saveChat);
 router.get('/Api-View-Chat', ApiController.getChat);
