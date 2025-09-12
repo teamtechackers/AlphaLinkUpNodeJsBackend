@@ -2407,21 +2407,22 @@ class AdminController {
   static async submitCardActivationRequests(req, res) {
     try {
       // Support both query parameters and form data
-      const { user_id, token, row_id, country_id, state_id, city_id, description, card_number, card_status, status, name, business_name, business_location, card_comments } = {
+      const { user_id, token, row_id, sp_user_id, country_id, state_id, city_id, description, card_number, card_status, status, name, card_activation_name, business_name, business_location, card_comments } = {
         ...req.query,
         ...req.body
       };
       
-      // Extract service provider user_id from body (different from admin user_id)
-      const sp_user_id = req.body.user_id;
+      // sp_user_id is now extracted from destructuring above
       
       // Ensure admin user_id comes from query parameters
       const adminUserId = req.query.user_id;
 
-      console.log('submitCardActivationRequests - Parameters:', { user_id, token, row_id, sp_user_id, country_id, state_id, city_id, description, card_number, card_status, status, name, business_name, business_location, card_comments });
+      console.log('submitCardActivationRequests - Parameters:', { user_id, token, row_id, sp_user_id, country_id, state_id, city_id, description, card_number, card_status, status, name, card_activation_name, business_name, business_location, card_comments });
+      console.log('submitCardActivationRequests - req.body:', req.body);
+      console.log('submitCardActivationRequests - req.query:', req.query);
 
       // Check if user_id and token are provided
-      if (!adminUserId || !token) {
+      if (!user_id || !token) {
         return res.json({
           status: false,
           rcode: 500,
@@ -2430,7 +2431,8 @@ class AdminController {
       }
 
       // Decode user ID
-      const decodedUserId = idDecode(adminUserId);
+      const decodedUserId = idDecode(user_id);
+      console.log('submitCardActivationRequests - decodedUserId:', decodedUserId);
       if (!decodedUserId) {
         return res.json({
           status: false,
@@ -2440,8 +2442,11 @@ class AdminController {
       }
 
       // Check if user exists
+      console.log('Checking user with decodedUserId:', decodedUserId);
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      console.log('User rows found:', userRows.length);
       if (!userRows.length) {
+        console.log('User not found in users table for decodedUserId:', decodedUserId);
         return res.json({
           status: false,
           rcode: 500,
@@ -2482,7 +2487,7 @@ class AdminController {
           card_number: card_number ? card_number.trim() : '',
           card_status: card_status ? parseInt(card_status) : 1,
           status: status !== undefined ? parseInt(status) : 1,
-          name: name ? name.trim() : '',
+          name: (card_activation_name || name) ? (card_activation_name || name).trim() : '',
           business_name: business_name ? business_name.trim() : '',
           business_location: business_location ? business_location.trim() : '',
           deleted: 0,
@@ -2511,7 +2516,7 @@ class AdminController {
           card_number: card_number ? card_number.trim() : '',
           card_status: card_status ? parseInt(card_status) : 1,
           status: status !== undefined ? parseInt(status) : 1,
-          name: name ? name.trim() : '',
+          name: (card_activation_name || name) ? (card_activation_name || name).trim() : '',
           business_name: business_name ? business_name.trim() : '',
           business_location: business_location ? business_location.trim() : '',
           updated_at: new Date().toISOString().slice(0, 19).replace('T', ' '),
@@ -2653,6 +2658,7 @@ class AdminController {
       const formattedCardActivationRequestsList = cardActivationRequests.map((card, index) => ({
         row_id: startValue + index + 1,
         ubc_id: String(card.ubc_id),
+        sp_user_id: String(card.user_id),
         user_id: String(card.user_id),
         user_name: card.user_name || "",
         card_activation_name: card.card_activation_name || "",
@@ -3241,7 +3247,7 @@ class AdminController {
         // Insert new investor (matching PHP exactly)
         const insertData = {
           user_id: parseInt(investorUserId),
-          name: name ? name.trim() : '',
+          name: (card_activation_name || name) ? (card_activation_name || name).trim() : '',
           country_id: country_id ? parseInt(country_id) : 166, // Default to Pakistan
           state_id: state_id ? parseInt(state_id) : 2728, // Default to Punjab
           city_id: city_id ? parseInt(city_id) : 31439, // Default to Lahore
@@ -3292,7 +3298,7 @@ class AdminController {
         // Update existing investor (matching PHP exactly)
         const updateData = {
           user_id: parseInt(investorUserId),
-          name: name ? name.trim() : '',
+          name: (card_activation_name || name) ? (card_activation_name || name).trim() : '',
           country_id: country_id ? parseInt(country_id) : 166, // Default to Pakistan
           state_id: state_id ? parseInt(state_id) : 2728, // Default to Punjab
           city_id: city_id ? parseInt(city_id) : 31439, // Default to Lahore
