@@ -951,6 +951,8 @@ class JobController {
         job_id: String(job.job_id),
         user_id: String(job.user_id),
         user_name: job.user_name || "",
+        job_title: job.job_title || "",
+        job_description: job.job_description || "",
         company_name: job.company_name || "",
         country_id: job.country_id ? String(job.country_id) : "",
         country_name: job.country_name || "",

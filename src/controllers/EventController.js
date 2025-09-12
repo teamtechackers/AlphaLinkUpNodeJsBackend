@@ -1626,6 +1626,7 @@ class EventController {
       // Format data as objects
       const formattedEventsList = events.map((event, index) => ({
         row_id: (parseInt(start) || 0) + index + 1,
+        event_id: String(event.event_id),
         user_id: String(event.user_id),
         user_name: event.user_name || "",
         event_name: event.event_name || "",

@@ -1832,6 +1832,7 @@ class AdminController {
       // Format data as objects
       const formattedServiceProvidersList = serviceProviders.map((provider, index) => ({
         row_id: startValue + index + 1,
+        sp_id: String(provider.sp_id),
         user_id: String(provider.user_id),
         user_name: provider.user_name || "",
         country_id: provider.country_id ? String(provider.country_id) : "",
@@ -2651,6 +2652,7 @@ class AdminController {
       // Format data as objects
       const formattedCardActivationRequestsList = cardActivationRequests.map((card, index) => ({
         row_id: startValue + index + 1,
+        ubc_id: String(card.ubc_id),
         user_id: String(card.user_id),
         user_name: card.user_name || "",
         card_activation_name: card.card_activation_name || "",
@@ -3447,6 +3449,7 @@ class AdminController {
       // Format data as objects
       const formattedInvestorsList = investors.map((investor, index) => ({
         row_id: startValue + index + 1,
+        investor_id: String(investor.investor_id),
         user_id: String(investor.user_id),
         user_name: investor.user_name || "",
         country_id: investor.country_id ? String(investor.country_id) : "",

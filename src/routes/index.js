@@ -24,6 +24,7 @@ const UserProfileController = require('../controllers/userProfileController');
 const JobController = require('../controllers/JobController');
 const FolderController = require('../controllers/FolderController');
 const FCMTokenController = require('../controllers/FCMTokenController');
+
 const authenticate = require('../middlewares/authenticate');
 const adminAuth = require('../middlewares/adminAuth');
 const validate = require('../middlewares/validation');
