@@ -3178,22 +3178,17 @@ class AdminController {
   // Submit investors - PHP compatible version
   static async submitInvestors(req, res) {
     try {
-      // Support both query parameters and form data
-      const { user_id, token, row_id, user_id: sp_user_id, name, country_id, state_id, city_id, fund_size_id, linkedin_url, bio, availability, profile, investment_stage, meeting_city, countries_to_invest, investment_industry, language, approval_status, status } = {
-        ...req.query,
-        ...req.body
-      };
+      // Get parameters from body
+      const { user_id, token, row_id, name, country_id, state_id, city_id, fund_size_id, linkedin_url, bio, availability, profile, investment_stage, meeting_city, countries_to_invest, investment_industry, language, approval_status, status, investor_user_id } = req.body;
       
-      // Extract service provider user_id from body (different from admin user_id)
-      const investorUserId = req.body.user_id;
+      console.log('submitInvestors - req.body:', req.body);
+      console.log('submitInvestors - user_id:', user_id);
+      console.log('submitInvestors - investor_user_id:', investor_user_id);
       
-      // Ensure admin user_id comes from query parameters
-      const adminUserId = req.query.user_id;
-
-      console.log('submitInvestors - Parameters:', { user_id, token, row_id, investorUserId, name, country_id, state_id, city_id, fund_size_id, linkedin_url, bio, availability, profile, investment_stage, meeting_city, countries_to_invest, investment_industry, language, approval_status, status });
+      console.log('submitInvestors - Parameters:', { user_id, token, row_id, investor_user_id, name, country_id, state_id, city_id, fund_size_id, linkedin_url, bio, availability, profile, investment_stage, meeting_city, countries_to_invest, investment_industry, language, approval_status, status });
 
       // Check if user_id and token are provided
-      if (!adminUserId || !token) {
+      if (!user_id || !token) {
         return res.json({
           status: false,
           rcode: 500,
@@ -3201,8 +3196,8 @@ class AdminController {
         });
       }
 
-      // Decode user ID
-      const decodedUserId = idDecode(adminUserId);
+      // Decode admin user ID
+      const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
         return res.json({
           status: false,
@@ -3211,7 +3206,7 @@ class AdminController {
         });
       }
 
-      // Check if user exists
+      // Check if admin user exists
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return res.json({
@@ -3221,119 +3216,122 @@ class AdminController {
         });
       }
 
-      // Check if user is admin (role_id = 1 or 2)
-      const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
-      if (!adminRows.length) {
+      // Check if token is valid
+      const tokenRows = await query('SELECT * FROM users WHERE user_id = ? AND unique_token = ? LIMIT 1', [decodedUserId, token]);
+      if (!tokenRows.length) {
         return res.json({
           status: false,
           rcode: 500,
-          message: 'Permission denied'
+          message: 'Invalid token'
         });
       }
 
-      // Check if required fields are provided
-      if (!investorUserId) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'user_id is required'
-        });
-      }
+      // If row_id is provided, update existing record
+      if (row_id && row_id !== '') {
+        // Use row_id directly without encoding/decoding
+        const investorRowId = row_id;
+        console.log('submitInvestors - row_id:', row_id);
+        console.log('submitInvestors - investorRowId:', investorRowId);
 
-      // Get admin role_id
-      const admin = adminRows[0];
+        // Update existing investor record
+        const updateQuery = `
+          UPDATE user_investor 
+          SET 
+            name = ?,
+            country_id = ?,
+            state_id = ?,
+            city_id = ?,
+            fund_size_id = ?,
+            linkedin_url = ?,
+            bio = ?,
+            availability = ?,
+            profile = ?,
+            investment_stage = ?,
+            meeting_city = ?,
+            countries_to_invest = ?,
+            investment_industry = ?,
+            language = ?,
+            approval_status = ?,
+            status = ?,
+            updated_at = NOW()
+          WHERE investor_id = ?
+        `;
 
-      if (!row_id || row_id === '') {
-        // Insert new investor (matching PHP exactly)
-        const insertData = {
-          user_id: parseInt(investorUserId),
-          name: (card_activation_name || name) ? (card_activation_name || name).trim() : '',
-          country_id: country_id ? parseInt(country_id) : 166, // Default to Pakistan
-          state_id: state_id ? parseInt(state_id) : 2728, // Default to Punjab
-          city_id: city_id ? parseInt(city_id) : 31439, // Default to Lahore
-          fund_size_id: fund_size_id ? parseInt(fund_size_id) : 1, // Default to first fund size
-          linkedin_url: linkedin_url ? linkedin_url.trim() : '',
-          bio: bio ? bio.trim() : '',
-          availability: availability === 'Both' ? 'Online, In-Person' : (availability ? availability.trim() : ''),
-          profile: profile ? profile.trim() : '',
-          investment_stage: investment_stage ? investment_stage.trim() : '',
-          meeting_city: meeting_city ? meeting_city.trim() : '',
-          countries_to_invest: countries_to_invest ? countries_to_invest.trim() : '',
-          investment_industry: investment_industry ? investment_industry.trim() : '',
-          language: language ? language.trim() : '',
-          approval_status: approval_status ? parseInt(approval_status) : 1,
-          status: status !== undefined ? parseInt(status) : 1,
-          image: '', // Default empty image
-          deleted: 0,
-          created_dts: new Date().toISOString().slice(0, 19).replace('T', ' '),
-          created_by: admin.role_id
-        };
-
-        const result = await query(
-          'INSERT INTO user_investor (user_id, name, country_id, state_id, city_id, fund_size_id, linkedin_url, bio, availability, profile, investment_stage, meeting_city, countries_to_invest, investment_industry, language, approval_status, status, image, deleted, created_dts, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-          [insertData.user_id, insertData.name, insertData.country_id, insertData.state_id, insertData.city_id, insertData.fund_size_id, insertData.linkedin_url, insertData.bio, insertData.availability, insertData.profile, insertData.investment_stage, insertData.meeting_city, insertData.countries_to_invest, insertData.investment_industry, insertData.language, insertData.approval_status, insertData.status, insertData.image, insertData.deleted, insertData.created_dts, insertData.created_by]
-        );
-
-        // Generate reference number (matching PHP exactly)
-        const investorId = result.insertId;
-        let referenceNo;
-        if (investorId < 10) {
-          referenceNo = "00" + investorId;
-        } else if (investorId < 100) {
-          referenceNo = "0" + investorId;
-        } else {
-          referenceNo = investorId.toString();
-        }
-        referenceNo = "INV-ALPHA-" + referenceNo;
-
-        // Update with reference number
-        await query('UPDATE user_investor SET reference_no = ? WHERE investor_id = ?', [referenceNo, investorId]);
+        await query(updateQuery, [
+          name,
+          country_id,
+          state_id,
+          city_id,
+          fund_size_id,
+          linkedin_url,
+          bio,
+          availability,
+          profile,
+          investment_stage,
+          meeting_city,
+          countries_to_invest,
+          investment_industry,
+          language,
+          approval_status,
+          status,
+          investorRowId
+        ]);
 
         return res.json({
-          status: 'Success',
-          info: 'Investor Created Successfully'
+          status: true,
+          rcode: 200,
+          message: 'Investor updated successfully'
         });
-
       } else {
-        // Update existing investor (matching PHP exactly)
-        const updateData = {
-          user_id: parseInt(investorUserId),
-          name: (card_activation_name || name) ? (card_activation_name || name).trim() : '',
-          country_id: country_id ? parseInt(country_id) : 166, // Default to Pakistan
-          state_id: state_id ? parseInt(state_id) : 2728, // Default to Punjab
-          city_id: city_id ? parseInt(city_id) : 31439, // Default to Lahore
-          fund_size_id: fund_size_id ? parseInt(fund_size_id) : 1, // Default to first fund size
-          linkedin_url: linkedin_url ? linkedin_url.trim() : '',
-          bio: bio ? bio.trim() : '',
-          availability: availability === 'Both' ? 'Online, In-Person' : (availability ? availability.trim() : ''),
-          profile: profile ? profile.trim() : '',
-          investment_stage: investment_stage ? investment_stage.trim() : '',
-          meeting_city: meeting_city ? meeting_city.trim() : '',
-          countries_to_invest: countries_to_invest ? countries_to_invest.trim() : '',
-          investment_industry: investment_industry ? investment_industry.trim() : '',
-          language: language ? language.trim() : '',
-          approval_status: approval_status ? parseInt(approval_status) : 1,
-          status: status !== undefined ? parseInt(status) : 1,
-          updated_at: new Date().toISOString().slice(0, 19).replace('T', ' '),
-          updated_by: admin.role_id
-        };
+        // Insert new investor record
+        const insertQuery = `
+          INSERT INTO user_investor (
+            user_id, name, country_id, state_id, city_id, fund_size_id, 
+            linkedin_url, bio, availability, profile, investment_stage, 
+            meeting_city, countries_to_invest, investment_industry, 
+            language, approval_status, status, image, deleted, created_dts, updated_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '', 0, NOW(), NOW())
+        `;
 
-        await query(
-          'UPDATE user_investor SET user_id = ?, name = ?, country_id = ?, state_id = ?, city_id = ?, fund_size_id = ?, linkedin_url = ?, bio = ?, availability = ?, profile = ?, investment_stage = ?, meeting_city = ?, countries_to_invest = ?, investment_industry = ?, language = ?, approval_status = ?, status = ?, updated_at = ?, updated_by = ? WHERE investor_id = ?',
-          [updateData.user_id, updateData.name, updateData.country_id, updateData.state_id, updateData.city_id, updateData.fund_size_id, updateData.linkedin_url, updateData.bio, updateData.availability, updateData.profile, updateData.investment_stage, updateData.meeting_city, updateData.countries_to_invest, updateData.investment_industry, updateData.language, updateData.approval_status, updateData.status, updateData.updated_at, updateData.updated_by, row_id]
-        );
+        // Use investor_user_id if provided, otherwise use admin user_id
+        const investorUserId = investor_user_id ? idDecode(investor_user_id) : decodedUserId;
+        
+        console.log('submitInvestors - investorUserId:', investorUserId);
+        
+        const result = await query(insertQuery, [
+          investorUserId, // Investor user_id
+          name,
+          country_id,
+          state_id,
+          city_id,
+          fund_size_id,
+          linkedin_url,
+          bio,
+          availability,
+          profile,
+          investment_stage,
+          meeting_city,
+          countries_to_invest,
+          investment_industry,
+          language,
+          approval_status,
+          status
+        ]);
 
         return res.json({
-          status: 'Success',
-          info: 'Investor Updated Successfully'
+          status: true,
+          rcode: 200,
+          message: 'Investor created successfully',
+          investor_id: result.insertId
         });
       }
-
     } catch (error) {
       console.error('submitInvestors error:', error);
+      console.error('submitInvestors error stack:', error.stack);
       return res.json({
-        status: 'Error',
-        info: 'Failed to submit investor'
+        status: false,
+        rcode: 500,
+        message: 'Failed to submit investor: ' + error.message
       });
     }
   }

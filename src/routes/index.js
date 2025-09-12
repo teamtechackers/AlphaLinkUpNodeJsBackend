@@ -24,11 +24,13 @@ const UserProfileController = require('../controllers/userProfileController');
 const JobController = require('../controllers/JobController');
 const FolderController = require('../controllers/FolderController');
 const FCMTokenController = require('../controllers/FCMTokenController');
+const UserController = require('../controllers/UserController');
 
 const authenticate = require('../middlewares/authenticate');
 const adminAuth = require('../middlewares/adminAuth');
 const validate = require('../middlewares/validation');
 const rateLimiter = require('../middlewares/rateLimiter');
+
 const { checkUser } = require('../middlewares/checkUser');
 const { uploadProfilePhoto, uploadFormData, uploadEvents, uploadResume, uploadInvestor, uploadVisitingCards, uploadServices, uploadProjectLogo } = require('../middlewares/upload');
 // Serve static files (images, uploads)
@@ -95,6 +97,10 @@ router.get('/Api-Event-Type-List', EventTypeController.getEventTypeList);
 router.post('/Api-Event-Type-List', uploadFormData.none(), EventTypeController.getEventTypeList);
 router.get('/Api-Fund-Size-List', FundController.getFundSizeList);
 router.post('/Api-Fund-Size-List', uploadFormData.none(), FundController.getFundSizeList);
+router.get('/Api-User-List', UserController.fetchUserByNameId);
+router.post('/Api-User-List', uploadFormData.none(), UserController.fetchUserByNameId);
+router.get('/Api-Industry-Type-List', UserController.fetchIndustryTypeByNameId);
+router.post('/Api-Industry-Type-List', uploadFormData.none(), UserController.fetchIndustryTypeByNameId);
 // Profile Routes
 router.post('/Api-Update-Profile', uploadProfilePhoto.single('profile_photo'), UserProfileController.updateProfile);
 router.get('/Api-View-Profile', UserProfileController.getProfile);

@@ -6,6 +6,8 @@ const NotificationService = require('../services/NotificationService');
 const ConnectionService = require('../services/ConnectionService');
 const { logger } = require('../utils/logger');
 const { successResponse, errorResponse } = require('../utils/response');
+const { query } = require('../config/db');
+const { idDecode } = require('../utils/idCodec');
 
 class UserController {
   // User Registration
@@ -784,6 +786,174 @@ class UserController {
     } catch (error) {
       logger.error('Export user data error:', error);
       return errorResponse(res, 'Failed to export user data', 500);
+    }
+  }
+
+
+  // Fetch users by name and ID (similar to state list format)
+  static async fetchUserByNameId(req, res) {
+    try {
+      const { user_id, token } = {
+        ...req.query,
+        ...req.body
+      };
+      
+      if (!user_id || !token) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'user_id and token are required'
+        });
+      }
+      
+      // Decode user ID
+      const decodedUserId = idDecode(user_id);
+      if (!decodedUserId) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Invalid user ID'
+        });
+      }
+      
+      // Get user details and validate
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      if (!userRows.length) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Not A Valid User'
+        });
+      }
+      
+      const user = userRows[0];
+      
+      // Validate token
+      if (user.unique_token !== token) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Token Mismatch Exception'
+        });
+      }
+
+      // Get all users list with name and ID
+      const usersList = await query(`
+        SELECT 
+          user_id,
+          CASE 
+            WHEN full_name IS NOT NULL AND full_name != '' THEN full_name
+            WHEN mobile IS NOT NULL AND mobile != '' THEN CONCAT('User_', user_id)
+            WHEN email IS NOT NULL AND email != '' THEN CONCAT('User_', user_id)
+            ELSE CONCAT('User_', user_id)
+          END as user_name
+        FROM users 
+        WHERE deleted = 0 
+        ORDER BY 
+          CASE 
+            WHEN full_name IS NOT NULL AND full_name != '' THEN full_name
+            WHEN mobile IS NOT NULL AND mobile != '' THEN CONCAT('User_', user_id)
+            WHEN email IS NOT NULL AND email != '' THEN CONCAT('User_', user_id)
+            ELSE CONCAT('User_', user_id)
+          END ASC
+      `);
+      
+      return res.json({
+        status: true,
+        rcode: 200,
+        user_id: user_id,
+        unique_token: token,
+        user_list: usersList.map(user => ({
+          user_id: user.user_id.toString(),
+          user_name: user.user_name || ""
+        }))
+      });
+      
+    } catch (error) {
+      console.error('fetchUserByNameId error:', error);
+      return res.json({
+        status: false,
+        rcode: 500,
+        message: 'Failed to get user list'
+      });
+    }
+  }
+
+  // Fetch industry types by name and ID (similar to state list format)
+  static async fetchIndustryTypeByNameId(req, res) {
+    try {
+      const { user_id, token } = {
+        ...req.query,
+        ...req.body
+      };
+      
+      if (!user_id || !token) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'user_id and token are required'
+        });
+      }
+      
+      // Decode user ID
+      const decodedUserId = idDecode(user_id);
+      if (!decodedUserId) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Invalid user ID'
+        });
+      }
+      
+      // Get user details and validate
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      if (!userRows.length) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Not A Valid User'
+        });
+      }
+      
+      const user = userRows[0];
+      
+      // Validate token
+      if (user.unique_token !== token) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Token Mismatch Exception'
+        });
+      }
+
+      // Get all industry types list with name and ID
+      const industryTypesList = await query(`
+        SELECT 
+          id as industry_type_id,
+          name as industry_type_name
+        FROM industry_type 
+        WHERE deleted = 0 
+        ORDER BY name ASC
+      `);
+      
+      return res.json({
+        status: true,
+        rcode: 200,
+        user_id: user_id,
+        unique_token: token,
+        industry_type_list: industryTypesList.map(industry => ({
+          industry_type_id: industry.industry_type_id.toString(),
+          industry_type_name: industry.industry_type_name || ""
+        }))
+      });
+      
+    } catch (error) {
+      console.error('fetchIndustryTypeByNameId error:', error);
+      return res.json({
+        status: false,
+        rcode: 500,
+        message: 'Failed to get industry type list'
+      });
     }
   }
 }

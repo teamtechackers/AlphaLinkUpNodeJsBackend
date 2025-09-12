@@ -536,6 +536,31 @@ class EventController {
         );
         finalEventId = result.insertId;
         
+        console.log('Event created with ID:', finalEventId);
+
+        // Send topic notification for event
+        try {
+          console.log('Sending event topic notification...');
+          const NotificationService = require('../notification/NotificationService');
+          console.log('NotificationService loaded successfully');
+          
+          const notificationData = {
+            type: 'event',
+            eventId: finalEventId.toString(),
+            eventName: eventData.event_name,
+            eventVenue: eventData.event_venue,
+            eventDate: eventData.event_date,
+            timestamp: new Date().toISOString()
+          };
+          
+          console.log('Notification data:', notificationData);
+          
+          await NotificationService.sendTopicNotification('event-notifications', 'New Event Available!', `${eventData.event_name} - ${eventData.event_venue}`, notificationData);
+          console.log('Event topic notification sent successfully');
+        } catch (notificationError) {
+          console.error('Event topic notification error:', notificationError);
+        }
+        
         // Create Event Creator as Organiser
       await query(
           'INSERT INTO event_organisers (event_id, user_id) VALUES (?, ?)',
@@ -1442,21 +1467,7 @@ class EventController {
           'INSERT INTO user_event_details (user_id, event_name, industry_type, country_id, state_id, city_id, event_venue, event_link, event_lat, event_lng, event_geo_address, event_date, event_start_time, event_end_time, event_mode_id, event_type_id, event_details, event_banner, status, deleted, created_dts, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
           [insertData.user_id, insertData.event_name, insertData.industry_type, insertData.country_id, insertData.state_id, insertData.city_id, insertData.event_venue, insertData.event_link, insertData.event_lat, insertData.event_lng, insertData.event_geo_address, insertData.event_date, insertData.event_start_time, insertData.event_end_time, insertData.event_mode_id, insertData.event_type_id, insertData.event_details, insertData.event_banner, insertData.status, insertData.deleted, insertData.created_dts, insertData.created_by]
         );
-
-        // Send notification for new event
-        try {
-          const NotificationService = require('../notification/NotificationService');
-          const eventData = {
-            event_id: result.insertId,
-            title: insertData.event_name,
-            location: insertData.event_venue,
-            event_date: insertData.event_date
-          };
-          await NotificationService.sendEventNotification(eventData);
-        } catch (notificationError) {
-          console.error('Event notification error:', notificationError);
-          // Don't fail the event creation if notification fails
-        }
+        
 
         return res.json({
           status: 'Success',
