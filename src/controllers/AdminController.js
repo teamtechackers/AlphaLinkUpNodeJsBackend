@@ -3190,17 +3190,18 @@ class AdminController {
   static async submitInvestors(req, res) {
     try {
       // Get parameters from body
-      const { user_id, token, row_id, name, country_id, state_id, city_id, fund_size_id, linkedin_url, bio, availability, profile, investment_stage, meeting_city, countries_to_invest, investment_industry, language, approval_status, status, investor_user_id } = req.body;
+      const { user_id, token, row_id, name, country_id, state_id, city_id, fund_size_id, linkedin_url, bio, availability, profile, investment_stage, meeting_city, countries_to_invest, investment_industry, language, approval_status, status, user_for_investor } = req.body;
       
       // Get uploaded image filename
       const image = req.file ? req.file.filename : '';
       
       console.log('submitInvestors - req.body:', req.body);
-      console.log('submitInvestors - user_id:', user_id);
-      console.log('submitInvestors - investor_user_id:', investor_user_id);
+      console.log('submitInvestors - user_id (admin):', user_id);
+      console.log('submitInvestors - user_for_investor:', user_for_investor);
+      console.log('submitInvestors - row_id (investor_id):', row_id);
       console.log('submitInvestors - image:', image);
       
-      console.log('submitInvestors - Parameters:', { user_id, token, row_id, investor_user_id, name, country_id, state_id, city_id, fund_size_id, linkedin_url, bio, availability, profile, investment_stage, meeting_city, countries_to_invest, investment_industry, language, approval_status, status, image });
+      console.log('submitInvestors - Parameters:', { user_id, token, row_id, user_for_investor, name, country_id, state_id, city_id, fund_size_id, linkedin_url, bio, availability, profile, investment_stage, meeting_city, countries_to_invest, investment_industry, language, approval_status, status, image });
 
       // Check if user_id and token are provided
       if (!user_id || !token) {
@@ -3243,10 +3244,10 @@ class AdminController {
 
       // If row_id is provided, update existing record
       if (row_id && row_id !== '') {
-        // Use row_id directly without encoding/decoding
-        const investorRowId = row_id;
+        // Use row_id directly as investor_id for update
+        const investorId = parseInt(row_id);
         console.log('submitInvestors - row_id:', row_id);
-        console.log('submitInvestors - investorRowId:', investorRowId);
+        console.log('submitInvestors - investorId:', investorId);
 
         // Update existing investor record
         // If image is provided, update it; otherwise keep existing
@@ -3276,7 +3277,7 @@ class AdminController {
             WHERE investor_id = ?
           `;
           updateParams = [
-            name, country_id, state_id, city_id, fund_size_id, linkedin_url, bio, availability, profile, investment_stage, meeting_city, countries_to_invest, investment_industry, language, approval_status, status, image, investorRowId
+            name, country_id, state_id, city_id, fund_size_id, linkedin_url, bio, availability, profile, investment_stage, meeting_city, countries_to_invest, investment_industry, language, approval_status, status, image, investorId
           ];
         } else {
           updateQuery = `
@@ -3302,7 +3303,7 @@ class AdminController {
             WHERE investor_id = ?
           `;
           updateParams = [
-            name, country_id, state_id, city_id, fund_size_id, linkedin_url, bio, availability, profile, investment_stage, meeting_city, countries_to_invest, investment_industry, language, approval_status, status, investorRowId
+            name, country_id, state_id, city_id, fund_size_id, linkedin_url, bio, availability, profile, investment_stage, meeting_city, countries_to_invest, investment_industry, language, approval_status, status, investorId
           ];
         }
 
@@ -3324,10 +3325,12 @@ class AdminController {
           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, NOW(), NOW())
         `;
 
-        // Use investor_user_id if provided, otherwise use admin user_id
-        const investorUserId = investor_user_id ? idDecode(investor_user_id) : decodedUserId;
+        // Use user_for_investor if provided (as simple number), otherwise use admin user_id
+        const investorUserId = user_for_investor ? parseInt(user_for_investor, 10) : decodedUserId;
         
-        console.log('submitInvestors - investorUserId:', investorUserId);
+        console.log('submitInvestors - user_for_investor:', user_for_investor, 'type:', typeof user_for_investor);
+        console.log('submitInvestors - investorUserId:', investorUserId, 'type:', typeof investorUserId);
+        console.log('submitInvestors - decodedUserId (admin):', decodedUserId, 'type:', typeof decodedUserId);
         
         const result = await query(insertQuery, [
           investorUserId, // Investor user_id
