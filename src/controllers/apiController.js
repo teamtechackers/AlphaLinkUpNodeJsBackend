@@ -30,13 +30,11 @@ const ApiController = {
   },
   async logout(req, res) {
     try {
-      // Support both query parameters and form data
       let { user_id, token } = {
         ...req.query,
         ...req.body
       };
       
-      // URL decode user_id if it's URL encoded
       if (user_id && typeof user_id === 'string') {
         user_id = decodeURIComponent(user_id);
       }
@@ -45,18 +43,15 @@ const ApiController = {
       console.log('logout - Raw body:', req.body);
       console.log('logout - Raw query:', req.query);
       
-      // Check if user_id and token are provided
       if (!user_id || !token || user_id === 'null' || token === 'null') {
         return fail(res, 500, 'user_id and token are required');
       }
       
-      // Decode user ID
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
         return fail(res, 500, 'Invalid user ID');
       }
       
-      // Get user details and validate
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return fail(res, 500, 'Not A Valid User');
@@ -64,12 +59,10 @@ const ApiController = {
       
       const user = userRows[0];
       
-      // Validate token
       if (user.unique_token !== token) {
         return fail(res, 500, 'Token Mismatch Exception');
       }
 
-      // Update logged_out_dts
       await query(
         'UPDATE users SET logged_out_dts = NOW() WHERE user_id = ?',
         [decodedUserId]
@@ -174,7 +167,6 @@ const ApiController = {
       
       const servicesMasterList = await query('SELECT * FROM folders WHERE status = 1');
       
-      // Convert all integer values to strings
       const formattedServicesList = (servicesMasterList || []).map(service => ({
         id: (service.id || 0).toString(),
         name: service.name || "",
@@ -219,7 +211,6 @@ const ApiController = {
         });
       }
       
-      // Decode user ID
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
       return res.json({
@@ -229,7 +220,6 @@ const ApiController = {
         });
       }
       
-      // Get user details and validate
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
       return res.json({
@@ -241,7 +231,6 @@ const ApiController = {
       
       const user = userRows[0];
       
-      // Validate token
       if (user.unique_token !== token) {
       return res.json({
           status: false,
@@ -250,7 +239,6 @@ const ApiController = {
         });
       }
       
-      // Get service providers list with their services
       const serviceProviderRows = await query(
         `SELECT usp.*, 
                 u.full_name,
@@ -281,7 +269,6 @@ const ApiController = {
       
       const provider = serviceProviderRows[0];
       
-      // Get services for this provider
       const servicesRows = await query(
         `SELECT usps.*, 
                 f.name as service_name
@@ -292,7 +279,6 @@ const ApiController = {
         [provider.sp_id]
       );
       
-      // Format services with proper image URLs
       const services = servicesRows.map(service => ({
         usps_id: String(service.usps_id),
         service_id: String(service.service_id),
@@ -305,7 +291,6 @@ const ApiController = {
         service_image: service.service_image ? getImageUrl(req, `uploads/services/${service.service_image}`) : ''
       }));
       
-      // Format service provider with nested services
       const serviceProviderList = {
         sp_id: String(provider.sp_id),
         country: provider.country_name || '',
@@ -352,13 +337,11 @@ const ApiController = {
         return fail(res, 500, 'Please enter mandatory fields');
       }
       
-      // Decode user ID
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
         return fail(res, 500, 'Invalid user ID');
       }
       
-      // Check if user exists and validate token
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return fail(res, 500, 'Not A Valid User');
@@ -366,12 +349,10 @@ const ApiController = {
       
       const user = userRows[0];
       
-      // Validate token
       if (user.unique_token !== token) {
         return fail(res, 500, 'Token Mismatch Exception');
       }
       
-      // Save service provider
       const serviceProviderResult = await query(
         `INSERT INTO user_service_provider (user_id, country_id, state_id, city_id, description, status, deleted, created_dts) 
          VALUES (?, ?, ?, ?, ?, 1, 0, NOW())`,
@@ -381,18 +362,15 @@ const ApiController = {
       const sp_id = serviceProviderResult.insertId;
       
       if (sp_id > 0) {
-        // Get service IDs array
         const serviceIdsArray = service_ids.split(',');
         
         if (serviceIdsArray.length > 0) {
-          // Get service names from folders table
           const placeholders = serviceIdsArray.map(() => '?').join(',');
           const foldersList = await query(
             `SELECT id, name FROM folders WHERE id IN (${placeholders})`,
             serviceIdsArray
           );
           
-          // Create service name mapping
           const servicesMap = {};
           if (foldersList && foldersList.length > 0) {
             foldersList.forEach(row => {
@@ -400,7 +378,6 @@ const ApiController = {
             });
           }
           
-          // Insert service provider services
           for (const serviceId of serviceIdsArray) {
             await query(
               `INSERT INTO user_service_provider_services (sp_id, service_id, service_name, company_name, tag_line, title, service_description, status, created_dts) 
@@ -410,13 +387,11 @@ const ApiController = {
           }
         }
         
-        // Update user's is_service_provider status
         await query(
           'UPDATE users SET is_service_provider = 1 WHERE user_id = ?',
           [decodedUserId]
         );
         
-        // Return success response in PHP format
         return res.json({
           status: true,
           rcode: 200,
@@ -444,23 +419,19 @@ const ApiController = {
       
       console.log('saveReviewRating - Parameters:', { user_id, token, sp_id, service_id, rating, review });
       
-      // Check if user_id and token are provided
       if (!user_id || !token) {
         return fail(res, 500, 'user_id and token are required');
       }
       
-      // Check mandatory fields - at least rating > 0 OR review not empty
       if (!sp_id || sp_id <= 0 || !service_id || service_id <= 0 || (rating <= 0 && (!review || review === ""))) {
         return fail(res, 500, 'Please enter mandatory fields');
       }
       
-      // Decode user ID
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
         return fail(res, 500, 'Invalid user ID');
       }
       
-      // Check if user exists and validate token
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return fail(res, 500, 'Not A Valid User');
@@ -468,12 +439,10 @@ const ApiController = {
       
       const user = userRows[0];
       
-      // Validate token
       if (user.unique_token !== token) {
         return fail(res, 500, 'Token Mismatch Exception');
       }
       
-      // Update user_services_unlocked with rating and review
       await query(
         `UPDATE user_services_unlocked 
          SET rating = ?, review = ?, review_dts = NOW() 
@@ -481,7 +450,6 @@ const ApiController = {
         [rating || 0, review || '', decodedUserId, sp_id, service_id]
       );
       
-      // Calculate and update average service rating
       const avgServiceRatingResult = await query(
         `SELECT AVG(rating) as avg_rating 
          FROM user_services_unlocked 
@@ -498,7 +466,6 @@ const ApiController = {
         [avgServiceRating, sp_id, service_id]
       );
       
-      // Calculate and update average service provider rating
       const avgSpRatingResult = await query(
         `SELECT AVG(rating) as avg_rating 
          FROM user_services_unlocked 
@@ -515,7 +482,6 @@ const ApiController = {
         [avgSpRating, sp_id]
       );
       
-      // Return success response in PHP format
       return res.json({
         status: true,
         rcode: 200,
@@ -540,23 +506,19 @@ const ApiController = {
       console.log('saveServiceDetails - Parameters:', { user_id, token, usps_id, company_name, tag_line, title, service_description });
       console.log('saveServiceDetails - Files:', req.files);
       
-      // Check if user_id and token are provided
       if (!user_id || !token) {
         return fail(res, 500, 'user_id and token are required');
       }
       
-      // Check mandatory fields
       if (!usps_id || usps_id <= 0 || !company_name || company_name === "" || !service_description || service_description === "" || !tag_line || tag_line === "" || !title || title === "") {
         return fail(res, 500, 'Please enter mandatory fields');
       }
       
-      // Decode user ID
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
         return fail(res, 500, 'Invalid user ID');
       }
       
-      // Check if user exists and validate token
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return fail(res, 500, 'Not A Valid User');
@@ -564,12 +526,10 @@ const ApiController = {
       
       const user = userRows[0];
       
-      // Validate token
       if (user.unique_token !== token) {
         return fail(res, 500, 'Token Mismatch Exception');
       }
       
-      // Prepare update data - using the correct column names from the working saveServiceProvider method
       const updateData = {
         company_name: company_name,
         tag_line: tag_line,
@@ -578,24 +538,19 @@ const ApiController = {
         status: 1
       };
       
-      // Handle service image upload if provided
       if (req.files && req.files.service_image && req.files.service_image.length > 0) {
         const file = req.files.service_image[0];
-        // Use the filename generated by Multer (file is already saved to disk)
         updateData.service_image = file.filename;
       }
       
-      // Build dynamic UPDATE query
       const updateFields = Object.keys(updateData).map(key => `${key} = ?`).join(', ');
       const updateValues = Object.values(updateData);
       
-      // Update service details
       await query(
         `UPDATE user_service_provider_services SET ${updateFields} WHERE usps_id = ?`,
         [...updateValues, usps_id]
       );
       
-      // Return success response in PHP format
       return res.json({
         status: true,
         rcode: 200,
@@ -617,7 +572,6 @@ const ApiController = {
       
       console.log('getBusinessCardInformation - Parameters:', { user_id, token });
       
-      // Check if user_id and token are provided
       if (!user_id || !token) {
         return res.json({
           status: false,
@@ -626,7 +580,6 @@ const ApiController = {
         });
       }
       
-      // Decode user ID
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
       return res.json({
@@ -636,7 +589,6 @@ const ApiController = {
         });
       }
       
-      // Get user details and validate
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return res.json({
@@ -648,7 +600,6 @@ const ApiController = {
       
       const user = userRows[0];
       
-      // Validate token
       if (user.unique_token !== token) {
         return res.json({
           status: false,
@@ -657,7 +608,6 @@ const ApiController = {
         });
       }
       
-      // Get business card information
       const businessCardRows = await query(
         `SELECT ubc.*, 
                 countries.name as country_name,
@@ -672,7 +622,6 @@ const ApiController = {
         [decodedUserId]
       );
       
-      // Format business card info
       const businessCardInfo = businessCardRows.map(card => ({
         ubc_id: String(card.ubc_id),
         business_name: card.business_name || '',
@@ -690,10 +639,8 @@ const ApiController = {
         created_dts: card.created_dts || ''
       }));
       
-      // Get promotions list (empty for now)
       const promotionsList = [];
       
-      // Return response in standard format
       return res.json({
         status: true,
         rcode: 200,
@@ -716,329 +663,8 @@ const ApiController = {
 
 
 
-
-
-  async getUserDetailByMobile(req, res) {
-    try {
-      const { user_id, token, mobile_no } = {
-        ...req.query,
-        ...req.body
-      };
-      
-      // Check if user_id, token, and mobile_no are provided
-      if (!user_id || !token || !mobile_no) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'Token Mismatch Exception'
-        });
-      }
-      
-      // Decode user ID
-      const decodedUserId = idDecode(user_id);
-      if (!decodedUserId) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'Invalid user ID'
-        });
-      }
-      
-      // Get user details and validate
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
-      if (!userRows.length) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'Not A Valid User'
-        });
-      }
-      
-      const user = userRows[0];
-      
-      // Validate token
-      if (user.unique_token !== token) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'Token Mismatch Exception'
-        });
-      }
-      
-      // Get user profile by mobile (matching PHP implementation)
-      const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
-      const profilePhotoPath = `${baseUrl}/uploads/profiles/`;
-      const qrCodePath = `${baseUrl}/uploads/qr_codes/`;
-      
-      const userProfileRows = await query(
-        `SELECT user_id, 
-                COALESCE(full_name, '') as full_name,
-                COALESCE(email, '') as email,
-                mobile,
-                COALESCE(address, '') as address,
-                users.city_id,
-                COALESCE(cities.name, '') as city,
-                users.state_id,
-                COALESCE(states.name, '') as state,
-                users.country_id,
-                COALESCE(countries.name, '') as country,
-                COALESCE(interests, '') as interests,
-                COALESCE(linkedin_url, '') as linkedin_url,
-                COALESCE(summary, '') as summary,
-                IF(profile_photo != '', CONCAT(?, profile_photo), '') AS profile_photo,
-                IF(qr_image != '', CONCAT(?, qr_image), '') AS qr_image,
-                profile_updated,
-                card_requested,
-                is_service_provider,
-                is_investor
-         FROM users
-         LEFT JOIN countries ON countries.id = users.country_id
-         LEFT JOIN states ON states.id = users.state_id
-         LEFT JOIN cities ON cities.id = users.city_id
-         WHERE mobile LIKE ?`,
-        [profilePhotoPath, qrCodePath, `%${mobile_no}%`]
-      );
-      
-      if (!userProfileRows.length) {
-      return res.json({
-          status: false,
-          rcode: 500,
-          message: 'User not found with this mobile number'
-        });
-      }
-      
-      const userData = userProfileRows[0];
-      
-      // Get education details
-      const educationRows = await query(
-        `SELECT education_detail_id, user_id, institute_name, degree, start_date, end_date, status, created_dts
-         FROM user_education_details 
-         WHERE user_id = ? AND status = 1`, [userData.user_id]
-      );
-
-      // Get work details
-      const workRows = await query(
-        `SELECT work_detail_id, user_id, company_name, designation, start_date, end_date, currently_working, employment_type_id, status, created_dts
-         FROM user_work_details 
-         WHERE user_id = ? AND status = 1`, [userData.user_id]
-      );
-
-      // Get project details with dynamic project logo URLs
-      const projectLogoPath = `${baseUrl}/uploads/project_logo/`;
-      const projectRows = await query(
-        `SELECT user_project_details.*, 
-                IF(project_logo != '', CONCAT(?, project_logo), '') AS project_logo
-         FROM user_project_details 
-         WHERE user_id = ? AND status = 1
-         ORDER BY project_detail_id`, [projectLogoPath, userData.user_id]
-      );
-
-      // Convert all integer values to strings for education details
-      const educationDetails = educationRows.map(row => ({
-        education_detail_id: (row.education_detail_id || 0).toString(),
-        user_id: (row.user_id || 0).toString(),
-        institute_name: row.institute_name || "",
-        degree: row.degree || "",
-        start_date: row.start_date || "",
-        end_date: row.end_date || "",
-        status: (row.status || 0).toString(),
-        created_dts: row.created_dts || ""
-      }));
-
-      // Convert all integer values to strings for work details
-      const workDetails = workRows.map(row => ({
-        work_detail_id: (row.work_detail_id || 0).toString(),
-        user_id: (row.user_id || 0).toString(),
-        company_name: row.company_name || "",
-        designation: row.designation || "",
-        start_date: row.start_date || "",
-        end_date: row.end_date || "",
-        currently_working: (row.currently_working || 0).toString(),
-        employment_type_id: (row.employment_type_id || 0).toString(),
-        status: (row.status || 0).toString(),
-        created_dts: row.created_dts || ""
-      }));
-
-      // Convert all integer values to strings for project details
-      const projectDetails = projectRows.map(row => ({
-        project_detail_id: (row.project_detail_id || 0).toString(),
-        user_id: (row.user_id || 0).toString(),
-        project_name: row.project_name || "",
-        description: row.description || "",
-        project_url: row.project_url || "",
-        start_month: row.start_month || "",
-        start_year: row.start_year || "",
-        closed_month: row.closed_month || "",
-        closed_year: row.closed_year || "",
-        project_logo: row.project_logo || "",
-        status: (row.status || 0).toString(),
-        created_dts: row.created_dts || "",
-        created_by: row.created_by || "",
-        updated_at: row.updated_at || "",
-        updated_by: row.updated_by || "",
-        deleted: (row.deleted || 0).toString(),
-        deleted_by: row.deleted_by || "",
-        deleted_at: row.deleted_at || ""
-      }));
-
-      // Convert all integer values to strings for user details
-      const userDetails = userProfileRows.map(row => ({
-        user_id: row.user_id.toString(),
-        full_name: row.full_name || "",
-        email: row.email || "",
-        mobile: row.mobile || "",
-        address: row.address || "",
-        city_id: row.city_id.toString(),
-        city: row.city || "",
-        state_id: row.state_id.toString(),
-        state: row.state || "",
-        country_id: row.country_id.toString(),
-        country: row.country || "",
-        interests: row.interests || "",
-        linkedin_url: row.linkedin_url || "",
-        summary: row.summary || "",
-        profile_photo: row.profile_photo || "",
-        qr_image: row.qr_image || "",
-        profile_updated: row.profile_updated.toString(),
-        card_requested: row.card_requested.toString(),
-        is_service_provider: row.is_service_provider.toString(),
-        is_investor: row.is_investor.toString()
-      }));
-      
-      // Return response in PHP format
-      return res.json({
-        status: true,
-        rcode: 200,
-        user_id: user_id,
-        unique_token: token,
-        user_details: userDetails,
-        education_details: educationDetails,
-        work_details: workDetails,
-        project_details: projectDetails
-      });
-      
-    } catch (error) {
-      console.error('getUserDetailByMobile error:', error);
-      return res.json({
-        status: false,
-        rcode: 500,
-        message: 'Failed to get user detail by mobile'
-      });
-    }
-  },
-
-
-  async getUserDetailByQrCode(req, res) {
-    try {
-      // Support both query parameters and form data
-      const { user_id, token, contact_token } = {
-        ...req.query,
-        ...req.body
-      };
-      
-      console.log('getUserDetailByQrCode - Parameters:', { user_id, token, contact_token });
-      
-      // Check if user_id and token are provided
-      if (!user_id || !token) {
-        return fail(res, 500, 'user_id and token are required');
-      }
-      
-      if (!contact_token) {
-        return fail(res, 500, 'contact_token is required');
-      }
-      
-      // Decode user ID
-      const decodedUserId = idDecode(user_id);
-      if (!decodedUserId) {
-        return fail(res, 500, 'Invalid user ID');
-      }
-      
-      // Get user details and validate
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
-      if (!userRows.length) {
-        return fail(res, 500, 'Not A Valid User');
-      }
-      
-      const user = userRows[0];
-      
-      // Validate token
-      if (user.unique_token !== token) {
-        return fail(res, 500, 'Token Mismatch Exception');
-      }
-
-      // Get user profile by QR code token (unique_token)
-      const userProfileRows = await query(`
-        SELECT 
-          u.user_id,
-          COALESCE(u.full_name, '') as full_name,
-          COALESCE(u.email, '') as email,
-          u.mobile,
-          COALESCE(u.address, '') as address,
-          COALESCE(u.city_id, '') as city_id,
-          COALESCE(c.name, '') as city,
-          COALESCE(u.state_id, '') as state_id,
-          COALESCE(s.name, '') as state,
-          COALESCE(u.country_id, '') as country_id,
-          COALESCE(co.name, '') as country,
-          COALESCE(u.interests, '') as interests,
-          COALESCE(u.linkedin_url, '') as linkedin_url,
-          COALESCE(u.summary, '') as summary,
-          CASE 
-            WHEN u.profile_photo != '' THEN CONCAT('${process.env.BASE_URL || 'http://192.168.0.100:3000'}/uploads/profiles/', u.profile_photo)
-            ELSE ''
-          END AS profile_photo
-        FROM users u
-        LEFT JOIN countries co ON co.id = u.country_id
-        LEFT JOIN states s ON s.id = u.state_id
-        LEFT JOIN cities c ON c.id = u.city_id
-        LEFT JOIN interests i ON i.id = u.interests
-        WHERE u.unique_token = ? AND u.status = 1
-        LIMIT 1
-      `, [contact_token]);
-      
-      if (!userProfileRows.length) {
-        return fail(res, 500, 'User not found with this QR code token');
-      }
-
-      const userDetails = userProfileRows[0];
-
-      // Format user details to convert all numeric fields to strings
-      const formattedUserDetails = {
-        user_id: String(userDetails.user_id),
-        full_name: userDetails.full_name || '',
-        email: userDetails.email || '',
-        mobile: userDetails.mobile || '',
-        address: userDetails.address || '',
-        city_id: String(userDetails.city_id || 0),
-        city: userDetails.city || '',
-        state_id: String(userDetails.state_id || 0),
-        state: userDetails.state || '',
-        country_id: String(userDetails.country_id || 0),
-        country: userDetails.country || '',
-        interests: userDetails.interests || '',
-        linkedin_url: userDetails.linkedin_url || '',
-        summary: userDetails.summary || '',
-        profile_photo: userDetails.profile_photo || ''
-      };
-
-      // Return response in standard format (user_details as array for Flutter compatibility)
-      return res.json({
-        status: true,
-        rcode: 200,
-        user_id: idEncode(decodedUserId),
-        unique_token: token,
-        user_details: [formattedUserDetails]
-      });
-      
-    } catch (error) {
-      console.error('getUserDetailByQrCode error:', error);
-      return fail(res, 500, 'Failed to get user details by QR code');
-    }
-  },
-
   async saveContact(req, res) {
     try {
-      // Support both query parameters and form data
       const { user_id, token, contact_user_id, user_folder_id, user_sub_folder_id } = {
         ...req.query,
         ...req.body
@@ -1046,7 +672,6 @@ const ApiController = {
       
       console.log('saveContact - Parameters:', { user_id, token, contact_user_id, user_folder_id, user_sub_folder_id });
       
-      // Check if user_id and token are provided
       if (!user_id || !token) {
         return fail(res, 500, 'user_id and token are required');
       }
@@ -1055,13 +680,11 @@ const ApiController = {
         return fail(res, 500, 'Please enter mandatory fields');
       }
       
-      // Decode user ID
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
         return fail(res, 500, 'Invalid user ID');
       }
       
-      // Get user details and validate
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return fail(res, 500, 'Not A Valid User');
@@ -1069,12 +692,10 @@ const ApiController = {
       
       const user = userRows[0];
       
-      // Validate token
       if (user.unique_token !== token) {
         return fail(res, 500, 'Token Mismatch Exception');
       }
 
-      // Check whether the contact is already added
       const existingContact = await query(
         'SELECT * FROM user_contacts WHERE user_folder_id = ? AND user_sub_folder_id = ? AND contact_user_id = ? AND status = 1',
         [user_folder_id, user_sub_folder_id, contact_user_id]
@@ -1084,7 +705,6 @@ const ApiController = {
         return fail(res, 500, 'Contact already exists');
       }
 
-      // Save contact to sub folder
       const result = await query(
         `INSERT INTO user_contacts (user_id, user_folder_id, user_sub_folder_id, contact_user_id, status, created_dts) 
          VALUES (?, ?, ?, ?, 1, NOW())`,
@@ -1093,7 +713,6 @@ const ApiController = {
 
       const uc_id = result.insertId;
 
-      // Return response in PHP format (matching exactly)
       return res.json({
         status: true,
         rcode: 200,
@@ -1110,7 +729,6 @@ const ApiController = {
   },
   async saveContactVisitingCard(req, res) {
     try {
-      // Support both query parameters and form data
       const { user_id, token, user_folder_id, user_sub_folder_id } = {
         ...req.query,
         ...req.body
@@ -1119,7 +737,6 @@ const ApiController = {
       console.log('saveContactVisitingCard - Parameters:', { user_id, token, user_folder_id, user_sub_folder_id });
       console.log('saveContactVisitingCard - Files:', req.files);
       
-      // Check if user_id and token are provided
       if (!user_id || !token) {
         return res.json({
           status: false,
@@ -1144,7 +761,6 @@ const ApiController = {
         });
       }
       
-      // Decode user ID
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
         return res.json({
@@ -1154,7 +770,6 @@ const ApiController = {
         });
       }
       
-      // Get user details and validate
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return res.json({
@@ -1166,7 +781,6 @@ const ApiController = {
       
       const user = userRows[0];
       
-      // Validate token
       if (user.unique_token !== token) {
         return res.json({
           status: false,
@@ -1175,13 +789,11 @@ const ApiController = {
         });
       }
 
-      // Get filenames from multer (files are already saved to disk)
       const frontFile = req.files.visiting_card_front[0];
       const backFile = req.files.visiting_card_back[0];
       const frontFileName = frontFile.filename;
       const backFileName = backFile.filename;
 
-      // Save visiting card to sub folder
       const result = await query(
         `INSERT INTO user_contacts_visiting_cards (user_id, user_folder_id, user_sub_folder_id, visiting_card_front, visiting_card_back, status, created_dts) 
          VALUES (?, ?, ?, ?, ?, 1, NOW())`,
@@ -1190,7 +802,6 @@ const ApiController = {
 
       const ucvc_id = result.insertId;
 
-      // Return response in PHP format - exact match with same data types
       return res.json({
         status: true,
         rcode: 200,
@@ -1211,7 +822,6 @@ const ApiController = {
   },
   async activateCard(req, res) {
     try {
-      // Support both query parameters and form data
       const { user_id, token, business_name, name, business_location, country_id, state_id, city_id, description } = {
         ...req.query,
         ...req.body
@@ -1220,7 +830,6 @@ const ApiController = {
       console.log('activateCard - Parameters:', { user_id, token, business_name, name, business_location, country_id, state_id, city_id, description });
       console.log('activateCard - Files:', req.files);
       
-      // Check if user_id and token are provided
       if (!user_id || !token) {
         return res.json({
           status: false,
@@ -1251,7 +860,6 @@ const ApiController = {
         });
       }
       
-      // Decode user ID
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
         return res.json({
@@ -1261,7 +869,6 @@ const ApiController = {
         });
       }
       
-      // Get user details and validate
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return res.json({
@@ -1273,7 +880,6 @@ const ApiController = {
       
       const user = userRows[0];
       
-      // Validate token
       if (user.unique_token !== token) {
         return res.json({
           status: false,
@@ -1282,7 +888,6 @@ const ApiController = {
         });
       }
 
-      // Save business card information
       const cardResult = await query(
         `INSERT INTO user_business_cards (user_id, business_name, name, business_location, country_id, state_id, city_id, description, status, deleted, created_dts) 
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, 0, NOW())`,
@@ -1291,7 +896,6 @@ const ApiController = {
 
       const ubc_id = cardResult.insertId;
 
-      // Save business documents files
       if (ubc_id > 0 && req.files && req.files.length > 0) {
         for (const file of req.files) {
           const timestamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\..+/, '');
@@ -1305,13 +909,11 @@ const ApiController = {
         }
       }
 
-      // Update card_requested in users table
       await query(
         'UPDATE users SET card_requested = 1 WHERE user_id = ?',
         [decodedUserId]
       );
 
-      // Return response in standard format
       return res.json({
         status: true,
         rcode: 200,
@@ -1331,27 +933,19 @@ const ApiController = {
     }
   },
 
-
-
-  // Jobs (read-only endpoints for parity)
-
-  // Save project details (with optional project_logo)
   async saveProjectDetails(req, res) {
     try {
       const { user_id, token, project_detail_id, project_name, description, project_url, start_month, start_year, closed_month, closed_year } = req.body;
       
-      // Check if user_id and token are provided
       if (!user_id || !token) {
         return fail(res, 500, 'user_id and token are required');
       }
       
-      // Decode user ID
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
         return fail(res, 500, 'Invalid user ID');
       }
       
-      // Get user details and validate
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return fail(res, 500, 'Not A Valid User');
@@ -1359,26 +953,22 @@ const ApiController = {
       
       const user = userRows[0];
       
-      // Validate token
       if (user.unique_token !== token) {
         return fail(res, 500, 'Token Mismatch Exception');
       }
 
-      // Check mandatory fields
       if (!project_name || !description || !start_month || !start_year || !closed_month || !closed_year) {
         return fail(res, 500, 'Please enter mandatory fields');
       }
 
       let finalProjectDetailId = project_detail_id || 0;
 
-      // Handle project logo upload if provided
       let projectLogo = null;
       if (req.file && req.file.filename) {
         projectLogo = req.file.filename;
       }
 
       if (finalProjectDetailId == 0) {
-        // Insert new project detail
         const result = await query(
           `INSERT INTO user_project_details (user_id, project_name, description, project_url, start_month, start_year, closed_month, closed_year, project_logo) 
            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -1386,11 +976,9 @@ const ApiController = {
         );
         finalProjectDetailId = result.insertId;
     } else {
-        // Update existing project detail
         const updateFields = ['project_name = ?', 'description = ?', 'project_url = ?', 'start_month = ?', 'start_year = ?', 'closed_month = ?', 'closed_year = ?'];
         const updateValues = [project_name, description, project_url || '', start_month, start_year, closed_month, closed_year];
         
-        // Add project_logo to update if provided
         if (projectLogo) {
           updateFields.push('project_logo = ?');
           updateValues.push(projectLogo);
@@ -1406,7 +994,6 @@ const ApiController = {
         );
       }
       
-      // Return response in PHP format
       return res.json({
         status: true,
         rcode: 200,
@@ -1422,31 +1009,8 @@ const ApiController = {
     }
   },
 
-
-
-
-
-  async generateQrCode(req, res) {
-    try {
-    const token = req.user.details?.unique_token;
-    if (!token) return fail(res, 500, 'Token missing');
-    const filename = `${token}.png`;
-    await generateToFile(token, filename);
-    await query('UPDATE users SET qr_image = ? WHERE user_id = ?', [filename, req.user.id]);
-    return ok(res, { qr_image: filename });
-    } catch (error) {
-      console.error('generateQrCode error:', error);
-      return fail(res, 500, 'Failed to generate QR code');
-    }
-  },
-
-
-
-
-
   async getServiceDetail(req, res) {
     try {
-      // Support both query parameters and form data
       const { user_id, token, usps_id } = {
         ...req.query,
         ...req.body
@@ -1454,7 +1018,6 @@ const ApiController = {
       
       console.log('getServiceDetail - Parameters:', { user_id, token, usps_id });
       
-      // Check if user_id and token are provided
       if (!user_id || !token) {
         return res.json({
           status: false,
@@ -1471,7 +1034,6 @@ const ApiController = {
         });
       }
       
-      // Decode user ID
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
         return res.json({
@@ -1481,7 +1043,6 @@ const ApiController = {
         });
       }
       
-      // Get user details and validate
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return res.json({
@@ -1493,7 +1054,6 @@ const ApiController = {
       
       const user = userRows[0];
       
-      // Validate token
       if (user.unique_token !== token) {
         return res.json({
           status: false,
@@ -1502,7 +1062,6 @@ const ApiController = {
         });
       }
 
-      // Get service detail with location data and user info
       const serviceDetail = await query(`
         SELECT 
           usps.*,
@@ -1541,13 +1100,11 @@ const ApiController = {
       const sp_id = service.sp_id;
       const service_id = service.service_id;
 
-      // Check if service is unlocked by current user
       const serviceUnlocked = await query(
         'SELECT * FROM user_services_unlocked WHERE sp_id = ? AND service_id = ? AND user_id = ?',
         [sp_id, service_id, decodedUserId]
       );
 
-      // Get ratings breakdown
       const ratingsData = await query(`
         SELECT rating, COUNT(*) as count
         FROM user_services_unlocked
@@ -1555,7 +1112,6 @@ const ApiController = {
         GROUP BY rating
       `, [sp_id, service_id]);
 
-      // Initialize ratings result
       const ratings = {
         '1_star': 0,
         '2_star': 0,
@@ -1566,7 +1122,6 @@ const ApiController = {
         'total_reviews': 0
       };
 
-      // Process ratings data
       if (ratingsData && ratingsData.length > 0) {
         ratingsData.forEach(row => {
           const rating = row.rating;
@@ -1576,7 +1131,6 @@ const ApiController = {
         });
       }
 
-      // Get reviews
       const reviewsData = await query(`
         SELECT 
           COALESCE(u.full_name, '') as name,
@@ -1601,7 +1155,6 @@ const ApiController = {
         });
       }
 
-      // Get total profile views
       const profileViewsData = await query(`
         SELECT COUNT(*) as total_profile_views
         FROM user_services_unlocked
@@ -1636,7 +1189,6 @@ const ApiController = {
         total_profile_views: totalProfileViews
       }));
 
-      // Return response in PHP format (matching exactly)
       return res.json({
         status: true,
         rcode: 200,
@@ -1660,7 +1212,6 @@ const ApiController = {
 
   async getAllServicesList(req, res) {
     try {
-      // Support both query parameters and form data
       const { user_id, token, service_id } = {
         ...req.query,
         ...req.body
@@ -1668,7 +1219,6 @@ const ApiController = {
       
       console.log('getAllServicesList - Parameters:', { user_id, token, service_id });
       
-      // Check if user_id and token are provided
       if (!user_id || !token) {
         return res.json({
           status: false,
@@ -1685,7 +1235,6 @@ const ApiController = {
         });
       }
       
-      // Decode user ID
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
         return res.json({
@@ -1695,7 +1244,6 @@ const ApiController = {
         });
       }
       
-      // Get user details and validate
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return res.json({
@@ -1707,7 +1255,6 @@ const ApiController = {
       
       const user = userRows[0];
       
-      // Validate token
       if (user.unique_token !== token) {
         return res.json({
           status: false,
@@ -1716,7 +1263,6 @@ const ApiController = {
         });
       }
 
-      // Get all services list (excluding current user's services)
       const servicesList = await query(`
         SELECT 
           usps.*,
@@ -1737,7 +1283,6 @@ const ApiController = {
         AND usps.status = 1
       `, [decodedUserId, service_id]);
 
-      // Convert all integer values to strings
       const formattedServicesList = (servicesList || []).map(service => ({
         usps_id: (service.usps_id || 0).toString(),
         sp_id: (service.sp_id || 0).toString(),
@@ -1756,7 +1301,6 @@ const ApiController = {
         city: service.city || ""
       }));
 
-      // Return response in PHP format (matching exactly)
       return res.json({
         status: true,
         rcode: 200,
@@ -1776,7 +1320,6 @@ const ApiController = {
   },
   async serviceUnlock(req, res) {
     try {
-      // Support both query parameters and form data
       const { user_id, token, sp_id, service_id } = {
         ...req.query,
         ...req.body
@@ -1784,7 +1327,6 @@ const ApiController = {
       
       console.log('serviceUnlock - Parameters:', { user_id, token, sp_id, service_id });
       
-      // Check if user_id and token are provided
       if (!user_id || !token) {
         return fail(res, 500, 'user_id and token are required');
       }
@@ -1793,13 +1335,11 @@ const ApiController = {
         return fail(res, 500, 'Please enter mandatory fields');
       }
       
-      // Decode user ID
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
         return fail(res, 500, 'Invalid user ID');
       }
       
-      // Get user details and validate
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return fail(res, 500, 'Not A Valid User');
@@ -1807,12 +1347,10 @@ const ApiController = {
       
       const user = userRows[0];
       
-      // Validate token
       if (user.unique_token !== token) {
         return fail(res, 500, 'Token Mismatch Exception');
       }
 
-      // Check if service is already unlocked
       const existingUnlock = await query(
         'SELECT * FROM user_services_unlocked WHERE user_id = ? AND sp_id = ? AND service_id = ?',
         [decodedUserId, sp_id, service_id]
@@ -1828,7 +1366,6 @@ const ApiController = {
         });
       }
 
-      // Insert into user_services_unlocked table
       const unlockResult = await query(
         'INSERT INTO user_services_unlocked (user_id, sp_id, service_id, created_dts) VALUES (?, ?, ?, NOW())',
         [decodedUserId, sp_id, service_id]
@@ -1853,7 +1390,6 @@ const ApiController = {
   },
   async getAllServiceUnlockList(req, res) {
     try {
-      // Support both query parameters and form data
       const { user_id, token, filter_date } = {
         ...req.query,
         ...req.body
@@ -1861,18 +1397,15 @@ const ApiController = {
       
       console.log('getAllServiceUnlockList - Parameters:', { user_id, token, filter_date });
       
-      // Check if user_id and token are provided
       if (!user_id || !token) {
         return fail(res, 500, 'user_id and token are required');
       }
       
-      // Decode user ID
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
         return fail(res, 500, 'Invalid user ID');
       }
       
-      // Get user details and validate
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return fail(res, 500, 'Not A Valid User');
@@ -1880,12 +1413,10 @@ const ApiController = {
       
       const user = userRows[0];
       
-      // Validate token
       if (user.unique_token !== token) {
         return fail(res, 500, 'Token Mismatch Exception');
       }
 
-      // Build the query for service unlocked details
       let queryString = `
         SELECT 
           usp.*,
@@ -1910,7 +1441,6 @@ const ApiController = {
       
       const queryParams = [decodedUserId];
       
-      // Add date filter if provided
       if (filter_date && filter_date !== '') {
         queryString += ` AND DATE(usp.created_dts) = ?`;
         queryParams.push(filter_date);
@@ -1918,10 +1448,8 @@ const ApiController = {
       
       queryString += ` GROUP BY usul.sp_id`;
       
-      // Get service unlocked details
       const serviceUnlockedDetails = await query(queryString, queryParams);
 
-      // Convert all numeric fields to strings to match Flutter model
       const formattedServiceUnlockedDetails = (serviceUnlockedDetails || []).map(service => ({
         sp_id: String(service.sp_id || 0),
         user_id: String(service.user_id || 0),
@@ -1948,7 +1476,6 @@ const ApiController = {
         profile_photo: service.profile_photo || ""
       }));
 
-      // Return response in PHP format (matching exactly)
       return res.json({
         status: true,
         rcode: 200,
@@ -1965,7 +1492,6 @@ const ApiController = {
 
   async saveInvestor(req, res) {
     try {
-      // Support both query parameters and form data
       const { user_id, token, name, country_id, state_id, city_id, fund_size_id, bio, linkedin_url } = {
         ...req.query,
         ...req.body
@@ -1973,23 +1499,19 @@ const ApiController = {
       
       console.log('saveInvestor - Parameters:', { user_id, token, name, country_id, state_id, city_id, fund_size_id, bio, linkedin_url });
       
-      // Check if user_id and token are provided
       if (!user_id || !token) {
         return fail(res, 500, 'user_id and token are required');
       }
       
-      // Check mandatory fields - match PHP validation exactly
       if (name === "" || country_id <= 0 || state_id <= 0 || city_id <= 0 || fund_size_id <= 0 || bio === "") {
         return fail(res, 500, 'Please enter mandatory fields');
       }
       
-      // Decode user ID
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
         return fail(res, 500, 'Invalid user ID');
       }
       
-      // Get user details and validate
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return fail(res, 500, 'Not A Valid User');
@@ -1997,12 +1519,10 @@ const ApiController = {
       
       const user = userRows[0];
       
-      // Validate token
       if (user.unique_token !== token) {
         return fail(res, 500, 'Token Mismatch Exception');
       }
 
-      // Check if user is already an investor
       const existingInvestor = await query(
         'SELECT * FROM user_investor WHERE user_id = ?',
         [decodedUserId]
@@ -2012,14 +1532,12 @@ const ApiController = {
         return fail(res, 500, 'User is already registered as an investor');
       }
 
-      // Handle image upload - match PHP behavior exactly
       let imageFileName = '';
       if (req.file) {
         imageFileName = req.file.filename;
         console.log('Image uploaded:', imageFileName);
       }
 
-      // Save investor
       const investorResult = await query(
         `INSERT INTO user_investor (user_id, country_id, name, state_id, city_id, fund_size_id, bio, linkedin_url, image, status, created_dts, deleted) 
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, NOW(), 0)`,
@@ -2029,14 +1547,12 @@ const ApiController = {
       const investor_id = investorResult.insertId;
 
       if (investor_id > 0) {
-        // Update reference_no
         const reference_no = `INV-ALPHA-${investor_id.toString().padStart(3, '0')}`;
         await query(
           'UPDATE user_investor SET reference_no = ? WHERE investor_id = ?',
           [reference_no, investor_id]
         );
 
-        // Update is_investor in users table
         await query(
           'UPDATE users SET is_investor = 1 WHERE user_id = ?',
           [decodedUserId]
@@ -2062,7 +1578,6 @@ const ApiController = {
 
   async getAllInvestorsList(req, res) {
     try {
-      // Support both query parameters and form data
       const { user_id, token } = {
         ...req.query,
         ...req.body
@@ -2070,7 +1585,6 @@ const ApiController = {
       
       console.log('getAllInvestorsList - Parameters:', { user_id, token });
       
-      // Check if user_id and token are provided
       if (!user_id || !token) {
         return res.json({
           status: false,
@@ -2079,7 +1593,6 @@ const ApiController = {
         });
       }
       
-      // Decode user ID
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
         return res.json({
@@ -2089,7 +1602,6 @@ const ApiController = {
         });
       }
       
-      // Get user details and validate
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return res.json({
@@ -2101,7 +1613,6 @@ const ApiController = {
       
       const user = userRows[0];
       
-      // Validate token
       if (user.unique_token !== token) {
         return res.json({
           status: false,
@@ -2110,7 +1621,6 @@ const ApiController = {
         });
       }
 
-      // Get all investors list (excluding current user)
       const investorsList = await query(`
         SELECT 
           ui.*,
@@ -2130,7 +1640,6 @@ const ApiController = {
         WHERE ui.user_id != ? AND ui.status = 1 AND ui.approval_status = 2
       `, [decodedUserId]);
 
-      // Convert all integer values to strings
       const formattedInvestorsList = (investorsList || []).map(investor => ({
         investor_id: (investor.investor_id || 0).toString(),
         user_id: (investor.user_id || 0).toString(),
@@ -2166,7 +1675,6 @@ const ApiController = {
         investment_range: investor.investment_range || ""
       }));
 
-      // Return response in PHP format (matching exactly)
       return res.json({
         status: true,
         rcode: 200,
@@ -2186,7 +1694,6 @@ const ApiController = {
   },
   async getInvestorDetail(req, res) {
     try {
-      // Support both query parameters and form data
       const { user_id, token, investor_id } = {
         ...req.query,
         ...req.body
@@ -2194,7 +1701,6 @@ const ApiController = {
       
       console.log('getInvestorDetail - Parameters:', { user_id, token, investor_id });
       
-      // Check if user_id and token are provided
       if (!user_id || !token) {
         return res.json({
           status: false,
@@ -2211,7 +1717,6 @@ const ApiController = {
         });
       }
       
-      // Decode user ID
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
         return res.json({
@@ -2221,7 +1726,6 @@ const ApiController = {
         });
       }
       
-      // Get user details and validate
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return res.json({
@@ -2242,7 +1746,6 @@ const ApiController = {
         });
       }
 
-      // Get investor detail
       const investorDetail = await query(`
         SELECT 
           ui.*,
@@ -2270,11 +1773,9 @@ const ApiController = {
         });
       }
 
-      // Add default values
       investorDetail[0].no_of_meetings = 0;
       investorDetail[0].no_of_investments = 0;
 
-      // Get meetings type list (handle missing table gracefully)
       let meetingsTypeList = [];
       try {
         meetingsTypeList = await query('SELECT * FROM meetings_type WHERE status = 1');
@@ -2283,13 +1784,11 @@ const ApiController = {
         meetingsTypeList = [];
       }
 
-      // Get investor current meets
       const investorUnlocked = await query(`
         SELECT * FROM user_investors_unlocked 
         WHERE investor_id = ? AND user_id = ?
       `, [investor_id, decodedUserId]);
 
-      // Process meeting status
       if (investorUnlocked && investorUnlocked.length > 0) {
         const meeting = investorUnlocked[0];
         const meetingDate = meeting.meeting_date;
@@ -2307,7 +1806,6 @@ const ApiController = {
         }
       }
 
-      // Get ratings breakdown
       const ratings = {
         '1_star': 0, '2_star': 0, '3_star': 0, '4_star': 0, '5_star': 0,
         'total_ratings': 0, 'total_reviews': 0
@@ -2329,7 +1827,6 @@ const ApiController = {
         });
       }
 
-      // Get reviews
       const reviewsData = await query(`
         SELECT 
           COALESCE(u.full_name, '') as name, 
@@ -2354,7 +1851,6 @@ const ApiController = {
         });
       }
 
-      // Convert all integer values to strings for investor_detail
       const formattedInvestorDetail = (investorDetail || []).map(investor => ({
         investor_id: String(investor.investor_id || 0),
         user_id: String(investor.user_id || 0),
@@ -2392,7 +1888,6 @@ const ApiController = {
         no_of_investments: investor.no_of_investments || 0
       }));
 
-      // Convert all integer values to strings for meeting_type
       const formattedMeetingType = (meetingsTypeList || []).map(meeting => ({
         meeting_id: (meeting.id || 0).toString(),
         name: meeting.name || "",
@@ -2401,7 +1896,6 @@ const ApiController = {
         type: meeting.type || ""
       }));
 
-      // Convert all integer values to strings for investor_unlocked
       const formattedInvestorUnlocked = (investorUnlocked || []).map(unlock => ({
         iu_id: String(unlock.iu_id || 0),
         user_id: String(unlock.user_id || 0),
@@ -2421,7 +1915,6 @@ const ApiController = {
         review_dts: unlock.review_dts || null
       }));
 
-      // Return response in PHP format (matching exactly)
       return res.json({
         status: true,
         rcode: 200,
@@ -2445,7 +1938,6 @@ const ApiController = {
   },
   async investorUnlock(req, res) {
     try {
-      // Support both query parameters and form data
       const { user_id, token, investor_id, meeting_id, meeting_date, meeting_time } = {
         ...req.query,
         ...req.body
@@ -2453,29 +1945,24 @@ const ApiController = {
       
       console.log('investorUnlock - Parameters:', { user_id, token, investor_id, meeting_id, meeting_date, meeting_time });
       
-      // Check if user_id and token are provided
       if (!user_id || !token) {
         return fail(res, 500, 'user_id and token are required');
       }
       
-      // Check mandatory fields
       if (!investor_id || investor_id === "" || !meeting_date || meeting_date === "" || !meeting_time || meeting_time === "") {
         return fail(res, 500, 'Please enter mandatory fields');
       }
       
-      // Decode user ID
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
         return fail(res, 500, 'Invalid user ID');
       }
       
-      // investor_id is a regular integer, not base64 encoded
       const investorId = parseInt(investor_id);
       if (isNaN(investorId) || investorId <= 0) {
         return fail(res, 500, 'Invalid investor_id');
       }
       
-      // Get user details and validate
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return fail(res, 500, 'Not A Valid User');
@@ -2483,24 +1970,19 @@ const ApiController = {
       
       const user = userRows[0];
       
-      // Validate token
       if (user.unique_token !== token) {
         return fail(res, 500, 'Token Mismatch Exception');
       }
 
-      // Format meeting date to Y-m-d
       const formattedMeetingDate = new Date(meeting_date).toISOString().split('T')[0];
 
-      // Insert user_investors_unlocked
       let insertQuery, insertParams;
       
       if (meeting_id && meeting_id !== "") {
-        // Include meeting_id if provided
         insertQuery = `INSERT INTO user_investors_unlocked (user_id, investor_id, meeting_id, meeting_date, meeting_time, meeting_location, meeting_url, created_dts) 
                       VALUES (?, ?, ?, ?, ?, ?, ?, NOW())`;
         insertParams = [decodedUserId, investorId, meeting_id, formattedMeetingDate, meeting_time, '', ''];
       } else {
-        // Provide default values for required fields
         insertQuery = `INSERT INTO user_investors_unlocked (user_id, investor_id, meeting_id, meeting_date, meeting_time, meeting_location, meeting_url, created_dts) 
                       VALUES (?, ?, ?, ?, ?, ?, ?, NOW())`;
         insertParams = [decodedUserId, investorId, 0, formattedMeetingDate, meeting_time, '', ''];
@@ -2545,12 +2027,10 @@ const ApiController = {
       if (!decodedUserId) {
         return fail(res, 500, 'Invalid user ID');
       }
-      // investor_id is a regular integer, not base64 encoded
       const investorId = parseInt(investor_id);
       if (isNaN(investorId) || investorId <= 0) {
         return fail(res, 500, 'Invalid investor_id');
       }
-      // iu_id is a regular integer, not base64 encoded
       const iuId = parseInt(iu_id);
       if (isNaN(iuId) || iuId <= 0) {
         return fail(res, 500, 'Invalid iu_id');
@@ -2563,7 +2043,6 @@ const ApiController = {
       if (user.unique_token !== token) {
         return fail(res, 500, 'Token Mismatch Exception');
       }
-      // Update user_investors_unlocked with rating and review
       const updateResult = await query(
         `UPDATE user_investors_unlocked 
          SET rating = ?, review = ?, review_dts = NOW()
@@ -2571,7 +2050,6 @@ const ApiController = {
         [rating || null, review || '', decodedUserId, investorId, iuId]
       );
       if (updateResult.affectedRows > 0) {
-        // Calculate and update average rating for the investor
         const avgRatingResult = await query(
           `SELECT AVG(rating) as avg_rating
            FROM user_investors_unlocked
@@ -2624,7 +2102,6 @@ const ApiController = {
       if (user.unique_token !== token) {
         return fail(res, 500, 'Token Mismatch Exception');
       }
-      // Get investor profile for the current user
       const investorProfileData = await query(`
         SELECT 
           ui.*,
@@ -2650,13 +2127,11 @@ const ApiController = {
         investorProfileData[0].no_of_meetings = 0;
         investorProfileData[0].no_of_investments = 0;
       }
-      // Get investor unlock records
       const investorUnlockedData = await query(
         'SELECT * FROM user_investors_unlocked WHERE investor_id = ? AND user_id = ?',
         [investor_id, decodedUserId]
       );
       
-      // Initialize ratings statistics
       const ratingsStats = {
         '1_star': 0,
         '2_star': 0,
@@ -2667,7 +2142,6 @@ const ApiController = {
         'total_reviews': 0
       };
       
-      // Get ratings details by investor ID
       const ratingsData = await query(`
         SELECT rating, COUNT(*) as count
         FROM user_investors_unlocked
@@ -2686,7 +2160,6 @@ const ApiController = {
         });
       }
       
-      // Get reviews with user details
       const reviewsData = await query(`
         SELECT 
           COALESCE(u.full_name, '') as name,
@@ -2713,7 +2186,6 @@ const ApiController = {
         ratingsStats.total_reviews = 0;
       }
       
-      // Convert all integer values to strings for investor_detail
       const formattedInvestorDetail = (investorProfileData || []).map(investor => ({
         investor_id: String(investor.investor_id || 0),
         user_id: String(investor.user_id || 0),
@@ -2751,7 +2223,6 @@ const ApiController = {
         no_of_investments: investor.no_of_investments || 0
       }));
       
-      // Wrap ratings in array to match PHP format
       const ratingsArray = [ratingsStats];
       
       return res.json({
@@ -2792,7 +2263,6 @@ const ApiController = {
       if (user.unique_token !== token) {
         return fail(res, 500, 'Token Mismatch Exception');
       }
-      // Get investor desk - all users who have unlocked this investor's profile
       let baseQuery = `
         SELECT 
           uiu.user_id,
@@ -2819,7 +2289,6 @@ const ApiController = {
         WHERE ui.user_id = ? AND ui.status = 1 AND ui.approval_status = 2
       `;
       const queryParams = [`${process.env.BASE_URL || req.protocol + '://' + req.get('host')}/uploads/profiles/`, decodedUserId];
-      // Apply filter if provided
       if (filter_type === 'ready') {
         baseQuery += ' AND uiu.request_status = "Ready"';
       } else if (filter_type === 'scheduled') {
@@ -2830,7 +2299,6 @@ const ApiController = {
       baseQuery += ' ORDER BY uiu.created_dts DESC';
       const userLists = await query(baseQuery, queryParams);
       
-      // Convert all integer IDs to strings to match PHP format
       const formattedUserLists = userLists.map(user => ({
         user_id: user.user_id.toString(),
         investor_id: user.investor_id.toString(),
@@ -2887,7 +2355,6 @@ const ApiController = {
         return fail(res, 500, 'Token Mismatch Exception');
       }
       
-      // Get investor meets with comprehensive details
       let queryString = `
         SELECT 
           uiul.*,
@@ -2920,7 +2387,6 @@ const ApiController = {
       `;
       const queryParams = [decodedUserId];
       
-      // Apply filter if provided
       if (filter_type && filter_type !== '') {
         if (filter_type === 'pending') {
           queryString += ` AND uiul.request_status = 'Pending'`;
@@ -2936,9 +2402,7 @@ const ApiController = {
       
       const investorMeets = await query(queryString, queryParams);
       
-      // Convert all numeric fields to strings to match Flutter model
       const formattedInvestorMeets = (investorMeets || []).map(meet => {
-        // Format date to match PHP: DATE_FORMAT(meeting_date, '%d-%m-%Y')
         let formattedDate = "";
         if (meet.meeting_date) {
           const date = new Date(meet.meeting_date);
@@ -2968,7 +2432,6 @@ const ApiController = {
         };
       });
       
-      // Return response in PHP format (matching exactly)
       return res.json({
         status: true,
         rcode: 200,
@@ -2983,10 +2446,8 @@ const ApiController = {
     }
   },
 
-  // Chat (simplified)
   async getChatUsersList(req, res) {
     try {
-      // Support both query parameters and form data
       const { user_id, token } = {
         ...req.query,
         ...req.body
@@ -2994,18 +2455,15 @@ const ApiController = {
       
       console.log('getChatUsersList - Parameters:', { user_id, token });
       
-      // Check if user_id and token are provided
       if (!user_id || !token) {
         return fail(res, 500, 'user_id and token are required');
       }
       
-      // Decode user ID
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
         return fail(res, 500, 'Invalid user ID');
       }
       
-      // Get user details and validate
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return fail(res, 500, 'Not A Valid User');
@@ -3013,12 +2471,10 @@ const ApiController = {
       
       const user = userRows[0];
       
-      // Validate token
       if (user.unique_token !== token) {
         return fail(res, 500, 'Token Mismatch Exception');
       }
 
-      // Get latest chats with each user
       const latestChatsData = await query(`
         SELECT 
           user_chats.*,
@@ -3039,7 +2495,6 @@ const ApiController = {
         ORDER BY user_chats.created_dts DESC
       `, [decodedUserId, decodedUserId]);
 
-      // Create a map of latest messages for each user
       const latestChats = {};
       if (latestChatsData && latestChatsData.length > 0) {
         latestChatsData.forEach(row => {
@@ -3053,7 +2508,6 @@ const ApiController = {
         });
       }
 
-      // Get all users except current user
       const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
       const profilePath = `${baseUrl}/uploads/profiles/`;
       
@@ -3070,7 +2524,6 @@ const ApiController = {
         ORDER BY created_dts ASC
       `, [profilePath, decodedUserId]);
 
-      // Add last message to each user
       if (chatUsersData && chatUsersData.length > 0) {
         chatUsersData.forEach((userRow, key) => {
           const chatUserId = userRow.user_id;
@@ -3095,7 +2548,6 @@ const ApiController = {
   },
   async getChat(req, res) {
     try {
-      // Support both query parameters and form data
       const { user_id, token, current_user_id } = {
         ...req.query,
         ...req.body
@@ -3103,7 +2555,6 @@ const ApiController = {
       
       console.log('getChat - Parameters:', { user_id, token, current_user_id });
       
-      // Check if user_id and token are provided
       if (!user_id || !token) {
         return res.json({
           status: false,
@@ -3112,7 +2563,6 @@ const ApiController = {
         });
       }
       
-      // Check if current_user_id is provided
       if (!current_user_id || current_user_id === "") {
         return res.json({
           status: false,
@@ -3121,7 +2571,6 @@ const ApiController = {
         });
       }
       
-      // Decode user ID
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
         return res.json({
@@ -3131,8 +2580,7 @@ const ApiController = {
         });
       }
       
-      // Decode current_user_id
-      // current_user_id is a regular integer, not base64 encoded
+ 
       const currentUserId = parseInt(current_user_id);
       if (isNaN(currentUserId) || currentUserId <= 0) {
         return res.json({
@@ -3142,7 +2590,6 @@ const ApiController = {
         });
       }
       
-      // Get user details and validate
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return res.json({
@@ -3154,7 +2601,6 @@ const ApiController = {
       
       const user = userRows[0];
       
-      // Validate token
       if (user.unique_token !== token) {
         return res.json({
           status: false,
@@ -3163,7 +2609,6 @@ const ApiController = {
         });
       }
 
-      // Get chat details between the two users
       const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
       const profilePath = `${baseUrl}/uploads/profiles/`;
       
@@ -3187,9 +2632,8 @@ const ApiController = {
              ORDER BY user_chats.created_dts ASC
            `, [profilePath, profilePath, currentUserId, decodedUserId, decodedUserId, currentUserId]);
 
-      // Convert all integer values to strings
       const formattedChatDetails = (chatDetails || []).map(chat => ({
-        chat_id: (chat.chat_id || 0).toString(),
+        chat_id: (chat.id || chat.chat_id || 0).toString(),
         sender_id: (chat.sender_id || 0).toString(),
         receiver_id: (chat.receiver_id || 0).toString(),
         message: chat.message || "",
@@ -3220,7 +2664,6 @@ const ApiController = {
   async saveChat(req, res) {
     console.log('🚀 saveChat function called');
     try {
-      // Support both query parameters and form data
       const { user_id, token, sender_id, receiver_id, message } = {
         ...req.query,
         ...req.body
@@ -3229,24 +2672,26 @@ const ApiController = {
       console.log('💬 saveChat - Parameters:', { user_id, token, sender_id, receiver_id, message });
       console.log('💬 saveChat - Request body:', req.body);
       console.log('💬 saveChat - Request query:', req.query);
+      console.log('💬 saveChat - User Agent:', req.get('User-Agent'));
+      console.log('💬 saveChat - Content-Type:', req.get('Content-Type'));
+      console.log('💬 saveChat - Headers:', req.headers);
+      console.log('💬 saveChat - IP Address:', req.ip);
+      console.log('💬 saveChat - Request Method:', req.method);
+      console.log('💬 saveChat - Request URL:', req.url);
       
-      // Check if user_id and token are provided
       if (!user_id || !token) {
         return fail(res, 500, 'user_id and token are required');
       }
       
-      // Check mandatory fields
       if (!sender_id || sender_id <= 0 || !receiver_id || receiver_id <= 0 || !message || message === "") {
         return fail(res, 500, 'Please enter mandatory fields');
       }
       
-      // Decode user ID
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
         return fail(res, 500, 'Invalid user ID');
       }
       
-      // Get user details and validate
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return fail(res, 500, 'Not A Valid User');
@@ -3254,12 +2699,10 @@ const ApiController = {
       
       const user = userRows[0];
       
-      // Validate token
       if (user.unique_token !== token) {
         return fail(res, 500, 'Token Mismatch Exception');
       }
 
-      // sender_id and receiver_id are regular integers, not base64 encoded
       const senderId = parseInt(sender_id);
       const receiverId = parseInt(receiver_id);
       
@@ -3267,7 +2710,6 @@ const ApiController = {
         return fail(res, 500, 'Invalid sender_id or receiver_id');
       }
 
-      // Save chat message
       const chatResult = await query(
         'INSERT INTO user_chats (sender_id, receiver_id, message, created_dts) VALUES (?, ?, ?, NOW())',
         [senderId, receiverId, message]
@@ -3280,11 +2722,9 @@ const ApiController = {
 
       if (chatResult.insertId > 0) {
         console.log(`✅ Chat insert successful, proceeding with WebSocket check`);
-        // Get sender details for WebSocket notification
         const senderRows = await query('SELECT full_name, profile_photo FROM users WHERE user_id = ?', [senderId]);
         const sender = senderRows[0] || {};
 
-        // Prepare message data for WebSocket
         const messageData = {
           chat_id: chatResult.insertId,
           sender_id: senderId,
@@ -3296,40 +2736,56 @@ const ApiController = {
           timestamp: Date.now()
         };
 
-        // Check if receiver is connected via WebSocket
         const websocketService = require('../services/WebSocketService');
         console.log(`🔌 WebSocket service loaded:`, websocketService);
         console.log(`🔌 Connected users map:`, websocketService.connectedUsers);
         console.log(`🔌 WebSocket service methods:`, Object.getOwnPropertyNames(Object.getPrototypeOf(websocketService)));
         
-        // Check WebSocket connected users info
         console.log(`🔌 Total Connected Users: ${websocketService.connectedUsers.size}`);
         console.log(`🔌 Connected Users List:`, Array.from(websocketService.connectedUsers.keys()));
         console.log(`🔌 User Sockets List:`, Array.from(websocketService.userSockets.keys()));
         console.log(`🔌 Total Socket Connections: ${websocketService.io.sockets.sockets.size}`);
         
-        // Check if receiver is connected via WebSocket (direct fallback)
-        const isReceiverConnected = websocketService.connectedUsers.has(receiverId);
+        // Check if receiver is connected via WebSocket
+        const isReceiverConnected = websocketService.connectedUsers.has(String(receiverId));
         console.log(`🔌 Receiver ${receiverId} WebSocket connection status: ${isReceiverConnected ? 'CONNECTED' : 'DISCONNECTED'}`);
         
-        // Send message to receiver via WebSocket (if connected)
+        // Check if receiver is in active chat session with sender
+        const isInActiveChat = websocketService.isInActiveChatSession(receiverId, senderId);
+        console.log(`💬 Active chat session between ${senderId} and ${receiverId}: ${isInActiveChat}`);
+        
         let messageSent = false;
         if (isReceiverConnected) {
           try {
-            messageSent = websocketService.sendMessageToUser(receiverId, messageData);
-            console.log(`🔌 WebSocket message sent: ${messageSent}`);
+            if (isInActiveChat) {
+              // Both users are in active chat - send message without notification
+              const messageDataWithFlags = {
+                ...messageData,
+                show_notification: false,
+                is_active_chat: true
+              };
+              messageSent = websocketService.sendMessageToUser(receiverId, messageDataWithFlags);
+              console.log(`💬 Message sent via WebSocket (active chat - no notification): ${messageSent}`);
+            } else {
+              // Receiver not in active chat - send with notification
+              const messageDataWithFlags = {
+                ...messageData,
+                show_notification: true,
+                is_active_chat: false
+              };
+              messageSent = websocketService.sendMessageToUser(receiverId, messageDataWithFlags);
+              console.log(`💬 Message sent via WebSocket (with notification): ${messageSent}`);
+            }
           } catch (wsError) {
             console.log(`❌ WebSocket send error:`, wsError.message);
             messageSent = false;
           }
         }
         
-        // If receiver is not connected via WebSocket, send FCM notification to receiver
         if (!messageSent) {
           try {
             const NotificationService = require('../notification/NotificationService');
             
-            // Get receiver's FCM token
             const receiverRows = await query('SELECT fcm_token, full_name FROM users WHERE user_id = ?', [receiverId]);
             const receiver = receiverRows[0] || {};
             
@@ -3378,12 +2834,6 @@ const ApiController = {
     }
   },
 
-  // Job Information Management
-
-
-
-
-
   async deleteResume(req, res) {
     try {
       const { user_id, token, resume_id } = req.body;
@@ -3407,17 +2857,14 @@ const ApiController = {
       
       const user = userRows[0];
       
-      // Validate token
       if (user.unique_token !== token) {
         return fail(res, 500, 'Token Mismatch Exception');
       }
 
-      // Check mandatory fields - match PHP validation exactly
       if (resume_id <= 0) {
         return fail(res, 500, 'Please enter mandatory fields');
       }
 
-      // Update resume status to 0 (soft delete) - match PHP implementation exactly
       await query(
         'UPDATE user_resumes SET status = 0 WHERE resume_id = ? AND user_id = ?',
         [resume_id, decodedUserId]
@@ -3446,18 +2893,15 @@ const ApiController = {
       
       console.log('viewResumes - Parameters:', { user_id, token });
       
-      // Check if user_id and token are provided
       if (!user_id || !token) {
         return fail(res, 500, 'user_id and token are required');
       }
       
-      // Decode user ID
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
         return fail(res, 500, 'Invalid user ID');
       }
       
-      // Get user details and validate
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return fail(res, 500, 'Not A Valid User');
@@ -3465,16 +2909,13 @@ const ApiController = {
       
       const user = userRows[0];
       
-      // Validate token
       if (user.unique_token !== token) {
         return fail(res, 500, 'Token Mismatch Exception');
       }
       
-      // Get base URL for resume files
       const baseUrl = `${req.protocol}://${req.get('host')}`;
       const resumePath = `${baseUrl}/uploads/resumes/`;
       
-      // Get user resumes - match PHP query exactly
       const resumeRows = await query(
         `SELECT *, 
                 IF(resume_file != '', CONCAT(?, resume_file), '') AS resume_file, 
@@ -3485,7 +2926,6 @@ const ApiController = {
         [resumePath, decodedUserId]
       );
       
-      // Convert all values to strings to match PHP format exactly
       const formattedResumes = resumeRows.map(resume => ({
         resume_id: resume.resume_id.toString(),
         user_id: resume.user_id.toString(),
@@ -3496,7 +2936,6 @@ const ApiController = {
         resume_file_extension: resume.resume_file_extension || ""
       }));
       
-      // Return response in PHP format - match exactly
       return res.json({
         status: true,
         rcode: 200,
@@ -3510,11 +2949,6 @@ const ApiController = {
       return fail(res, 500, 'Failed to retrieve resumes');
     }
   },
-
-
-
-
-
 
   async legalTerms(req, res) {
     try {
@@ -3589,7 +3023,6 @@ const ApiController = {
         });
       }
       
-      // Get user details and validate
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return res.json({
@@ -3610,7 +3043,6 @@ const ApiController = {
         });
       }
 
-      // Get project details with dynamic project logo URLs
       const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
       const projectLogoPath = `${baseUrl}/uploads/project_logo/`;
       
@@ -3623,7 +3055,6 @@ const ApiController = {
         [projectLogoPath, decodedUserId]
       );
 
-      // Convert all integer values to strings
       const projectDetails = projectDetailsRows.map(row => ({
         project_detail_id: row.project_detail_id.toString(),
         user_id: row.user_id.toString(),
@@ -3667,18 +3098,15 @@ const ApiController = {
     try {
       const { user_id, token, project_detail_id } = req.body;
       
-      // Check if user_id and token are provided
       if (!user_id || !token) {
         return fail(res, 500, 'user_id and token are required');
       }
       
-      // Decode user ID
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
         return fail(res, 500, 'Invalid user ID');
       }
       
-      // Get user details and validate
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return fail(res, 500, 'Not A Valid User');
@@ -3686,17 +3114,14 @@ const ApiController = {
       
       const user = userRows[0];
       
-      // Validate token
       if (user.unique_token !== token) {
         return fail(res, 500, 'Token Mismatch Exception');
       }
 
-      // Check mandatory fields
       if (!project_detail_id || project_detail_id <= 0) {
         return fail(res, 500, 'Please enter mandatory fields');
       }
 
-      // Delete project detail
       const result = await query(
         'DELETE FROM user_project_details WHERE project_detail_id = ? AND user_id = ?',
         [project_detail_id, decodedUserId]
@@ -3720,13 +3145,11 @@ const ApiController = {
     }
   },
 
-  // Generic handler for missing methods
   async genericHandler(req, res) {
     const methodName = req.route.path.split('/').pop();
     return ok(res, { message: `${methodName} endpoint called successfully` });
   },
 
-  // Frontend routes - PHP compatible version
   deleteRequest(req, res) {
     try {
       const html = '<!DOCTYPE html><html><head><title>Delete Request</title></head><body><h1>Delete Request Form</h1><form action="/thank-you" method="post"><input type="text" name="user_name" placeholder="Name"><input type="text" name="user_mobile_no" placeholder="Mobile"><input type="text" name="user_email_address" placeholder="Email"><textarea name="user_account_delete_reason" placeholder="Reason"></textarea><button type="submit">Submit</button></form></body></html>';
@@ -3749,7 +3172,6 @@ const ApiController = {
     }
   },
 
-  // Frontend routes - PHP compatible version
   deleteRequest(req, res) {
     try {
       const html = '<!DOCTYPE html><html><head><title>Delete Request</title></head><body><h1>Delete Request Form</h1><form action="/thank-you" method="post"><input type="text" name="user_name" placeholder="Name"><input type="text" name="user_mobile_no" placeholder="Mobile"><input type="text" name="user_email_address" placeholder="Email"><textarea name="user_account_delete_reason" placeholder="Reason"></textarea><button type="submit">Submit</button></form></body></html>';
@@ -3772,7 +3194,6 @@ const ApiController = {
     }
   },
 
-  // Investor Unlock - Save investor meeting request
   investorUnlock: async (req, res) => {
     try {
       const { user_id, token, investor_id, meeting_id, meeting_date, meeting_time } = { ...req.query, ...req.body };
@@ -3793,7 +3214,6 @@ const ApiController = {
         });
       }
       
-      // Decode user ID
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
         return res.json({
@@ -3803,7 +3223,6 @@ const ApiController = {
         });
       }
       
-      // Get user details and validate
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return res.json({
@@ -3815,7 +3234,6 @@ const ApiController = {
       
       const user = userRows[0];
       
-      // Validate token
       if (user.unique_token !== token) {
         return res.json({
           status: false,
@@ -3824,7 +3242,6 @@ const ApiController = {
         });
       }
 
-      // Validate investor_id
       const investorId = parseInt(investor_id);
       if (isNaN(investorId) || investorId <= 0) {
         return res.json({
@@ -3834,7 +3251,6 @@ const ApiController = {
         });
       }
 
-      // Validate meeting_id
       const meetingId = parseInt(meeting_id);
       if (isNaN(meetingId) || meetingId <= 0) {
       return res.json({
@@ -3844,21 +3260,16 @@ const ApiController = {
         });
       }
 
-      // Format meeting date to Y-m-d format
               let formattedMeetingDate;
         try {
           let dateObj;
         
-        // Handle different date formats
         if (meeting_date.includes('-')) {
           const parts = meeting_date.split('-');
           if (parts.length === 3) {
-            // Check if it's DD-MM-YYYY format
             if (parts[0].length === 2 && parts[1].length === 2 && parts[2].length === 4) {
-              // DD-MM-YYYY format
               dateObj = new Date(parts[2], parts[1] - 1, parts[0]);
             } else if (parts[0].length === 4 && parts[1].length === 2 && parts[2].length === 2) {
-              // YYYY-MM-DD format
               dateObj = new Date(meeting_date);
             } else {
               dateObj = new Date(meeting_date);
@@ -3869,7 +3280,6 @@ const ApiController = {
         } else if (meeting_date.includes('/')) {
           const parts = meeting_date.split('/');
           if (parts.length === 3) {
-            // Check if it's DD/MM/YYYY format
             if (parts[0].length === 2 && parts[1].length === 2 && parts[2].length === 4) {
               // DD/MM/YYYY format
               dateObj = new Date(parts[2], parts[1] - 1, parts[0]);
@@ -3880,7 +3290,6 @@ const ApiController = {
             dateObj = new Date(meeting_date);
           }
         } else {
-          // Try default parsing
           dateObj = new Date(meeting_date);
         }
         
@@ -3900,7 +3309,6 @@ const ApiController = {
         });
       }
       
-      // Insert into user_investors_unlocked table
       const insertResult = await query(`
         INSERT INTO user_investors_unlocked 
         (user_id, investor_id, meeting_id, meeting_date, meeting_time, request_status, meeting_location, meeting_url, status, created_dts) 

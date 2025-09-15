@@ -575,7 +575,7 @@ class AdminController {
         const action = `<a href="javascript:void(0);" id="edit_${row.id}" data-id="${row.id}" data-name="${row.name}" data-status="${row.status}" onclick="viewEditDetails(${row.id});" class="action-icon"> <i class="mdi mdi-square-edit-outline"></i></a>
                         <a href="javascript:void(0);" class="action-icon delete_info" data-id="${row.id}"> <i class="mdi mdi-delete"></i></a>`;
 
-        data.push([i, row.name, status, action]);
+        data.push([row.id, row.name, status, action]);
       }
 
       // Return response in DataTables format (matching PHP exactly)
@@ -773,13 +773,13 @@ class AdminController {
         });
       }
 
-      // Check if industry type is used in user_personal_details (matching PHP exactly)
-      const personalDetails = await query('SELECT * FROM user_personal_details WHERE industry_type_id = ? AND deleted = 0', [keys]);
+      // Check if industry type is used in user_event_details (matching PHP exactly)
+      const eventDetails = await query('SELECT * FROM user_event_details WHERE industry_type = ? AND deleted = 0', [keys]);
       
-      if (personalDetails.length > 0) {
+      if (eventDetails.length > 0) {
         return res.json({
           status: 'Error',
-          info: 'Unable to Delete. Due to Industry Type Active in User Personal Details'
+          info: 'Unable to Delete. Due to Industry Type Active in Events'
         });
       }
 
