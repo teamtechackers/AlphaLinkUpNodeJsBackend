@@ -444,8 +444,20 @@ class EventTypeController {
 
       console.log('adminDeleteEventType - Parameters:', { user_id, token, keys });
 
+      // Decode admin user ID
+      const decodedUserId = idDecode(user_id);
+      console.log('adminDeleteEventType - decodedUserId:', decodedUserId);
+      if (!decodedUserId) {
+        return res.status(400).json({
+          status: false,
+          rcode: 400,
+          message: 'Invalid user ID'
+        });
+      }
+
       // Verify admin user
-      const adminUser = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [user_id]);
+      const adminUser = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      console.log('adminDeleteEventType - adminUser:', adminUser);
       if (!adminUser.length) {
         return res.status(400).json({
           status: false,
@@ -454,14 +466,7 @@ class EventTypeController {
         });
       }
 
-      const adminUserData = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [user_id]);
-      if (!adminUserData.length) {
-        return res.status(400).json({
-          status: false,
-          rcode: 400,
-          message: 'Invalid admin user'
-        });
-      }
+      console.log('adminDeleteEventType - Skipping admin_users check, using users table');
 
       // Check if keys (event type ID) is provided
       if (!keys || keys === '') {
@@ -486,7 +491,7 @@ class EventTypeController {
       const currentTime = new Date().toISOString().slice(0, 19).replace('T', ' ');
       await query(
         'UPDATE event_type SET deleted = ?, deleted_at = ?, deleted_by = ? WHERE id = ?',
-        [1, currentTime, user_id, keys]
+        [1, currentTime, decodedUserId, keys]
       );
 
       return res.json({
