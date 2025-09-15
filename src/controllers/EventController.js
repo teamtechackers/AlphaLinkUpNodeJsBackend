@@ -1377,13 +1377,16 @@ class EventController {
         ...req.body
       };
       
+      // Get uploaded event banner filename
+      const event_banner_file = req.file ? req.file.filename : '';
+      
       // Extract event user_id from body (different from admin user_id)
       const eventUserId = req.body.user_id;
       
       // Ensure admin user_id comes from query parameters
       const adminUserId = req.query.user_id;
 
-      console.log('submitEvents - Parameters:', { user_id, token, row_id, eventUserId, event_name, industry_type, country_id, state_id, city_id, event_venue, event_link, event_lat, event_lng, event_geo_address, event_date, event_start_time, event_end_time, event_mode_id, event_type_id, event_details, status });
+      console.log('submitEvents - Parameters:', { user_id, token, row_id, eventUserId, event_name, industry_type, country_id, state_id, city_id, event_venue, event_link, event_lat, event_lng, event_geo_address, event_date, event_start_time, event_end_time, event_mode_id, event_type_id, event_details, status, event_banner_file });
 
       // Check if user_id and token are provided
       if (!adminUserId || !token) {
@@ -1456,7 +1459,7 @@ class EventController {
           event_mode_id: event_mode_id ? parseInt(event_mode_id) : null,
           event_type_id: event_type_id ? parseInt(event_type_id) : null,
           event_details: event_details ? event_details.trim() : '',
-          event_banner: '', // Default empty string for event_banner
+          event_banner: event_banner_file || '', // Use uploaded file or empty string
           status: status !== undefined ? parseInt(status) : 1,
           deleted: 0,
           created_dts: new Date().toISOString().slice(0, 19).replace('T', ' '),
@@ -1476,33 +1479,17 @@ class EventController {
 
       } else {
         // Update existing event (matching PHP exactly)
-        const updateData = {
-          user_id: parseInt(eventUserId),
-          event_name: event_name ? event_name.trim() : '',
-          industry_type: industry_type ? industry_type.trim() : '',
-          country_id: country_id ? parseInt(country_id) : 166, // Default to Pakistan
-          state_id: state_id ? parseInt(state_id) : 2728, // Default to Punjab
-          city_id: city_id ? parseInt(city_id) : 31439, // Default to Lahore
-          event_venue: event_venue ? event_venue.trim() : '',
-          event_link: event_link ? event_link.trim() : '',
-          event_lat: event_lat ? event_lat.toString() : '',
-          event_lng: event_lng ? event_lng.toString() : '',
-          event_geo_address: event_geo_address ? event_geo_address.trim() : '',
-          event_date: event_date ? event_date.trim() : null,
-          event_start_time: event_start_time ? event_start_time.trim() : null,
-          event_end_time: event_end_time ? event_end_time.trim() : null,
-          event_mode_id: event_mode_id ? parseInt(event_mode_id) : null,
-          event_type_id: event_type_id ? parseInt(event_type_id) : null,
-          event_details: event_details ? event_details.trim() : '',
-          status: status !== undefined ? parseInt(status) : 1,
-          updated_at: new Date().toISOString().slice(0, 19).replace('T', ' '),
-          updated_by: admin.role_id
-        };
+        // If event_banner_file is provided, update it; otherwise keep existing
+        let updateQuery, updateParams;
+        if (event_banner_file) {
+          updateQuery = 'UPDATE user_event_details SET user_id = ?, event_name = ?, industry_type = ?, country_id = ?, state_id = ?, city_id = ?, event_venue = ?, event_link = ?, event_lat = ?, event_lng = ?, event_geo_address = ?, event_date = ?, event_start_time = ?, event_end_time = ?, event_mode_id = ?, event_type_id = ?, event_details = ?, event_banner = ?, status = ?, updated_at = ?, updated_by = ? WHERE event_id = ?';
+          updateParams = [parseInt(eventUserId), event_name ? event_name.trim() : '', industry_type ? industry_type.trim() : '', country_id ? parseInt(country_id) : 166, state_id ? parseInt(state_id) : 2728, city_id ? parseInt(city_id) : 31439, event_venue ? event_venue.trim() : '', event_link ? event_link.trim() : '', event_lat ? event_lat.toString() : '', event_lng ? event_lng.toString() : '', event_geo_address ? event_geo_address.trim() : '', event_date ? event_date.trim() : null, event_start_time ? event_start_time.trim() : null, event_end_time ? event_end_time.trim() : null, event_mode_id ? parseInt(event_mode_id) : null, event_type_id ? parseInt(event_type_id) : null, event_details ? event_details.trim() : '', event_banner_file, status !== undefined ? parseInt(status) : 1, new Date().toISOString().slice(0, 19).replace('T', ' '), admin.role_id, row_id];
+        } else {
+          updateQuery = 'UPDATE user_event_details SET user_id = ?, event_name = ?, industry_type = ?, country_id = ?, state_id = ?, city_id = ?, event_venue = ?, event_link = ?, event_lat = ?, event_lng = ?, event_geo_address = ?, event_date = ?, event_start_time = ?, event_end_time = ?, event_mode_id = ?, event_type_id = ?, event_details = ?, status = ?, updated_at = ?, updated_by = ? WHERE event_id = ?';
+          updateParams = [parseInt(eventUserId), event_name ? event_name.trim() : '', industry_type ? industry_type.trim() : '', country_id ? parseInt(country_id) : 166, state_id ? parseInt(state_id) : 2728, city_id ? parseInt(city_id) : 31439, event_venue ? event_venue.trim() : '', event_link ? event_link.trim() : '', event_lat ? event_lat.toString() : '', event_lng ? event_lng.toString() : '', event_geo_address ? event_geo_address.trim() : '', event_date ? event_date.trim() : null, event_start_time ? event_start_time.trim() : null, event_end_time ? event_end_time.trim() : null, event_mode_id ? parseInt(event_mode_id) : null, event_type_id ? parseInt(event_type_id) : null, event_details ? event_details.trim() : '', status !== undefined ? parseInt(status) : 1, new Date().toISOString().slice(0, 19).replace('T', ' '), admin.role_id, row_id];
+        }
 
-        await query(
-          'UPDATE user_event_details SET user_id = ?, event_name = ?, industry_type = ?, country_id = ?, state_id = ?, city_id = ?, event_venue = ?, event_link = ?, event_lat = ?, event_lng = ?, event_geo_address = ?, event_date = ?, event_start_time = ?, event_end_time = ?, event_mode_id = ?, event_type_id = ?, event_details = ?, status = ?, updated_at = ?, updated_by = ? WHERE event_id = ?',
-          [updateData.user_id, updateData.event_name, updateData.industry_type, updateData.country_id, updateData.state_id, updateData.city_id, updateData.event_venue, updateData.event_link, updateData.event_lat, updateData.event_lng, updateData.event_geo_address, updateData.event_date, updateData.event_start_time, updateData.event_end_time, updateData.event_mode_id, updateData.event_type_id, updateData.event_details, updateData.status, updateData.updated_at, updateData.updated_by, row_id]
-        );
+        await query(updateQuery, updateParams);
 
         return res.json({
           status: 'Success',

@@ -327,7 +327,7 @@ router.post('/delete-folders', uploadFormData.none(), FolderController.deleteFol
 router.get('/list-users', AdminController.viewUsers);
 router.post('/list-users', uploadFormData.none(), AdminController.viewUsers);
 router.get('/submit-users', AdminController.submitUsers);
-router.post('/submit-users', uploadFormData.none(), AdminController.submitUsers);
+router.post('/submit-users', uploadProfilePhoto.single('profile_photo'), AdminController.submitUsers);
 router.get('/list-users-ajax', AdminController.listUsersAjax);
 router.post('/list-users-ajax', uploadFormData.none(), AdminController.listUsersAjax);
 router.get('/edit-users', AdminController.editUsers);
@@ -396,7 +396,7 @@ router.post('/list-investors-ajax', uploadFormData.none(), AdminController.listI
 router.get('/list_investors_ajax', AdminController.listInvestorsAjax);
 router.post('/list_investors_ajax', uploadFormData.none(), AdminController.listInvestorsAjax);
 router.get('/submit-investors', AdminController.submitInvestors);
-router.post('/submit-investors', uploadFormData.none(), AdminController.submitInvestors);
+router.post('/submit-investors', uploadInvestor.single('image'), AdminController.submitInvestors);
 router.get('/edit-investors', AdminController.editInvestors);
 router.post('/edit-investors', uploadFormData.none(), AdminController.editInvestors);
 router.get('/delete-investors', AdminController.deleteInvestors);
@@ -427,7 +427,7 @@ router.post('/list-events-ajax', uploadFormData.none(), EventController.listEven
 router.get('/list_events_ajax', EventController.listEventsAjax);
 router.post('/list_events_ajax', uploadFormData.none(), EventController.listEventsAjax);
 router.get('/submit-events', EventController.submitEvents);
-router.post('/submit-events', uploadFormData.none(), EventController.submitEvents);
+router.post('/submit-events', uploadEvents.single('event_banner_file'), EventController.submitEvents);
 router.get('/edit-events', EventController.editEvents);
 router.post('/edit-events', uploadFormData.none(), EventController.editEvents);
 router.get('/delete-events', EventController.deleteEvents);

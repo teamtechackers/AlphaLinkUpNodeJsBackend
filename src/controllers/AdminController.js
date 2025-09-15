@@ -895,7 +895,10 @@ class AdminController {
         ...req.body
       };
 
-      console.log('submitUsers - Parameters:', { user_id, token, row_id, full_name, mobile, email, address, country_id, state_id, city_id, status });
+      // Get uploaded profile photo filename
+      const profile_photo = req.file ? req.file.filename : '';
+
+      console.log('submitUsers - Parameters:', { user_id, token, row_id, full_name, mobile, email, address, country_id, state_id, city_id, status, profile_photo });
 
       // Check if user_id and token are provided
       if (!user_id || !token) {
@@ -991,13 +994,14 @@ class AdminController {
           city_id: city_id ? parseInt(city_id) : null,
           status: status !== undefined ? parseInt(status) : 1,
           unique_token: unique_token,
+          profile_photo: profile_photo,
           created_dts: new Date().toISOString().slice(0, 19).replace('T', ' '),
           created_by: admin.role_id
         };
 
         await query(
-          'INSERT INTO users (full_name, mobile, email, address, country_id, state_id, city_id, status, unique_token, created_dts, created_by, deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)',
-          [insertData.full_name, insertData.mobile, insertData.email, insertData.address, insertData.country_id, insertData.state_id, insertData.city_id, insertData.status, insertData.unique_token, insertData.created_dts, insertData.created_by]
+          'INSERT INTO users (full_name, mobile, email, address, country_id, state_id, city_id, status, unique_token, profile_photo, created_dts, created_by, deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)',
+          [insertData.full_name, insertData.mobile, insertData.email, insertData.address, insertData.country_id, insertData.state_id, insertData.city_id, insertData.status, insertData.unique_token, insertData.profile_photo, insertData.created_dts, insertData.created_by]
         );
 
         return res.json({
@@ -1032,10 +1036,17 @@ class AdminController {
         }
 
         // Update without mobile number (mobile stays same)
-        await query(
-          'UPDATE users SET full_name = ?, email = ?, address = ?, country_id = ?, state_id = ?, city_id = ?, status = ?, updated_at = ?, updated_by = ? WHERE user_id = ?',
-          [full_name.trim(), email.trim(), address ? address.trim() : '', country_id ? parseInt(country_id) : null, state_id ? parseInt(state_id) : null, city_id ? parseInt(city_id) : null, status !== undefined ? parseInt(status) : 1, new Date().toISOString().slice(0, 19).replace('T', ' '), admin.role_id, row_id]
-        );
+        // If profile_photo is provided, update it; otherwise keep existing
+        let updateQuery, updateParams;
+        if (profile_photo) {
+          updateQuery = 'UPDATE users SET full_name = ?, email = ?, address = ?, country_id = ?, state_id = ?, city_id = ?, status = ?, profile_photo = ?, updated_at = ?, updated_by = ? WHERE user_id = ?';
+          updateParams = [full_name.trim(), email.trim(), address ? address.trim() : '', country_id ? parseInt(country_id) : null, state_id ? parseInt(state_id) : null, city_id ? parseInt(city_id) : null, status !== undefined ? parseInt(status) : 1, profile_photo, new Date().toISOString().slice(0, 19).replace('T', ' '), admin.role_id, row_id];
+        } else {
+          updateQuery = 'UPDATE users SET full_name = ?, email = ?, address = ?, country_id = ?, state_id = ?, city_id = ?, status = ?, updated_at = ?, updated_by = ? WHERE user_id = ?';
+          updateParams = [full_name.trim(), email.trim(), address ? address.trim() : '', country_id ? parseInt(country_id) : null, state_id ? parseInt(state_id) : null, city_id ? parseInt(city_id) : null, status !== undefined ? parseInt(status) : 1, new Date().toISOString().slice(0, 19).replace('T', ' '), admin.role_id, row_id];
+        }
+        
+        await query(updateQuery, updateParams);
 
         return res.json({
           status: 'Success',
@@ -3181,11 +3192,15 @@ class AdminController {
       // Get parameters from body
       const { user_id, token, row_id, name, country_id, state_id, city_id, fund_size_id, linkedin_url, bio, availability, profile, investment_stage, meeting_city, countries_to_invest, investment_industry, language, approval_status, status, investor_user_id } = req.body;
       
+      // Get uploaded image filename
+      const image = req.file ? req.file.filename : '';
+      
       console.log('submitInvestors - req.body:', req.body);
       console.log('submitInvestors - user_id:', user_id);
       console.log('submitInvestors - investor_user_id:', investor_user_id);
+      console.log('submitInvestors - image:', image);
       
-      console.log('submitInvestors - Parameters:', { user_id, token, row_id, investor_user_id, name, country_id, state_id, city_id, fund_size_id, linkedin_url, bio, availability, profile, investment_stage, meeting_city, countries_to_invest, investment_industry, language, approval_status, status });
+      console.log('submitInvestors - Parameters:', { user_id, token, row_id, investor_user_id, name, country_id, state_id, city_id, fund_size_id, linkedin_url, bio, availability, profile, investment_stage, meeting_city, countries_to_invest, investment_industry, language, approval_status, status, image });
 
       // Check if user_id and token are provided
       if (!user_id || !token) {
@@ -3234,48 +3249,64 @@ class AdminController {
         console.log('submitInvestors - investorRowId:', investorRowId);
 
         // Update existing investor record
-        const updateQuery = `
-          UPDATE user_investor 
-          SET 
-            name = ?,
-            country_id = ?,
-            state_id = ?,
-            city_id = ?,
-            fund_size_id = ?,
-            linkedin_url = ?,
-            bio = ?,
-            availability = ?,
-            profile = ?,
-            investment_stage = ?,
-            meeting_city = ?,
-            countries_to_invest = ?,
-            investment_industry = ?,
-            language = ?,
-            approval_status = ?,
-            status = ?,
-            updated_at = NOW()
-          WHERE investor_id = ?
-        `;
+        // If image is provided, update it; otherwise keep existing
+        let updateQuery, updateParams;
+        if (image) {
+          updateQuery = `
+            UPDATE user_investor 
+            SET 
+              name = ?,
+              country_id = ?,
+              state_id = ?,
+              city_id = ?,
+              fund_size_id = ?,
+              linkedin_url = ?,
+              bio = ?,
+              availability = ?,
+              profile = ?,
+              investment_stage = ?,
+              meeting_city = ?,
+              countries_to_invest = ?,
+              investment_industry = ?,
+              language = ?,
+              approval_status = ?,
+              status = ?,
+              image = ?,
+              updated_at = NOW()
+            WHERE investor_id = ?
+          `;
+          updateParams = [
+            name, country_id, state_id, city_id, fund_size_id, linkedin_url, bio, availability, profile, investment_stage, meeting_city, countries_to_invest, investment_industry, language, approval_status, status, image, investorRowId
+          ];
+        } else {
+          updateQuery = `
+            UPDATE user_investor 
+            SET 
+              name = ?,
+              country_id = ?,
+              state_id = ?,
+              city_id = ?,
+              fund_size_id = ?,
+              linkedin_url = ?,
+              bio = ?,
+              availability = ?,
+              profile = ?,
+              investment_stage = ?,
+              meeting_city = ?,
+              countries_to_invest = ?,
+              investment_industry = ?,
+              language = ?,
+              approval_status = ?,
+              status = ?,
+              updated_at = NOW()
+            WHERE investor_id = ?
+          `;
+          updateParams = [
+            name, country_id, state_id, city_id, fund_size_id, linkedin_url, bio, availability, profile, investment_stage, meeting_city, countries_to_invest, investment_industry, language, approval_status, status, investorRowId
+          ];
+        }
 
-        await query(updateQuery, [
-          name,
-          country_id,
-          state_id,
-          city_id,
-          fund_size_id,
-          linkedin_url,
-          bio,
-          availability,
-          profile,
-          investment_stage,
-          meeting_city,
-          countries_to_invest,
-          investment_industry,
-          language,
-          approval_status,
-          status,
-          investorRowId
-        ]);
+        await query(updateQuery, updateParams);
 
         return res.json({
           status: true,
@@ -3290,7 +3321,7 @@ class AdminController {
             linkedin_url, bio, availability, profile, investment_stage, 
             meeting_city, countries_to_invest, investment_industry, 
             language, approval_status, status, image, deleted, created_dts, updated_at
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '', 0, NOW(), NOW())
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, NOW(), NOW())
         `;
 
         // Use investor_user_id if provided, otherwise use admin user_id
@@ -3315,7 +3346,8 @@ class AdminController {
           investment_industry,
           language,
           approval_status,
-          status
+          status,
+          image || '' // Use uploaded image or empty string
         ]);
 
         return res.json({
