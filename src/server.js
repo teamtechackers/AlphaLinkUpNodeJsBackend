@@ -1,11 +1,11 @@
 'use strict';
 
 // Load environment variables first
-require('dotenv').config({ path: '../.env' });
+require('dotenv').config({ path: './.env' });
 
 const app = require('./app');
 const { logger } = require('./utils/logger');
-const websocketService = require('./services/WebSocketService');
+const websocketService = require('./services/websocketService');
 
 // Import database connection
 const db = require('./config/db');

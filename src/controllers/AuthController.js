@@ -45,15 +45,15 @@ class AuthController {
           if (verificationResult.blocked) {
             return errorResponse(res, verificationResult.error, 403);
           }
-          
+            
           if (verificationResult.code === 60202) {
             return errorResponse(res, verificationResult.error, 400);
           }
-          
+            
           if (verificationResult.code === 60200) {
             return errorResponse(res, verificationResult.error, 500);
           }
-          
+            
           return errorResponse(res, verificationResult.error, 500);
         }
 
@@ -89,15 +89,15 @@ class AuthController {
           if (verificationResult.blocked) {
             return errorResponse(res, verificationResult.error, 403);
           }
-          
+            
           if (verificationResult.code === 60202) {
             return errorResponse(res, verificationResult.error, 400);
           }
-          
+            
           if (verificationResult.code === 60200) {
             return errorResponse(res, verificationResult.error, 500);
           }
-          
+            
           return errorResponse(res, verificationResult.error, 500);
         }
 
@@ -193,27 +193,24 @@ class AuthController {
         return errorResponse(res, 'Invalid token', 400);
       }
 
-      // Verify OTP with Twilio (temporarily bypassed for testing)
-      // const verificationResult = await TwilioService.verifyOTP(mobileValue, otpValue, verificationSidValue);
+      // Verify OTP with Twilio
+      const verificationResult = await TwilioService.verifyOTP(mobileValue, otpValue, verificationSidValue);
       
-      // if (!verificationResult.success) {
-      //   if (verificationResult.code === 20404) {
-      //     return errorResponse(res, 'Verification session expired. Please request a new OTP.', 400);
-      //   }
-        
-      //   if (verificationResult.code === 60202) {
-      //     return errorResponse(res, 'Invalid phone number format.', 400);
-      //   }
-        
-      //   if (verificationResult.code === 60200) {
-      //     return errorResponse(res, 'Verification service error. Please contact support.', 500);
-      //   }
-        
-      //   return errorResponse(res, 'Invalid OTP code. Please check and try again.', 400);
-      // }
-      
-      // Temporary: Accept any OTP for testing FCM token validation
-      console.log('Verify OTP - Twilio verification bypassed for testing');
+      if (!verificationResult.success) {
+        if (verificationResult.code === 20404) {
+          return errorResponse(res, 'Verification session expired. Please request a new OTP.', 400);
+        }
+          
+        if (verificationResult.code === 60202) {
+          return errorResponse(res, 'Invalid phone number format.', 400);
+        }
+          
+        if (verificationResult.code === 60200) {
+          return errorResponse(res, 'Verification service error. Please contact support.', 500);
+        }
+          
+        return errorResponse(res, 'Invalid OTP code. Please check and try again.', 400);
+      }
 
       const fcm_token = req.body.fcm_token || req.body.fcmToken;
       

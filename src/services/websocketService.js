@@ -42,6 +42,7 @@ class WebSocketService {
           const { user_id, token } = data;
           
           if (!user_id || !token) {
+            console.log('❌ WebSocket join - Missing user_id or token');
             socket.emit('error', { message: 'user_id and token are required' });
             return;
           }
@@ -49,8 +50,17 @@ class WebSocketService {
           // Validate user and token
           console.log('🔌 WebSocket join - user_id:', user_id, 'token:', token);
           
-          const decodedUserId = idDecode(user_id);
-          console.log('🔌 WebSocket join - decodedUserId:', decodedUserId);
+          // Check if user_id is already decoded (from Flutter)
+          let decodedUserId;
+          if (user_id.match(/^\d+$/)) {
+            // User ID is already decoded (e.g., "60", "1")
+            decodedUserId = user_id;
+            console.log('🔌 WebSocket join - User ID already decoded:', decodedUserId);
+          } else {
+            // User ID is encoded, decode it
+            decodedUserId = idDecode(user_id);
+            console.log('🔌 WebSocket join - decodedUserId:', decodedUserId);
+          }
           
           if (!decodedUserId) {
             console.log('❌ WebSocket join - Invalid user ID');
@@ -69,17 +79,21 @@ class WebSocketService {
 
           const user = userRows[0];
           if (user.unique_token !== token) {
+            console.log('❌ WebSocket join - Token Mismatch');
             socket.emit('error', { message: 'Token Mismatch Exception' });
             return;
           }
 
           // Store user connection
-          this.connectedUsers.set(decodedUserId, socket.id);
-          this.userSockets.set(socket.id, decodedUserId);
-          this.userLastActivity.set(decodedUserId, Date.now());
+          this.connectedUsers.set(String(decodedUserId), socket.id);
+          this.userSockets.set(socket.id, String(decodedUserId));
+          this.userLastActivity.set(String(decodedUserId), Date.now());
           
           // Join user to their personal room
           socket.join(`user_${decodedUserId}`);
+          
+          console.log('✅ WebSocket join - User registered successfully');
+          console.log('🔌 Connected users after join:', Array.from(this.connectedUsers.entries()));
           
           socket.emit('joined', { 
             message: 'Successfully joined chat',
@@ -97,33 +111,35 @@ class WebSocketService {
       // Handle joining a specific chat session
       socket.on('join_chat', (data) => {
         try {
-          const { user_id, chat_with_user_id } = data;
-          const decodedUserId = idDecode(user_id);
+          const { user1, user2 } = data;
           
-          if (!decodedUserId || !chat_with_user_id) {
-            socket.emit('error', { message: 'user_id and chat_with_user_id are required' });
+          if (!user1 || !user2) {
+            socket.emit('error', { message: 'user1 and user2 are required' });
             return;
           }
 
           // Create or update active chat session
-          const sessionKey = this.getChatSessionKey(decodedUserId, chat_with_user_id);
+          const sessionKey = this.getChatSessionKey(user1, user2);
           this.activeChatSessions.set(sessionKey, {
-            user1: decodedUserId,
-            user2: chat_with_user_id,
+            user1: user1,
+            user2: user2,
             lastActivity: Date.now(),
             isActive: true
           });
 
           // Update user's last activity
-          this.userLastActivity.set(decodedUserId, Date.now());
+          this.userLastActivity.set(user1, Date.now());
+          this.userLastActivity.set(user2, Date.now());
 
           socket.emit('chat_joined', {
             message: 'Successfully joined chat session',
-            chat_with_user_id: chat_with_user_id,
+            user1: user1,
+            user2: user2,
             session_key: sessionKey
           });
 
-          logger.info(`💬 User ${decodedUserId} joined chat with user ${chat_with_user_id}`);
+          logger.info(`💬 User ${user1} joined chat with user ${user2}`);
+          console.log(`💬 Active chat sessions:`, Array.from(this.activeChatSessions.entries()));
         } catch (error) {
           logger.error('Error in join_chat event:', error);
           socket.emit('error', { message: 'Failed to join chat session' });
@@ -133,24 +149,25 @@ class WebSocketService {
       // Handle leaving a specific chat session
       socket.on('leave_chat', (data) => {
         try {
-          const { user_id, chat_with_user_id } = data;
-          const decodedUserId = idDecode(user_id);
+          const { user1, user2 } = data;
           
-          if (!decodedUserId || !chat_with_user_id) {
-            socket.emit('error', { message: 'user_id and chat_with_user_id are required' });
+          if (!user1 || !user2) {
+            socket.emit('error', { message: 'user1 and user2 are required' });
             return;
           }
 
           // Remove active chat session
-          const sessionKey = this.getChatSessionKey(decodedUserId, chat_with_user_id);
+          const sessionKey = this.getChatSessionKey(user1, user2);
           this.activeChatSessions.delete(sessionKey);
 
           socket.emit('chat_left', {
             message: 'Successfully left chat session',
-            chat_with_user_id: chat_with_user_id
+            user1: user1,
+            user2: user2
           });
 
-          logger.info(`💬 User ${decodedUserId} left chat with user ${chat_with_user_id}`);
+          logger.info(`💬 User ${user1} left chat with user ${user2}`);
+          console.log(`💬 Active chat sessions:`, Array.from(this.activeChatSessions.entries()));
         } catch (error) {
           logger.error('Error in leave_chat event:', error);
           socket.emit('error', { message: 'Failed to leave chat session' });
@@ -279,16 +296,40 @@ class WebSocketService {
 
   // Method to check if user is connected via WebSocket
   isUserConnected(userId) {
-    return this.connectedUsers.has(userId);
+    return this.connectedUsers.has(String(userId)) || 
+           this.connectedUsers.has(Number(userId)) || 
+           this.connectedUsers.has(userId);
   }
 
   // Method to send message to specific user
   sendMessageToUser(userId, messageData) {
-    const socketId = this.connectedUsers.get(userId);
-    if (socketId) {
-      this.io.to(socketId).emit('new_message', messageData);
-      return true;
+    console.log(`🔌 sendMessageToUser called with userId: ${userId} (type: ${typeof userId})`);
+    console.log(`🔌 sendMessageToUser - connectedUsers map:`, Array.from(this.connectedUsers.entries()));
+    console.log(`🔌 sendMessageToUser - userSockets map:`, Array.from(this.userSockets.entries()));
+    
+    // Try both string and number versions of userId
+    let socketId = this.connectedUsers.get(String(userId));
+    if (!socketId) {
+      socketId = this.connectedUsers.get(Number(userId));
     }
+    if (!socketId) {
+      socketId = this.connectedUsers.get(userId);
+    }
+    
+    console.log(`🔌 sendMessageToUser - looking for userId: "${userId}" -> socketId: ${socketId}`);
+    
+    if (socketId) {
+      console.log(`🔌 Emitting new_message to socket ${socketId} with data:`, messageData);
+      try {
+        this.io.to(socketId).emit('new_message', messageData);
+        console.log(`✅ Message emitted successfully to user ${userId} via socket ${socketId}`);
+        return true;
+      } catch (error) {
+        console.log(`❌ Error emitting message to socket ${socketId}:`, error.message);
+        return false;
+      }
+    }
+    console.log(`❌ No socket found for user ${userId}`);
     return false;
   }
 
@@ -356,14 +397,27 @@ class WebSocketService {
 
   // Check if two users are in active chat session
   isInActiveChatSession(user1, user2) {
-    const sessionKey = this.getChatSessionKey(user1, user2);
-    const session = this.activeChatSessions.get(sessionKey);
+    // Try different combinations of user IDs
+    const sessionKeys = [
+      this.getChatSessionKey(String(user1), String(user2)),
+      this.getChatSessionKey(Number(user1), Number(user2)),
+      this.getChatSessionKey(String(user1), Number(user2)),
+      this.getChatSessionKey(Number(user1), String(user2)),
+      this.getChatSessionKey(user1, user2)
+    ];
     
-    if (!session) return false;
+    for (const sessionKey of sessionKeys) {
+      const session = this.activeChatSessions.get(sessionKey);
+      if (session) {
+        // Check if session is still active (within last 5 minutes)
+        const fiveMinutesAgo = Date.now() - (5 * 60 * 1000);
+        if (session.isActive && session.lastActivity > fiveMinutesAgo) {
+          return true;
+        }
+      }
+    }
     
-    // Check if session is still active (within last 5 minutes)
-    const fiveMinutesAgo = Date.now() - (5 * 60 * 1000);
-    return session.isActive && session.lastActivity > fiveMinutesAgo;
+    return false;
   }
 
   // Notify all users about disconnection

@@ -2446,6 +2446,83 @@ const ApiController = {
     }
   },
 
+  // New API to check online users and active chat sessions
+  async getOnlineUsersStatus(req, res) {
+    try {
+      const { user_id, token } = {
+        ...req.query,
+        ...req.body
+      };
+      
+      console.log('getOnlineUsersStatus - Parameters:', { user_id, token });
+      
+      if (!user_id || !token) {
+        return fail(res, 500, 'user_id and token are required');
+      }
+      
+      const decodedUserId = idDecode(user_id);
+      if (!decodedUserId) {
+        return fail(res, 500, 'Invalid user ID');
+      }
+      
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      if (!userRows.length) {
+        return fail(res, 500, 'Not A Valid User');
+      }
+      
+      const user = userRows[0];
+      
+      if (user.unique_token !== token) {
+        return fail(res, 500, 'Token Mismatch Exception');
+      }
+
+      // Get WebSocket service instance
+      const websocketService = require('../services/websocketService');
+      
+      // Get connected users
+      const connectedUsers = Array.from(websocketService.connectedUsers.keys());
+      const activeChatSessions = Array.from(websocketService.activeChatSessions.entries());
+      const userLastActivity = Array.from(websocketService.userLastActivity.entries());
+      
+      // Get user names for connected users
+      const userNames = {};
+      for (const userId of connectedUsers) {
+        const userData = await query('SELECT full_name, mobile FROM users WHERE user_id = ?', [userId]);
+        if (userData.length > 0) {
+          userNames[userId] = userData[0].full_name || userData[0].mobile || `User_${userId}`;
+        }
+      }
+      
+      return res.json({
+        status: true,
+        rcode: 200,
+        message: 'Online users status fetched successfully',
+        unique_token: token,
+        data: {
+          total_connected_users: connectedUsers.length,
+          connected_users: connectedUsers.map(userId => ({
+            user_id: userId,
+            user_name: userNames[userId] || `User_${userId}`,
+            last_activity: userLastActivity.find(([id]) => id === userId)?.[1] || null,
+            is_online: true
+          })),
+          active_chat_sessions: activeChatSessions.map(([sessionKey, sessionData]) => ({
+            session_key: sessionKey,
+            participants: sessionKey.split('_'),
+            is_active: sessionData.isActive,
+            last_activity: sessionData.lastActivity,
+            created_at: sessionData.createdAt
+          })),
+          total_active_sessions: activeChatSessions.length
+        }
+      });
+      
+    } catch (error) {
+      console.error('getOnlineUsersStatus error:', error);
+      return fail(res, 500, 'Failed to get online users status');
+    }
+  },
+
   async getChatUsersList(req, res) {
     try {
       const { user_id, token } = {
@@ -2736,19 +2813,66 @@ const ApiController = {
           timestamp: Date.now()
         };
 
-        const websocketService = require('../services/WebSocketService');
+        const websocketService = require('../services/websocketService');
         console.log(`🔌 WebSocket service loaded:`, websocketService);
+        console.log(`🔌 WebSocket service io:`, websocketService.io);
         console.log(`🔌 Connected users map:`, websocketService.connectedUsers);
         console.log(`🔌 WebSocket service methods:`, Object.getOwnPropertyNames(Object.getPrototypeOf(websocketService)));
         
         console.log(`🔌 Total Connected Users: ${websocketService.connectedUsers.size}`);
         console.log(`🔌 Connected Users List:`, Array.from(websocketService.connectedUsers.keys()));
         console.log(`🔌 User Sockets List:`, Array.from(websocketService.userSockets.keys()));
-        console.log(`🔌 Total Socket Connections: ${websocketService.io.sockets.sockets.size}`);
+        console.log(`🔌 Total Socket Connections: ${websocketService.io ? websocketService.io.sockets.sockets.size : 'WebSocket not initialized'}`);
+        
+        // Check if WebSocket service is initialized
+        if (!websocketService.io) {
+          console.log(`❌ WebSocket service not initialized, sending FCM notification only`);
+          // Send FCM notification only
+          try {
+            const NotificationService = require('../notification/NotificationService');
+            
+            const receiverRows = await query('SELECT fcm_token, full_name FROM users WHERE user_id = ?', [receiverId]);
+            const receiver = receiverRows[0] || {};
+            
+            if (receiver.fcm_token) {
+              const notificationData = {
+                title: `New message from ${sender.full_name || 'Someone'}`,
+                body: message,
+                data: {
+                  type: 'chat_message',
+                  sender_id: senderId.toString(),
+                  receiver_id: receiverId.toString(),
+                  chat_id: chatResult.insertId.toString(),
+                  sender_name: sender.full_name || '',
+                  message: message
+                }
+              };
+              
+              await NotificationService.sendNotification(receiverId, notificationData.title, notificationData.body, notificationData.data);
+              console.log(`📱 FCM notification sent to receiver ${receiverId} (WebSocket not initialized)`);
+            } else {
+              console.log(`❌ No FCM token found for receiver ${receiverId}`);
+            }
+          } catch (notificationError) {
+            console.error('Error sending FCM notification to receiver:', notificationError);
+          }
+          
+          return res.json({
+            status: true,
+            rcode: 200,
+            user_id: idEncode(decodedUserId),
+            unique_token: token,
+            message: 'Message sent successfully.',
+            chat_id: chatResult.insertId
+          });
+        }
         
         // Check if receiver is connected via WebSocket
         const isReceiverConnected = websocketService.connectedUsers.has(String(receiverId));
         console.log(`🔌 Receiver ${receiverId} WebSocket connection status: ${isReceiverConnected ? 'CONNECTED' : 'DISCONNECTED'}`);
+        console.log(`🔌 Looking for receiver ID: "${receiverId}" (type: ${typeof receiverId})`);
+        console.log(`🔌 Available connected users:`, Array.from(websocketService.connectedUsers.keys()));
+        console.log(`🔌 Available user sockets:`, Array.from(websocketService.userSockets.entries()));
         
         // Check if receiver is in active chat session with sender
         const isInActiveChat = websocketService.isInActiveChatSession(receiverId, senderId);
@@ -2764,7 +2888,8 @@ const ApiController = {
                 show_notification: false,
                 is_active_chat: true
               };
-              messageSent = websocketService.sendMessageToUser(receiverId, messageDataWithFlags);
+              console.log(`🔌 Sending message to user ${receiverId} (active chat - no notification)`);
+              messageSent = websocketService.sendMessageToUser(String(receiverId), messageDataWithFlags);
               console.log(`💬 Message sent via WebSocket (active chat - no notification): ${messageSent}`);
             } else {
               // Receiver not in active chat - send with notification
@@ -2773,16 +2898,19 @@ const ApiController = {
                 show_notification: true,
                 is_active_chat: false
               };
-              messageSent = websocketService.sendMessageToUser(receiverId, messageDataWithFlags);
+              console.log(`🔌 Sending message to user ${receiverId} (with notification)`);
+              messageSent = websocketService.sendMessageToUser(String(receiverId), messageDataWithFlags);
               console.log(`💬 Message sent via WebSocket (with notification): ${messageSent}`);
             }
           } catch (wsError) {
             console.log(`❌ WebSocket send error:`, wsError.message);
             messageSent = false;
           }
+        } else {
+          console.log(`❌ Receiver ${receiverId} is not connected via WebSocket`);
         }
         
-        if (!messageSent) {
+        if (!messageSent && !isInActiveChat) {
           try {
             const NotificationService = require('../notification/NotificationService');
             
@@ -2811,8 +2939,10 @@ const ApiController = {
           } catch (notificationError) {
             console.error('Error sending FCM notification to receiver:', notificationError);
           }
-        } else {
+        } else if (messageSent) {
           console.log(`🔌 Receiver ${receiverId} is connected via WebSocket - message sent via WebSocket`);
+        } else if (isInActiveChat) {
+          console.log(`💬 Both users in active chat session - no FCM notification sent`);
         }
 
         return res.json({

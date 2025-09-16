@@ -306,7 +306,7 @@ router.post('/delete-industry-type', uploadFormData.none(), AdminController.dele
 router.get('/list-fund-size', FundController.viewFundSize);
 router.post('/list-fund-size', uploadFormData.none(), FundController.viewFundSize);
 router.get('/submit-fund-size', FundController.submitFundSize);
-router.post('/submit-fund-size', uploadFormData.none(), FundController.submitFundSize);
+router.post('/submit-fund-size', FundController.submitFundSize);
 router.get('/list-fund-size-ajax', FundController.listFundSizeAjax);
 router.post('/list-fund-size-ajax', uploadFormData.none(), FundController.listFundSizeAjax);
 router.get('/check-duplicate-fund-size', FundController.checkDuplicateFundSize);
@@ -459,6 +459,8 @@ router.post('/Api-Save-Chat', uploadFormData.none(), ApiController.saveChat);
 router.get('/Api-View-Chat', ApiController.getChat);
 router.post('/Api-View-Chat', uploadFormData.none(), ApiController.getChat);
 router.get('/Api-Chat-Users-List', ApiController.getChatUsersList);
+router.post('/Api-Chat-Users-List', uploadFormData.none(), ApiController.getChatUsersList);
+router.post('/Api-Online-Users-Status', uploadFormData.none(), ApiController.getOnlineUsersStatus);
 
 // Business Card Routes
 router.get('/Api-View-Business-Card', ApiController.getBusinessCardInformation);
