@@ -462,11 +462,38 @@ class JobController {
       }
       
       try {
-        await NotificationService.sendTopicNotification('job-notifications', 'New Job Available!', `${job_title} - ${address || 'Location not specified'}`, {
+        const notificationData = {
           type: 'job',
           jobId: finalJobId.toString(),
           timestamp: new Date().toISOString()
-        });
+        };
+
+        await NotificationService.sendTopicNotification('job-notifications', 'New Job Available!', `${job_title} - ${address || 'Location not specified'}`, notificationData);
+        console.log('Job topic notification sent successfully');
+
+        // Save notification to database for all users
+        try {
+          const NotificationController = require('./NotificationController');
+          
+          // Get all users to send notification to
+          const allUsers = await query('SELECT user_id FROM users WHERE status = 1');
+          
+          for (const user of allUsers) {
+            await NotificationController.saveNotification({
+              user_id: user.user_id,
+              notification_type: 'job',
+              title: 'New Job Available!',
+              message: `${job_title} - ${address || 'Location not specified'}`,
+              data: notificationData,
+              source_id: finalJobId,
+              source_type: 'job'
+            });
+          }
+          
+          console.log(`Job notification saved to database for ${allUsers.length} users`);
+        } catch (dbError) {
+          console.error('Job notification database save error:', dbError);
+        }
       } catch (notificationError) {
         console.error('Job topic notification error:', notificationError);
       }

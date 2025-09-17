@@ -230,7 +230,7 @@ class FundController {
       if (finalRowId == 0) {
         // Insert new fund size
         const result = await query(
-          'INSERT INTO fund_size (investment_range, status) VALUES (?, ?)',
+          'INSERT INTO fund_size (investment_range, status, deleted) VALUES (?, ?, 0)',
           [investment_range, status || 1]
         );
         finalRowId = result.insertId;

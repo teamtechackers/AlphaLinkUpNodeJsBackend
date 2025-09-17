@@ -2815,102 +2815,79 @@ const ApiController = {
 
         const websocketService = require('../services/websocketService');
         console.log(`🔌 WebSocket service loaded:`, websocketService);
-        console.log(`🔌 WebSocket service io:`, websocketService.io);
         console.log(`🔌 Connected users map:`, websocketService.connectedUsers);
         console.log(`🔌 WebSocket service methods:`, Object.getOwnPropertyNames(Object.getPrototypeOf(websocketService)));
         
         console.log(`🔌 Total Connected Users: ${websocketService.connectedUsers.size}`);
         console.log(`🔌 Connected Users List:`, Array.from(websocketService.connectedUsers.keys()));
         console.log(`🔌 User Sockets List:`, Array.from(websocketService.userSockets.keys()));
-        console.log(`🔌 Total Socket Connections: ${websocketService.io ? websocketService.io.sockets.sockets.size : 'WebSocket not initialized'}`);
-        
-        // Check if WebSocket service is initialized
-        if (!websocketService.io) {
-          console.log(`❌ WebSocket service not initialized, sending FCM notification only`);
-          // Send FCM notification only
-          try {
-            const NotificationService = require('../notification/NotificationService');
-            
-            const receiverRows = await query('SELECT fcm_token, full_name FROM users WHERE user_id = ?', [receiverId]);
-            const receiver = receiverRows[0] || {};
-            
-            if (receiver.fcm_token) {
-              const notificationData = {
-                title: `New message from ${sender.full_name || 'Someone'}`,
-                body: message,
-                data: {
-                  type: 'chat_message',
-                  sender_id: senderId.toString(),
-                  receiver_id: receiverId.toString(),
-                  chat_id: chatResult.insertId.toString(),
-                  sender_name: sender.full_name || '',
-                  message: message
-                }
-              };
-              
-              await NotificationService.sendNotification(receiverId, notificationData.title, notificationData.body, notificationData.data);
-              console.log(`📱 FCM notification sent to receiver ${receiverId} (WebSocket not initialized)`);
-            } else {
-              console.log(`❌ No FCM token found for receiver ${receiverId}`);
-            }
-          } catch (notificationError) {
-            console.error('Error sending FCM notification to receiver:', notificationError);
-          }
-          
-          return res.json({
-            status: true,
-            rcode: 200,
-            user_id: idEncode(decodedUserId),
-            unique_token: token,
-            message: 'Message sent successfully.',
-            chat_id: chatResult.insertId
-          });
-        }
+        console.log(`🔌 Total Socket Connections: ${websocketService.io.sockets.sockets.size}`);
         
         // Check if receiver is connected via WebSocket
         const isReceiverConnected = websocketService.connectedUsers.has(String(receiverId));
         console.log(`🔌 Receiver ${receiverId} WebSocket connection status: ${isReceiverConnected ? 'CONNECTED' : 'DISCONNECTED'}`);
-        console.log(`🔌 Looking for receiver ID: "${receiverId}" (type: ${typeof receiverId})`);
-        console.log(`🔌 Available connected users:`, Array.from(websocketService.connectedUsers.keys()));
-        console.log(`🔌 Available user sockets:`, Array.from(websocketService.userSockets.entries()));
         
         // Check if receiver is in active chat session with sender
         const isInActiveChat = websocketService.isInActiveChatSession(receiverId, senderId);
         console.log(`💬 Active chat session between ${senderId} and ${receiverId}: ${isInActiveChat}`);
         
+        // Check if receiver is in any active chat session (not just with sender)
+        const receiverActiveChats = websocketService.getUserActiveChatSessions(receiverId);
+        const isReceiverInAnyActiveChat = receiverActiveChats.length > 0;
+        
+        // Check if receiver is in active chat with someone OTHER than the sender
+        const isReceiverInOtherChat = receiverActiveChats.some(chat => 
+          chat.otherUser !== String(senderId)
+        );
+        
+        console.log(`💬 Receiver ${receiverId} active chat sessions:`, receiverActiveChats);
+        console.log(`💬 Receiver ${receiverId} in any active chat: ${isReceiverInAnyActiveChat}`);
+        console.log(`💬 Receiver ${receiverId} in other chat (not with sender ${senderId}): ${isReceiverInOtherChat}`);
+        
         let messageSent = false;
         if (isReceiverConnected) {
           try {
             if (isInActiveChat) {
-              // Both users are in active chat - send message without notification
+              // Both users are in active chat together - send message without notification
               const messageDataWithFlags = {
                 ...messageData,
                 show_notification: false,
                 is_active_chat: true
               };
-              console.log(`🔌 Sending message to user ${receiverId} (active chat - no notification)`);
-              messageSent = websocketService.sendMessageToUser(String(receiverId), messageDataWithFlags);
+              messageSent = websocketService.sendMessageToUser(receiverId, messageDataWithFlags);
               console.log(`💬 Message sent via WebSocket (active chat - no notification): ${messageSent}`);
+            } else if (isReceiverInOtherChat) {
+              // Receiver is in active chat with someone else - send message with notification
+              const messageDataWithFlags = {
+                ...messageData,
+                show_notification: true,
+                is_active_chat: false,
+                notification_reason: 'receiver_in_other_chat'
+              };
+              messageSent = websocketService.sendMessageToUser(receiverId, messageDataWithFlags);
+              console.log(`💬 Message sent via WebSocket (receiver in other chat - with notification): ${messageSent}`);
             } else {
-              // Receiver not in active chat - send with notification
+              // Receiver not in any active chat - send with notification
               const messageDataWithFlags = {
                 ...messageData,
                 show_notification: true,
                 is_active_chat: false
               };
-              console.log(`🔌 Sending message to user ${receiverId} (with notification)`);
-              messageSent = websocketService.sendMessageToUser(String(receiverId), messageDataWithFlags);
+              messageSent = websocketService.sendMessageToUser(receiverId, messageDataWithFlags);
               console.log(`💬 Message sent via WebSocket (with notification): ${messageSent}`);
             }
           } catch (wsError) {
             console.log(`❌ WebSocket send error:`, wsError.message);
             messageSent = false;
           }
-        } else {
-          console.log(`❌ Receiver ${receiverId} is not connected via WebSocket`);
         }
         
-        if (!messageSent && !isInActiveChat) {
+        // Send FCM notification if receiver is not connected or not in active chat with sender
+        // Always send FCM notification for better reliability, even if WebSocket is connected
+        const shouldSendFCM = !isReceiverConnected || (!isInActiveChat && isReceiverInOtherChat) || (!isInActiveChat && !isReceiverInOtherChat);
+        console.log(`📱 Should send FCM notification: ${shouldSendFCM} (receiver connected: ${isReceiverConnected}, in active chat with sender: ${isInActiveChat}, in other chat: ${isReceiverInOtherChat})`);
+        
+        if (shouldSendFCM) {
           try {
             const NotificationService = require('../notification/NotificationService');
             
@@ -2932,17 +2909,15 @@ const ApiController = {
               };
               
               await NotificationService.sendNotification(receiverId, notificationData.title, notificationData.body, notificationData.data);
-              console.log(`📱 FCM notification sent to receiver ${receiverId} (not connected via WebSocket)`);
+              console.log(`📱 FCM notification sent to receiver ${receiverId} (${!isReceiverConnected ? 'not connected via WebSocket' : 'in other chat'})`);
             } else {
               console.log(`❌ No FCM token found for receiver ${receiverId}`);
             }
           } catch (notificationError) {
             console.error('Error sending FCM notification to receiver:', notificationError);
           }
-        } else if (messageSent) {
+        } else {
           console.log(`🔌 Receiver ${receiverId} is connected via WebSocket - message sent via WebSocket`);
-        } else if (isInActiveChat) {
-          console.log(`💬 Both users in active chat session - no FCM notification sent`);
         }
 
         return res.json({
@@ -3463,6 +3438,396 @@ const ApiController = {
       
     } catch (error) {
       console.error('investorUnlock error:', error);
+      return res.json({
+        status: false,
+        rcode: 500,
+        message: 'Internal server error'
+      });
+    }
+  },
+
+  // ==================== NOTIFICATION ENDPOINTS ====================
+
+  /**
+   * Fetch notifications for a user
+   * GET /Api-Notifications-List
+   */
+  async getNotificationsList(req, res) {
+    console.log('🔔 getNotificationsList method called!');
+    try {
+      const { user_id, token, limit = 50, offset = 0, notification_type, unread_only } = {
+        ...req.query,
+        ...req.body
+      };
+
+      console.log('🔔 getNotificationsList - Raw user_id:', user_id);
+      console.log('🔔 getNotificationsList - Raw token:', token);
+      console.log('🔔 getNotificationsList - req.body:', req.body);
+      console.log('🔔 getNotificationsList - req.query:', req.query);
+
+      // Decode user ID
+      const decodedUserId = idDecode(user_id);
+      console.log('🔔 getNotificationsList - decodedUserId:', decodedUserId);
+      if (!decodedUserId) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Invalid user ID'
+        });
+      }
+
+      // Validate user
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      if (userRows.length === 0) {
+        return res.json({
+          status: false,
+          rcode: 404,
+          message: 'User not found'
+        });
+      }
+
+      // Validate token
+      if (userRows[0].unique_token !== token) {
+        return res.json({
+          status: false,
+          rcode: 401,
+          message: 'Invalid token'
+        });
+      }
+
+      const NotificationController = require('./NotificationController');
+      
+      const options = {
+        limit: parseInt(limit),
+        offset: parseInt(offset),
+        notification_type: notification_type || null,
+        unread_only: unread_only === 'true'
+      };
+
+      const result = await NotificationController.fetchNotifications(decodedUserId, options);
+
+      if (result.success) {
+        // Simplify notification objects - flatten data field
+        const simplifiedNotifications = result.notifications.map(notification => ({
+          id: notification.id,
+          user_id: notification.user_id,
+          notification_type: notification.notification_type,
+          title: notification.title,
+          message: notification.message,
+          sender_name: notification.data?.sender_name || null,
+          message_type: notification.data?.type || null,
+          source_id: notification.source_id,
+          source_type: notification.source_type,
+          is_read: notification.is_read,
+          created_dts: notification.created_dts,
+          read_dts: notification.read_dts,
+          status: notification.status,
+          fcm_message_id: notification.fcm_message_id
+        }));
+
+        return res.json({
+          status: true,
+          rcode: 200,
+          message: 'Notifications fetched successfully',
+          notifications: simplifiedNotifications,
+          count: result.count,
+          limit: options.limit,
+          offset: options.offset
+        });
+      } else {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: result.error || 'Failed to fetch notifications'
+        });
+      }
+
+    } catch (error) {
+      console.error('getNotificationsList error:', error);
+      return res.json({
+        status: false,
+        rcode: 500,
+        message: 'Internal server error'
+      });
+    }
+  },
+
+  /**
+   * Mark notification as read
+   * POST /Api-Notification-Mark-Read
+   */
+  async markNotificationAsRead(req, res) {
+    try {
+      const { user_id, token, notification_id } = {
+        ...req.query,
+        ...req.body
+      };
+
+      console.log('🔔 markNotificationAsRead - Raw user_id:', user_id);
+      console.log('🔔 markNotificationAsRead - Raw token:', token);
+      console.log('🔔 markNotificationAsRead - notification_id:', notification_id);
+
+      // Decode user ID
+      const decodedUserId = idDecode(user_id);
+      console.log('🔔 markNotificationAsRead - decodedUserId:', decodedUserId);
+      if (!decodedUserId) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Invalid user ID'
+        });
+      }
+
+      // Validate user
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      if (userRows.length === 0) {
+        return res.json({
+          status: false,
+          rcode: 404,
+          message: 'User not found'
+        });
+      }
+
+      // Validate token
+      if (userRows[0].unique_token !== token) {
+        return res.json({
+          status: false,
+          rcode: 401,
+          message: 'Invalid token'
+        });
+      }
+
+      if (!notification_id) {
+        return res.json({
+          status: false,
+          rcode: 400,
+          message: 'notification_id is required'
+        });
+      }
+
+      const NotificationController = require('./NotificationController');
+      const result = await NotificationController.markAsRead(notification_id, decodedUserId);
+
+      if (result.success) {
+        return res.json({
+          status: true,
+          rcode: 200,
+          message: result.message
+        });
+      } else {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: result.error || 'Failed to mark notification as read'
+        });
+      }
+
+    } catch (error) {
+      console.error('markNotificationAsRead error:', error);
+      return res.json({
+        status: false,
+        rcode: 500,
+        message: 'Internal server error'
+      });
+    }
+  },
+
+  /**
+   * Mark all notifications as read for a user
+   * POST /Api-Notifications-Mark-All-Read
+   */
+  async markAllNotificationsAsRead(req, res) {
+    try {
+      const { user_id, token } = {
+        ...req.query,
+        ...req.body
+      };
+
+      console.log('🔔 markAllNotificationsAsRead - Raw user_id:', user_id);
+      console.log('🔔 markAllNotificationsAsRead - Raw token:', token);
+
+      // Decode user ID
+      const decodedUserId = idDecode(user_id);
+      console.log('🔔 markAllNotificationsAsRead - decodedUserId:', decodedUserId);
+      if (!decodedUserId) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Invalid user ID'
+        });
+      }
+
+      // Validate user
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      if (userRows.length === 0) {
+        return res.json({
+          status: false,
+          rcode: 404,
+          message: 'User not found'
+        });
+      }
+
+      // Validate token
+      if (userRows[0].unique_token !== token) {
+        return res.json({
+          status: false,
+          rcode: 401,
+          message: 'Invalid token'
+        });
+      }
+
+      const NotificationController = require('./NotificationController');
+      const result = await NotificationController.markAllAsRead(decodedUserId);
+
+      if (result.success) {
+        return res.json({
+          status: true,
+          rcode: 200,
+          message: result.message,
+          data: {
+            affected_rows: result.affected_rows
+          }
+        });
+      } else {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: result.error || 'Failed to mark notifications as read'
+        });
+      }
+
+    } catch (error) {
+      console.error('markAllNotificationsAsRead error:', error);
+      return res.json({
+        status: false,
+        rcode: 500,
+        message: 'Internal server error'
+      });
+    }
+  },
+
+  /**
+   * Get notification statistics for a user
+   * GET /Api-Notification-Stats
+   */
+  async getNotificationStats(req, res) {
+    try {
+      const { user_id, token } = {
+        ...req.query,
+        ...req.body
+      };
+
+      // Decode user ID
+      const decodedUserId = idDecode(user_id);
+      if (!decodedUserId) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Invalid user ID'
+        });
+      }
+
+      // Validate user
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      if (userRows.length === 0) {
+        return res.json({
+          status: false,
+          rcode: 404,
+          message: 'User not found'
+        });
+      }
+
+      // Validate token
+      if (userRows[0].unique_token !== token) {
+        return res.json({
+          status: false,
+          rcode: 401,
+          message: 'Invalid token'
+        });
+      }
+
+      const NotificationController = require('./NotificationController');
+      const result = await NotificationController.getNotificationStats(decodedUserId);
+
+      if (result.success) {
+        return res.json({
+          status: true,
+          rcode: 200,
+          message: 'Notification stats fetched successfully',
+          data: result.stats
+        });
+      } else {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: result.error || 'Failed to fetch notification stats'
+        });
+      }
+
+    } catch (error) {
+      console.error('getNotificationStats error:', error);
+      return res.json({
+        status: false,
+        rcode: 500,
+        message: 'Internal server error'
+      });
+    }
+  },
+
+  /**
+   * Delete notification
+   * POST /Api-Notification-Delete
+   */
+  async deleteNotification(req, res) {
+    try {
+      const { user_id, token, notification_id } = req.body;
+
+      // Validate user
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [user_id]);
+      if (userRows.length === 0) {
+        return res.json({
+          status: false,
+          rcode: 404,
+          message: 'User not found'
+        });
+      }
+
+      // Validate token
+      if (userRows[0].unique_token !== token) {
+        return res.json({
+          status: false,
+          rcode: 401,
+          message: 'Invalid token'
+        });
+      }
+
+      if (!notification_id) {
+        return res.json({
+          status: false,
+          rcode: 400,
+          message: 'notification_id is required'
+        });
+      }
+
+      const NotificationController = require('./NotificationController');
+      const result = await NotificationController.deleteNotification(notification_id, user_id);
+
+      if (result.success) {
+        return res.json({
+          status: true,
+          rcode: 200,
+          message: result.message
+        });
+      } else {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: result.error || 'Failed to delete notification'
+        });
+      }
+
+    } catch (error) {
+      console.error('deleteNotification error:', error);
       return res.json({
         status: false,
         rcode: 500,

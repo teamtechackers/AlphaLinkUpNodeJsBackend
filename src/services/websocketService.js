@@ -2,6 +2,7 @@ const { Server } = require('socket.io');
 const { logger } = require('../utils/logger');
 const { query } = require('../config/db');
 const { idDecode } = require('../utils/idCodec');
+const NotificationController = require('../controllers/NotificationController');
 
 class WebSocketService {
   constructor() {
@@ -118,27 +119,31 @@ class WebSocketService {
             return;
           }
 
+          // Normalize user IDs to strings
+          const normalizedUser1 = String(user1);
+          const normalizedUser2 = String(user2);
+
           // Create or update active chat session
-          const sessionKey = this.getChatSessionKey(user1, user2);
+          const sessionKey = this.getChatSessionKey(normalizedUser1, normalizedUser2);
           this.activeChatSessions.set(sessionKey, {
-            user1: user1,
-            user2: user2,
+            user1: normalizedUser1,
+            user2: normalizedUser2,
             lastActivity: Date.now(),
             isActive: true
           });
 
           // Update user's last activity
-          this.userLastActivity.set(user1, Date.now());
-          this.userLastActivity.set(user2, Date.now());
+          this.userLastActivity.set(normalizedUser1, Date.now());
+          this.userLastActivity.set(normalizedUser2, Date.now());
 
           socket.emit('chat_joined', {
             message: 'Successfully joined chat session',
-            user1: user1,
-            user2: user2,
+            user1: normalizedUser1,
+            user2: normalizedUser2,
             session_key: sessionKey
           });
 
-          logger.info(`💬 User ${user1} joined chat with user ${user2}`);
+          logger.info(`💬 User ${normalizedUser1} joined chat with user ${normalizedUser2}`);
           console.log(`💬 Active chat sessions:`, Array.from(this.activeChatSessions.entries()));
         } catch (error) {
           logger.error('Error in join_chat event:', error);
@@ -156,17 +161,21 @@ class WebSocketService {
             return;
           }
 
+          // Normalize user IDs to strings
+          const normalizedUser1 = String(user1);
+          const normalizedUser2 = String(user2);
+
           // Remove active chat session
-          const sessionKey = this.getChatSessionKey(user1, user2);
+          const sessionKey = this.getChatSessionKey(normalizedUser1, normalizedUser2);
           this.activeChatSessions.delete(sessionKey);
 
           socket.emit('chat_left', {
             message: 'Successfully left chat session',
-            user1: user1,
-            user2: user2
+            user1: normalizedUser1,
+            user2: normalizedUser2
           });
 
-          logger.info(`💬 User ${user1} left chat with user ${user2}`);
+          logger.info(`💬 User ${normalizedUser1} left chat with user ${normalizedUser2}`);
           console.log(`💬 Active chat sessions:`, Array.from(this.activeChatSessions.entries()));
         } catch (error) {
           logger.error('Error in leave_chat event:', error);
@@ -184,22 +193,26 @@ class WebSocketService {
             return;
           }
 
+          // Normalize user IDs to strings
+          const normalizedSenderId = String(sender_id);
+          const normalizedReceiverId = String(receiver_id);
+
           // Save message to database
           const chatResult = await query(
             'INSERT INTO user_chats (sender_id, receiver_id, message, created_dts) VALUES (?, ?, ?, NOW())',
-            [sender_id, receiver_id, message]
+            [normalizedSenderId, normalizedReceiverId, message]
           );
 
           if (chatResult.insertId > 0) {
             // Get sender details
-            const senderRows = await query('SELECT full_name, profile_photo FROM users WHERE user_id = ?', [sender_id]);
+            const senderRows = await query('SELECT full_name, profile_photo FROM users WHERE user_id = ?', [normalizedSenderId]);
             const sender = senderRows[0] || {};
 
             // Prepare message data
             const messageData = {
               chat_id: chatResult.insertId,
-              sender_id: sender_id,
-              receiver_id: receiver_id,
+              sender_id: normalizedSenderId,
+              receiver_id: normalizedReceiverId,
               message: message,
               sender_name: sender.full_name || '',
               sender_image: sender.profile_photo ? `${process.env.BASE_URL || 'http://localhost:3000'}/uploads/profiles/${sender.profile_photo}` : '',
@@ -208,10 +221,23 @@ class WebSocketService {
             };
 
             // Check if receiver is in active chat session with sender
-            const isInActiveChat = this.isInActiveChatSession(receiver_id, sender_id);
+            const isInActiveChat = this.isInActiveChatSession(normalizedReceiverId, normalizedSenderId);
+            
+            // Check if receiver is in any active chat session (not just with sender)
+            const receiverActiveChats = this.getUserActiveChatSessions(normalizedReceiverId);
+            const isReceiverInAnyActiveChat = receiverActiveChats.length > 0;
+            
+            // Check if receiver is in active chat with someone OTHER than the sender
+            const isReceiverInOtherChat = receiverActiveChats.some(chat => 
+              chat.otherUser !== normalizedSenderId
+            );
+            
+            console.log(`💬 Receiver ${normalizedReceiverId} active chat sessions:`, receiverActiveChats);
+            console.log(`💬 Receiver ${normalizedReceiverId} in any active chat: ${isReceiverInAnyActiveChat}`);
+            console.log(`💬 Receiver ${normalizedReceiverId} in other chat (not with sender ${normalizedSenderId}): ${isReceiverInOtherChat}`);
             
             // Send to receiver if online
-            const receiverSocketId = this.connectedUsers.get(receiver_id);
+            const receiverSocketId = this.connectedUsers.get(normalizedReceiverId);
             if (receiverSocketId) {
               if (isInActiveChat) {
                 // Both users are in active chat - send message without notification
@@ -220,20 +246,44 @@ class WebSocketService {
                   show_notification: false,
                   is_active_chat: true
                 });
-                logger.info(`💬 Message sent from ${sender_id} to ${receiver_id} (active chat - no notification)`);
+                logger.info(`💬 Message sent from ${normalizedSenderId} to ${normalizedReceiverId} (active chat - no notification)`);
+              } else if (isReceiverInOtherChat) {
+                // Receiver is in active chat with someone else - send message with notification
+                this.io.to(receiverSocketId).emit('new_message', {
+                  ...messageData,
+                  show_notification: true,
+                  is_active_chat: false,
+                  notification_reason: 'receiver_in_other_chat'
+                });
+                logger.info(`💬 Message sent from ${normalizedSenderId} to ${normalizedReceiverId} (receiver in other chat - with notification)`);
               } else {
-                // Receiver not in active chat - send with notification
+                // Receiver not in any active chat - send with notification
                 this.io.to(receiverSocketId).emit('new_message', {
                   ...messageData,
                   show_notification: true,
                   is_active_chat: false
                 });
-                logger.info(`💬 Message sent from ${sender_id} to ${receiver_id} (with notification)`);
+                logger.info(`💬 Message sent from ${normalizedSenderId} to ${normalizedReceiverId} (with notification)`);
               }
             } else {
               // Receiver offline - send FCM notification
-              this.sendFCMNotification(receiver_id, sender.full_name || 'Someone', message);
-              logger.info(`📱 FCM notification sent to offline user ${receiver_id}`);
+              this.sendFCMNotification(normalizedReceiverId, sender.full_name || 'Someone', message);
+              logger.info(`📱 FCM notification sent to offline user ${normalizedReceiverId}`);
+            }
+            
+            // Send FCM notification if receiver is not connected or not in active chat with sender
+            // Always send FCM notification for better reliability, even if WebSocket is connected
+            const shouldSendFCM = !receiverSocketId || (!isInActiveChat && isReceiverInOtherChat) || (!isInActiveChat && !isReceiverInOtherChat);
+            console.log(`📱 Should send FCM notification: ${shouldSendFCM} (receiver connected: ${!!receiverSocketId}, in active chat with sender: ${isInActiveChat}, in other chat: ${isReceiverInOtherChat})`);
+            
+            if (shouldSendFCM) {
+              try {
+                // Send FCM notification
+                await this.sendFCMNotification(normalizedReceiverId, sender.full_name || 'Someone', message, chatResult.insertId, 'chat');
+                console.log(`📱 FCM notification sent to receiver ${normalizedReceiverId} (${!receiverSocketId ? 'not connected via WebSocket' : 'in other chat'})`);
+              } catch (fcmError) {
+                console.log(`❌ FCM notification error:`, fcmError.message);
+              }
             }
 
             // Send confirmation to sender
@@ -244,7 +294,7 @@ class WebSocketService {
               is_active_chat: isInActiveChat
             });
 
-            logger.info(`💬 Message sent from ${sender_id} to ${receiver_id}`);
+            logger.info(`💬 Message sent from ${normalizedSenderId} to ${normalizedReceiverId}`);
           } else {
             socket.emit('error', { message: 'Failed to save message' });
           }
@@ -257,7 +307,8 @@ class WebSocketService {
       // Handle typing indicators
       socket.on('typing', (data) => {
         const { receiver_id, is_typing } = data;
-        const receiverSocketId = this.connectedUsers.get(receiver_id);
+        const normalizedReceiverId = String(receiver_id);
+        const receiverSocketId = this.connectedUsers.get(normalizedReceiverId);
         
         if (receiverSocketId) {
           this.io.to(receiverSocketId).emit('user_typing', {
@@ -296,9 +347,8 @@ class WebSocketService {
 
   // Method to check if user is connected via WebSocket
   isUserConnected(userId) {
-    return this.connectedUsers.has(String(userId)) || 
-           this.connectedUsers.has(Number(userId)) || 
-           this.connectedUsers.has(userId);
+    const normalizedUserId = String(userId);
+    return this.connectedUsers.has(normalizedUserId);
   }
 
   // Method to send message to specific user
@@ -307,29 +357,24 @@ class WebSocketService {
     console.log(`🔌 sendMessageToUser - connectedUsers map:`, Array.from(this.connectedUsers.entries()));
     console.log(`🔌 sendMessageToUser - userSockets map:`, Array.from(this.userSockets.entries()));
     
-    // Try both string and number versions of userId
-    let socketId = this.connectedUsers.get(String(userId));
-    if (!socketId) {
-      socketId = this.connectedUsers.get(Number(userId));
-    }
-    if (!socketId) {
-      socketId = this.connectedUsers.get(userId);
-    }
+    // Normalize userId to string for consistent lookup
+    const normalizedUserId = String(userId);
+    const socketId = this.connectedUsers.get(normalizedUserId);
     
-    console.log(`🔌 sendMessageToUser - looking for userId: "${userId}" -> socketId: ${socketId}`);
+    console.log(`🔌 sendMessageToUser - looking for userId: "${normalizedUserId}" -> socketId: ${socketId}`);
     
     if (socketId) {
       console.log(`🔌 Emitting new_message to socket ${socketId} with data:`, messageData);
       try {
         this.io.to(socketId).emit('new_message', messageData);
-        console.log(`✅ Message emitted successfully to user ${userId} via socket ${socketId}`);
+        console.log(`✅ Message emitted successfully to user ${normalizedUserId} via socket ${socketId}`);
         return true;
       } catch (error) {
         console.log(`❌ Error emitting message to socket ${socketId}:`, error.message);
         return false;
       }
     }
-    console.log(`❌ No socket found for user ${userId}`);
+    console.log(`❌ No socket found for user ${normalizedUserId}`);
     return false;
   }
 
@@ -397,14 +442,15 @@ class WebSocketService {
 
   // Check if two users are in active chat session
   isInActiveChatSession(user1, user2) {
-    // Try different combinations of user IDs
-    const sessionKeys = [
-      this.getChatSessionKey(String(user1), String(user2)),
-      this.getChatSessionKey(Number(user1), Number(user2)),
-      this.getChatSessionKey(String(user1), Number(user2)),
-      this.getChatSessionKey(Number(user1), String(user2)),
-      this.getChatSessionKey(user1, user2)
-    ];
+    // Normalize user IDs to strings for consistent comparison
+    const normalizedUser1 = String(user1);
+    const normalizedUser2 = String(user2);
+    
+    // Try both possible session keys (order doesn't matter due to sorting in getChatSessionKey)
+    const sessionKey1 = this.getChatSessionKey(normalizedUser1, normalizedUser2);
+    const sessionKey2 = this.getChatSessionKey(normalizedUser2, normalizedUser1);
+    
+    const sessionKeys = [sessionKey1, sessionKey2];
     
     for (const sessionKey of sessionKeys) {
       const session = this.activeChatSessions.get(sessionKey);
@@ -412,23 +458,26 @@ class WebSocketService {
         // Check if session is still active (within last 5 minutes)
         const fiveMinutesAgo = Date.now() - (5 * 60 * 1000);
         if (session.isActive && session.lastActivity > fiveMinutesAgo) {
+          console.log(`💬 Found active chat session: ${sessionKey} (lastActivity: ${new Date(session.lastActivity).toISOString()})`);
           return true;
         }
       }
     }
     
+    console.log(`💬 No active chat session found between ${normalizedUser1} and ${normalizedUser2}`);
     return false;
   }
 
   // Notify all users about disconnection
   notifyDisconnection(disconnectedUserId) {
-    const disconnectedUserName = this.getUserName(disconnectedUserId);
+    const normalizedDisconnectedUserId = String(disconnectedUserId);
+    const disconnectedUserName = this.getUserName(normalizedDisconnectedUserId);
     
     // Notify all connected users about the disconnection
     this.connectedUsers.forEach((socketId, userId) => {
-      if (userId !== disconnectedUserId) {
+      if (userId !== normalizedDisconnectedUserId) {
         this.io.to(socketId).emit('user_disconnected', {
-          user_id: disconnectedUserId,
+          user_id: normalizedDisconnectedUserId,
           user_name: disconnectedUserName,
           timestamp: Date.now(),
           message: `${disconnectedUserName} has disconnected`
@@ -439,10 +488,11 @@ class WebSocketService {
 
   // Remove all chat sessions for a specific user
   removeUserChatSessions(userId) {
+    const normalizedUserId = String(userId);
     const sessionsToRemove = [];
     
     this.activeChatSessions.forEach((session, key) => {
-      if (session.user1 === userId || session.user2 === userId) {
+      if (session.user1 === normalizedUserId || session.user2 === normalizedUserId) {
         sessionsToRemove.push(key);
       }
     });
@@ -458,13 +508,31 @@ class WebSocketService {
     return `User_${userId}`;
   }
 
+  // Helper function to save notification to database
+  async saveNotificationToDB(notificationData) {
+    try {
+      const result = await NotificationController.saveNotification(notificationData);
+      if (result.success) {
+        logger.info(`💾 Notification saved to database: ID ${result.notification_id}`);
+      } else {
+        logger.error(`❌ Failed to save notification: ${result.error}`);
+      }
+      return result;
+    } catch (error) {
+      logger.error(`❌ Error saving notification to database: ${error.message}`);
+      return { success: false, error: error.message };
+    }
+  }
+
   // Send FCM notification
-  async sendFCMNotification(userId, senderName, message) {
+  async sendFCMNotification(userId, senderName, message, sourceId = null, sourceType = 'chat') {
     try {
       const NotificationService = require('../notification/NotificationService');
       
       // Get receiver's FCM token
       const receiverRows = await query('SELECT fcm_token FROM users WHERE user_id = ? LIMIT 1', [userId]);
+      
+      let fcmMessageId = null;
       
       if (receiverRows.length > 0 && receiverRows[0].fcm_token) {
         const notificationData = {
@@ -477,11 +545,29 @@ class WebSocketService {
           }
         };
         
-        await NotificationService.sendNotification(userId, notificationData.title, notificationData.body, notificationData.data);
+        const fcmResult = await NotificationService.sendNotification(userId, notificationData.title, notificationData.body, notificationData.data);
+        fcmMessageId = fcmResult?.messageId || null;
         logger.info(`📱 FCM notification sent to user ${userId}`);
       } else {
         logger.warn(`❌ No FCM token found for user ${userId}`);
       }
+
+      // Save notification to database
+      await this.saveNotificationToDB({
+        user_id: parseInt(userId),
+        notification_type: 'chat',
+        title: `New message from ${senderName}`,
+        message: message,
+        data: {
+          type: 'chat_message',
+          sender_name: senderName,
+          message: message
+        },
+        source_id: sourceId,
+        source_type: sourceType,
+        fcm_message_id: fcmMessageId
+      });
+
     } catch (error) {
       logger.error('Error sending FCM notification:', error);
     }
@@ -489,13 +575,14 @@ class WebSocketService {
 
   // Get active chat sessions for a user
   getUserActiveChatSessions(userId) {
+    const normalizedUserId = String(userId);
     const userSessions = [];
     
     this.activeChatSessions.forEach((session, key) => {
-      if (session.user1 === userId || session.user2 === userId) {
+      if (session.user1 === normalizedUserId || session.user2 === normalizedUserId) {
         userSessions.push({
           sessionKey: key,
-          otherUser: session.user1 === userId ? session.user2 : session.user1,
+          otherUser: session.user1 === normalizedUserId ? session.user2 : session.user1,
           lastActivity: session.lastActivity,
           isActive: session.isActive
         });
@@ -507,7 +594,9 @@ class WebSocketService {
 
   // Update chat session activity
   updateChatSessionActivity(user1, user2) {
-    const sessionKey = this.getChatSessionKey(user1, user2);
+    const normalizedUser1 = String(user1);
+    const normalizedUser2 = String(user2);
+    const sessionKey = this.getChatSessionKey(normalizedUser1, normalizedUser2);
     const session = this.activeChatSessions.get(sessionKey);
     
     if (session) {

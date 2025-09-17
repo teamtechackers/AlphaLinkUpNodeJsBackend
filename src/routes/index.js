@@ -468,7 +468,23 @@ router.get('/Api-View-Business-Card', ApiController.getBusinessCardInformation);
 // Note: Additional event management, folder, contact, business card, service, investor, and chat routes
 // will be implemented as needed to match PHP backend functionality
 
-// 404 handler for undefined routes
+// ===== FCM TOKEN ROUTES =====
+router.get('/Api-Update-FCM-Token', uploadFormData.none(), FCMTokenController.updateFCMToken);
+router.post('/Api-Update-FCM-Token', uploadFormData.none(), FCMTokenController.updateFCMToken);
+router.get('/Api-Get-FCM-Token', uploadFormData.none(), FCMTokenController.getFCMToken);
+router.post('/Api-Get-FCM-Token', uploadFormData.none(), FCMTokenController.getFCMToken);
+
+// ==================== NOTIFICATION ROUTES ====================
+console.log('🔔 Registering notification routes...');
+console.log('🔔 getNotificationStats method:', typeof ApiController.getNotificationStats);
+router.get('/Api-Notification-Stats', uploadFormData.none(), ApiController.getNotificationStats);
+router.get('/Api-Notifications-List', uploadFormData.none(), ApiController.getNotificationsList);
+router.post('/Api-Notification-Mark-Read', uploadFormData.none(), ApiController.markNotificationAsRead);
+router.post('/Api-Notifications-Mark-All-Read', uploadFormData.none(), ApiController.markAllNotificationsAsRead);
+router.post('/Api-Notification-Delete', uploadFormData.none(), ApiController.deleteNotification);
+console.log('🔔 Notification routes registered successfully');
+
+// 404 handler for undefined routes (MUST be at the end)
 router.use('*', (req, res) => {
   res.status(404).json({
     status: 'error',
@@ -483,13 +499,6 @@ router.use('*', (req, res) => {
     }
   });
 });
-
-// ===== FCM TOKEN ROUTES =====
-router.get('/Api-Update-FCM-Token', uploadFormData.none(), FCMTokenController.updateFCMToken);
-router.post('/Api-Update-FCM-Token', uploadFormData.none(), FCMTokenController.updateFCMToken);
-router.get('/Api-Get-FCM-Token', uploadFormData.none(), FCMTokenController.getFCMToken);
-router.post('/Api-Get-FCM-Token', uploadFormData.none(), FCMTokenController.getFCMToken);
-
 
 module.exports = router;
 

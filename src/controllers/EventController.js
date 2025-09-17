@@ -3,7 +3,7 @@
 const { query } = require('../config/db');
 const { ok, fail } = require('../utils/response');
 const { idEncode, idDecode } = require('../utils/idCodec');
-const websocketService = require('../services/WebSocketService');
+const websocketService = require('../services/websocketService');
 
 class EventController {
   
@@ -557,6 +557,30 @@ class EventController {
           
           await NotificationService.sendTopicNotification('event-notifications', 'New Event Available!', `${eventData.event_name} - ${eventData.event_venue}`, notificationData);
           console.log('Event topic notification sent successfully');
+
+          // Save notification to database for all users
+          try {
+            const NotificationController = require('./NotificationController');
+            
+            // Get all users to send notification to
+            const allUsers = await query('SELECT user_id FROM users WHERE status = 1');
+            
+            for (const user of allUsers) {
+              await NotificationController.saveNotification({
+                user_id: user.user_id,
+                notification_type: 'event',
+                title: 'New Event Available!',
+                message: `${eventData.event_name} - ${eventData.event_venue}`,
+                data: notificationData,
+                source_id: finalEventId,
+                source_type: 'event'
+              });
+            }
+            
+            console.log(`Event notification saved to database for ${allUsers.length} users`);
+          } catch (dbError) {
+            console.error('Error saving event notification to database:', dbError);
+          }
         } catch (notificationError) {
           console.error('Event topic notification error:', notificationError);
         }
