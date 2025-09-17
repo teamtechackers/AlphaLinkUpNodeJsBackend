@@ -385,6 +385,11 @@ class WebSocketService {
 
   // Method to broadcast dashboard updates to all connected users
   broadcastDashboardUpdate(updateType, data) {
+    if (!this.io) {
+      console.log('❌ WebSocket server not initialized, cannot broadcast dashboard update');
+      return;
+    }
+
     const updateData = {
       type: 'dashboard_update',
       update_type: updateType, // 'new_job', 'new_event', 'job_updated', 'event_updated', etc.
@@ -392,8 +397,21 @@ class WebSocketService {
       timestamp: Date.now()
     };
     
+    // Broadcast to all connected users
     this.io.emit('dashboard_update', updateData);
     logger.info(`📊 Dashboard update broadcasted: ${updateType}`);
+    console.log(`📊 Dashboard update sent to all connected users: ${updateType}`);
+
+    // Also send to each connected user individually for better reliability
+    console.log(`📊 Sending individual dashboard updates to ${this.connectedUsers.size} connected users`);
+    for (const [userId, socketId] of this.connectedUsers.entries()) {
+      try {
+        this.io.to(socketId).emit('dashboard_update', updateData);
+        console.log(`📊 Dashboard update sent to user ${userId} (socket: ${socketId})`);
+      } catch (error) {
+        console.log(`❌ Failed to send dashboard update to user ${userId}: ${error.message}`);
+      }
+    }
   }
 
   // Method to send dashboard update to specific user

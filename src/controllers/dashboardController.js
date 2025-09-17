@@ -420,6 +420,19 @@ const DashboardController = {
         });
       }
 
+      // Get unread notification count
+      let unreadNotificationCount = 0;
+      try {
+        const NotificationController = require('./NotificationController');
+        const notificationStats = await NotificationController.getNotificationStats(decodedUserId);
+        if (notificationStats.success) {
+          unreadNotificationCount = parseInt(notificationStats.stats.unread) || 0;
+        }
+      } catch (notificationError) {
+        console.log('Error fetching notification count:', notificationError.message);
+        unreadNotificationCount = 0;
+      }
+
       // Return Flutter compatible response format with pagination info
       return res.json({
         status: true,
@@ -428,6 +441,7 @@ const DashboardController = {
         unique_token: token,
         events_list: eventsList,
         jobs_list: jobsList,
+        unread_notification_count: unreadNotificationCount,
         pagination: {
           start: paginationStart,
           length: paginationLength,

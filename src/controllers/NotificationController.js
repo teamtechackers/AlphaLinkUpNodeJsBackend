@@ -60,6 +60,19 @@ class NotificationController {
 
             logger.info(`Notification saved successfully: ID ${result.insertId}, User: ${user_id}, Type: ${notification_type}`);
 
+            // Broadcast dashboard update for notification count change
+            try {
+                const websocketService = require('../services/websocketService');
+                websocketService.sendDashboardUpdateToUser(user_id.toString(), 'notification_created', {
+                    notification_id: result.insertId,
+                    notification_type: notification_type,
+                    title: title,
+                    message: message
+                });
+            } catch (wsError) {
+                console.log('Dashboard update broadcast error:', wsError.message);
+            }
+
             return {
                 success: true,
                 notification_id: result.insertId,
@@ -185,6 +198,16 @@ class NotificationController {
 
             logger.info(`Notification ${notification_id} marked as read for user ${user_id}`);
 
+            // Broadcast dashboard update for notification count change
+            try {
+                const websocketService = require('../services/websocketService');
+                websocketService.sendDashboardUpdateToUser(user_id.toString(), 'notification_read', {
+                    notification_id: notification_id
+                });
+            } catch (wsError) {
+                console.log('Dashboard update broadcast error:', wsError.message);
+            }
+
             return {
                 success: true,
                 message: 'Notification marked as read'
@@ -219,6 +242,16 @@ class NotificationController {
             const result = await query(sql, [user_id]);
 
             logger.info(`Marked ${result.affectedRows} notifications as read for user ${user_id}`);
+
+            // Broadcast dashboard update for notification count change
+            try {
+                const websocketService = require('../services/websocketService');
+                websocketService.sendDashboardUpdateToUser(user_id.toString(), 'notifications_all_read', {
+                    affected_rows: result.affectedRows
+                });
+            } catch (wsError) {
+                console.log('Dashboard update broadcast error:', wsError.message);
+            }
 
             return {
                 success: true,

@@ -3,7 +3,7 @@
 const { query } = require('../config/db');
 const { ok, fail } = require('../utils/response');
 const { idEncode, idDecode } = require('../utils/idCodec');
-const websocketService = require('../services/WebSocketService');
+const websocketService = require('../services/websocketService');
 const NotificationService = require('../notification/NotificationService');
 
 
