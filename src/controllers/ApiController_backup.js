@@ -7,13 +7,11 @@ const { idEncode, idDecode } = require('../utils/idCodec');
 const { sendOtp, verifyOtp } = require('../services/twilio');
 const { generateToFile } = require('../services/qrcode');
 
-// Utility function to generate image URLs
 const getImageUrl = (req, path) => {
   const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
   return path ? `${baseUrl}/${path}` : '';
 };
 
-// Helpers
 function toArray(rows) { return Array.isArray(rows) ? rows : []; }
 
 const ApiController = {
@@ -199,7 +197,6 @@ async getFundSizeList(req, res) {
       
       const servicesMasterList = await query('SELECT * FROM folders WHERE status = 1');
       
-      // Convert all integer values to strings
       const formattedServicesList = (servicesMasterList || []).map(service => ({
         id: (service.id || 0).toString(),
         name: service.name || "",
@@ -244,7 +241,6 @@ async getFundSizeList(req, res) {
         });
       }
       
-      // Decode user ID
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
         return res.json({
@@ -254,7 +250,6 @@ async getFundSizeList(req, res) {
         });
       }
       
-      // Get user details and validate
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return res.json({
@@ -266,7 +261,6 @@ async getFundSizeList(req, res) {
       
       const user = userRows[0];
       
-      // Validate token
       if (user.unique_token !== token) {
         return res.json({
           status: false,
@@ -275,7 +269,6 @@ async getFundSizeList(req, res) {
         });
       }
       
-      // Get service providers list with their services
       const serviceProviderRows = await query(
         `SELECT usp.*, 
                 u.full_name,
@@ -306,7 +299,6 @@ async getFundSizeList(req, res) {
       
       const provider = serviceProviderRows[0];
       
-      // Get services for this provider
       const servicesRows = await query(
         `SELECT usps.*, 
                 f.name as service_name
@@ -317,7 +309,6 @@ async getFundSizeList(req, res) {
         [provider.sp_id]
       );
       
-      // Format services with proper image URLs
       const services = servicesRows.map(service => ({
         usps_id: String(service.usps_id),
         service_id: String(service.service_id),
@@ -330,7 +321,6 @@ async getFundSizeList(req, res) {
         service_image: service.service_image ? getImageUrl(req, `uploads/services/${service.service_image}`) : ''
       }));
       
-      // Format service provider with nested services
       const serviceProviderList = {
         sp_id: String(provider.sp_id),
         country: provider.country_name || '',
@@ -406,18 +396,15 @@ async getFundSizeList(req, res) {
       const sp_id = serviceProviderResult.insertId;
       
       if (sp_id > 0) {
-        // Get service IDs array
         const serviceIdsArray = service_ids.split(',');
         
         if (serviceIdsArray.length > 0) {
-          // Get service names from folders table
           const placeholders = serviceIdsArray.map(() => '?').join(',');
           const foldersList = await query(
             `SELECT id, name FROM folders WHERE id IN (${placeholders})`,
             serviceIdsArray
           );
           
-          // Create service name mapping
           const servicesMap = {};
           if (foldersList && foldersList.length > 0) {
             foldersList.forEach(row => {
@@ -425,7 +412,6 @@ async getFundSizeList(req, res) {
             });
           }
           
-          // Insert service provider services
           for (const serviceId of serviceIdsArray) {
             await query(
               `INSERT INTO user_service_provider_services (sp_id, service_id, service_name, company_name, tag_line, title, service_description, status, created_dts) 
@@ -435,13 +421,11 @@ async getFundSizeList(req, res) {
           }
         }
         
-        // Update user's is_service_provider status
         await query(
           'UPDATE users SET is_service_provider = 1 WHERE user_id = ?',
           [decodedUserId]
         );
         
-        // Return success response in PHP format
         return res.json({
           status: true,
           rcode: 200,
@@ -474,18 +458,15 @@ async getFundSizeList(req, res) {
         return fail(res, 500, 'user_id and token are required');
       }
       
-      // Check mandatory fields - at least rating > 0 OR review not empty
       if (!sp_id || sp_id <= 0 || !service_id || service_id <= 0 || (rating <= 0 && (!review || review === ""))) {
         return fail(res, 500, 'Please enter mandatory fields');
       }
       
-      // Decode user ID
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
         return fail(res, 500, 'Invalid user ID');
       }
       
-      // Check if user exists and validate token
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return fail(res, 500, 'Not A Valid User');
@@ -493,12 +474,10 @@ async getFundSizeList(req, res) {
       
       const user = userRows[0];
       
-      // Validate token
       if (user.unique_token !== token) {
         return fail(res, 500, 'Token Mismatch Exception');
       }
       
-      // Update user_services_unlocked with rating and review
       await query(
         `UPDATE user_services_unlocked 
          SET rating = ?, review = ?, review_dts = NOW() 
@@ -506,7 +485,6 @@ async getFundSizeList(req, res) {
         [rating || 0, review || '', decodedUserId, sp_id, service_id]
       );
       
-      // Calculate and update average service rating
       const avgServiceRatingResult = await query(
         `SELECT AVG(rating) as avg_rating 
          FROM user_services_unlocked 
@@ -523,7 +501,6 @@ async getFundSizeList(req, res) {
         [avgServiceRating, sp_id, service_id]
       );
       
-      // Calculate and update average service provider rating
       const avgSpRatingResult = await query(
         `SELECT AVG(rating) as avg_rating 
          FROM user_services_unlocked 
@@ -540,7 +517,6 @@ async getFundSizeList(req, res) {
         [avgSpRating, sp_id]
       );
       
-      // Return success response in PHP format
       return res.json({
         status: true,
         rcode: 200,
@@ -565,23 +541,19 @@ async getFundSizeList(req, res) {
       console.log('saveServiceDetails - Parameters:', { user_id, token, usps_id, company_name, tag_line, title, service_description });
       console.log('saveServiceDetails - Files:', req.files);
       
-      // Check if user_id and token are provided
       if (!user_id || !token) {
         return fail(res, 500, 'user_id and token are required');
       }
       
-      // Check mandatory fields
       if (!usps_id || usps_id <= 0 || !company_name || company_name === "" || !service_description || service_description === "" || !tag_line || tag_line === "" || !title || title === "") {
         return fail(res, 500, 'Please enter mandatory fields');
       }
       
-      // Decode user ID
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
         return fail(res, 500, 'Invalid user ID');
       }
       
-      // Check if user exists and validate token
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return fail(res, 500, 'Not A Valid User');
@@ -589,12 +561,10 @@ async getFundSizeList(req, res) {
       
       const user = userRows[0];
       
-      // Validate token
       if (user.unique_token !== token) {
         return fail(res, 500, 'Token Mismatch Exception');
       }
       
-      // Prepare update data - using the correct column names from the working saveServiceProvider method
       const updateData = {
         company_name: company_name,
         tag_line: tag_line,
@@ -603,24 +573,20 @@ async getFundSizeList(req, res) {
         status: 1
       };
       
-      // Handle service image upload if provided
       if (req.files && req.files.service_image && req.files.service_image.length > 0) {
         const file = req.files.service_image[0];
         // Use the filename generated by Multer (file is already saved to disk)
         updateData.service_image = file.filename;
       }
       
-      // Build dynamic UPDATE query
       const updateFields = Object.keys(updateData).map(key => `${key} = ?`).join(', ');
       const updateValues = Object.values(updateData);
       
-      // Update service details
       await query(
         `UPDATE user_service_provider_services SET ${updateFields} WHERE usps_id = ?`,
         [...updateValues, usps_id]
       );
       
-      // Return success response in PHP format
       return res.json({
         status: true,
         rcode: 200,
@@ -642,7 +608,6 @@ async getFundSizeList(req, res) {
       
       console.log('getBusinessCardInformation - Parameters:', { user_id, token });
       
-      // Check if user_id and token are provided
       if (!user_id || !token) {
         return res.json({
           status: false,
@@ -651,7 +616,6 @@ async getFundSizeList(req, res) {
         });
       }
       
-      // Decode user ID
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
         return res.json({
@@ -661,7 +625,6 @@ async getFundSizeList(req, res) {
         });
       }
       
-      // Get user details and validate
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return res.json({
@@ -671,10 +634,8 @@ async getFundSizeList(req, res) {
         });
       }
       
-      const user = userRows[0];
-      
-      // Validate token
-      if (user.unique_token !== token) {
+  const user = userRows[0];
+    if (user.unique_token !== token) {
         return res.json({
           status: false,
           rcode: 500,
@@ -682,7 +643,6 @@ async getFundSizeList(req, res) {
         });
       }
       
-      // Get business card information
       const businessCardRows = await query(
         `SELECT ubc.*, 
                 countries.name as country_name,
@@ -697,7 +657,6 @@ async getFundSizeList(req, res) {
         [decodedUserId]
       );
       
-      // Format business card info
       const businessCardInfo = businessCardRows.map(card => ({
         ubc_id: String(card.ubc_id),
         business_name: card.business_name || '',
@@ -715,10 +674,8 @@ async getFundSizeList(req, res) {
         created_dts: card.created_dts || ''
       }));
       
-      // Get promotions list (empty for now)
       const promotionsList = [];
       
-      // Return response in standard format
       return res.json({
         status: true,
         rcode: 200,
@@ -750,7 +707,6 @@ async getFundSizeList(req, res) {
         ...req.body
       };
       
-      // Check if user_id, token, and mobile_no are provided
       if (!user_id || !token || !mobile_no) {
         return res.json({
           status: false,
@@ -759,7 +715,6 @@ async getFundSizeList(req, res) {
         });
       }
       
-      // Decode user ID
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
         return res.json({
@@ -769,7 +724,6 @@ async getFundSizeList(req, res) {
         });
       }
       
-      // Get user details and validate
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return res.json({
@@ -781,7 +735,6 @@ async getFundSizeList(req, res) {
       
       const user = userRows[0];
       
-      // Validate token
       if (user.unique_token !== token) {
         return res.json({
           status: false,
@@ -790,7 +743,6 @@ async getFundSizeList(req, res) {
         });
       }
       
-      // Get user profile by mobile (matching PHP implementation)
       const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
       const profilePhotoPath = `${baseUrl}/uploads/profiles/`;
       const qrCodePath = `${baseUrl}/uploads/qr_codes/`;
@@ -834,21 +786,18 @@ async getFundSizeList(req, res) {
       
       const userData = userProfileRows[0];
       
-      // Get education details
       const educationRows = await query(
         `SELECT education_detail_id, user_id, institute_name, degree, start_date, end_date, status, created_dts
          FROM user_education_details 
          WHERE user_id = ? AND status = 1`, [userData.user_id]
       );
 
-      // Get work details
       const workRows = await query(
         `SELECT work_detail_id, user_id, company_name, designation, start_date, end_date, currently_working, employment_type_id, status, created_dts
          FROM user_work_details 
          WHERE user_id = ? AND status = 1`, [userData.user_id]
       );
 
-      // Get project details with dynamic project logo URLs
       const projectLogoPath = `${baseUrl}/uploads/project_logo/`;
       const projectRows = await query(
         `SELECT user_project_details.*, 
@@ -858,7 +807,6 @@ async getFundSizeList(req, res) {
          ORDER BY project_detail_id`, [projectLogoPath, userData.user_id]
       );
 
-      // Convert all integer values to strings for education details
       const educationDetails = educationRows.map(row => ({
         education_detail_id: (row.education_detail_id || 0).toString(),
         user_id: (row.user_id || 0).toString(),
@@ -870,7 +818,6 @@ async getFundSizeList(req, res) {
         created_dts: row.created_dts || ""
       }));
 
-      // Convert all integer values to strings for work details
       const workDetails = workRows.map(row => ({
         work_detail_id: (row.work_detail_id || 0).toString(),
         user_id: (row.user_id || 0).toString(),
@@ -884,7 +831,6 @@ async getFundSizeList(req, res) {
         created_dts: row.created_dts || ""
       }));
 
-      // Convert all integer values to strings for project details
       const projectDetails = projectRows.map(row => ({
         project_detail_id: (row.project_detail_id || 0).toString(),
         user_id: (row.user_id || 0).toString(),
@@ -906,7 +852,6 @@ async getFundSizeList(req, res) {
         deleted_at: row.deleted_at || ""
       }));
 
-      // Convert all integer values to strings for user details
       const userDetails = userProfileRows.map(row => ({
         user_id: row.user_id.toString(),
         full_name: row.full_name || "",
@@ -929,8 +874,6 @@ async getFundSizeList(req, res) {
         is_service_provider: row.is_service_provider.toString(),
         is_investor: row.is_investor.toString()
       }));
-      
-      // Return response in PHP format
       return res.json({
         status: true,
         rcode: 200,
@@ -955,7 +898,6 @@ async getFundSizeList(req, res) {
 
   async getUserDetailByQrCode(req, res) {
     try {
-      // Support both query parameters and form data
       const { user_id, token, contact_token } = {
         ...req.query,
         ...req.body
@@ -963,7 +905,6 @@ async getFundSizeList(req, res) {
       
       console.log('getUserDetailByQrCode - Parameters:', { user_id, token, contact_token });
       
-      // Check if user_id and token are provided
       if (!user_id || !token) {
         return fail(res, 500, 'user_id and token are required');
       }
@@ -972,7 +913,6 @@ async getFundSizeList(req, res) {
         return fail(res, 500, 'contact_token is required');
       }
       
-      // Decode user ID
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
         return fail(res, 500, 'Invalid user ID');
@@ -1046,7 +986,6 @@ async getFundSizeList(req, res) {
         profile_photo: userDetails.profile_photo || ''
       };
 
-      // Return response in standard format (user_details as array for Flutter compatibility)
       return res.json({
         status: true,
         rcode: 200,
@@ -1062,7 +1001,6 @@ async getFundSizeList(req, res) {
   },
   async getContactsList(req, res) {
     try {
-      // Support both query parameters and form data
       const { user_id, token, user_folder_id, user_sub_folder_id } = {
         ...req.query,
         ...req.body
@@ -1070,31 +1008,25 @@ async getFundSizeList(req, res) {
       
       console.log('getContactsList - Parameters:', { user_id, token, user_folder_id, user_sub_folder_id });
       
-      // Check if user_id and token are provided
       if (!user_id || !token) {
         return fail(res, 500, 'user_id and token are required');
       }
       
-      // Decode user ID
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
         return fail(res, 500, 'Invalid user ID');
       }
-      
-      // Get user details and validate
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+            const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return fail(res, 500, 'Not A Valid User');
       }
       
       const user = userRows[0];
       
-      // Validate token
       if (user.unique_token !== token) {
         return fail(res, 500, 'Token Mismatch Exception');
       }
 
-      // Get contacts list
       const contactsList = await query(`
         SELECT 
           uc.contact_user_id,
@@ -1115,7 +1047,6 @@ async getFundSizeList(req, res) {
         AND uc.status = 1
       `, [decodedUserId, user_folder_id, user_sub_folder_id]);
 
-      // Format contacts list to convert all numeric fields to strings
       const formattedContactsList = (contactsList || []).map(contact => ({
         contact_user_id: String(contact.contact_user_id),
         user_folder_id: String(contact.user_folder_id),
@@ -1126,7 +1057,6 @@ async getFundSizeList(req, res) {
         profile_photo: contact.profile_photo || ''
       }));
 
-      // Return response in standard format
       return res.json({
         status: true,
         rcode: 200,
@@ -1142,7 +1072,6 @@ async getFundSizeList(req, res) {
   },
   async saveContact(req, res) {
     try {
-      // Support both query parameters and form data
       const { user_id, token, contact_user_id, user_folder_id, user_sub_folder_id } = {
         ...req.query,
         ...req.body
@@ -1150,7 +1079,6 @@ async getFundSizeList(req, res) {
       
       console.log('saveContact - Parameters:', { user_id, token, contact_user_id, user_folder_id, user_sub_folder_id });
       
-      // Check if user_id and token are provided
       if (!user_id || !token) {
         return fail(res, 500, 'user_id and token are required');
       }
@@ -1159,13 +1087,11 @@ async getFundSizeList(req, res) {
         return fail(res, 500, 'Please enter mandatory fields');
       }
       
-      // Decode user ID
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
         return fail(res, 500, 'Invalid user ID');
       }
       
-      // Get user details and validate
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return fail(res, 500, 'Not A Valid User');
@@ -1173,12 +1099,10 @@ async getFundSizeList(req, res) {
       
       const user = userRows[0];
       
-      // Validate token
       if (user.unique_token !== token) {
         return fail(res, 500, 'Token Mismatch Exception');
       }
 
-      // Check whether the contact is already added
       const existingContact = await query(
         'SELECT * FROM user_contacts WHERE user_folder_id = ? AND user_sub_folder_id = ? AND contact_user_id = ? AND status = 1',
         [user_folder_id, user_sub_folder_id, contact_user_id]
@@ -1188,7 +1112,6 @@ async getFundSizeList(req, res) {
         return fail(res, 500, 'Contact already exists');
       }
 
-      // Save contact to sub folder
       const result = await query(
         `INSERT INTO user_contacts (user_id, user_folder_id, user_sub_folder_id, contact_user_id, status, created_dts) 
          VALUES (?, ?, ?, ?, 1, NOW())`,
@@ -1197,7 +1120,6 @@ async getFundSizeList(req, res) {
 
       const uc_id = result.insertId;
 
-      // Return response in PHP format (matching exactly)
       return res.json({
         status: true,
         rcode: 200,
@@ -1214,7 +1136,6 @@ async getFundSizeList(req, res) {
   },
   async saveContactVisitingCard(req, res) {
     try {
-      // Support both query parameters and form data
       const { user_id, token, user_folder_id, user_sub_folder_id } = {
         ...req.query,
         ...req.body
@@ -1223,7 +1144,6 @@ async getFundSizeList(req, res) {
       console.log('saveContactVisitingCard - Parameters:', { user_id, token, user_folder_id, user_sub_folder_id });
       console.log('saveContactVisitingCard - Files:', req.files);
       
-      // Check if user_id and token are provided
       if (!user_id || !token) {
         return res.json({
           status: false,
@@ -1248,7 +1168,6 @@ async getFundSizeList(req, res) {
         });
       }
       
-      // Decode user ID
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
         return res.json({
@@ -1258,7 +1177,6 @@ async getFundSizeList(req, res) {
         });
       }
       
-      // Get user details and validate
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return res.json({
@@ -1270,7 +1188,6 @@ async getFundSizeList(req, res) {
       
       const user = userRows[0];
       
-      // Validate token
       if (user.unique_token !== token) {
         return res.json({
           status: false,
@@ -1279,13 +1196,11 @@ async getFundSizeList(req, res) {
         });
       }
 
-      // Get filenames from multer (files are already saved to disk)
       const frontFile = req.files.visiting_card_front[0];
       const backFile = req.files.visiting_card_back[0];
       const frontFileName = frontFile.filename;
       const backFileName = backFile.filename;
 
-      // Save visiting card to sub folder
       const result = await query(
         `INSERT INTO user_contacts_visiting_cards (user_id, user_folder_id, user_sub_folder_id, visiting_card_front, visiting_card_back, status, created_dts) 
          VALUES (?, ?, ?, ?, ?, 1, NOW())`,
@@ -1294,7 +1209,6 @@ async getFundSizeList(req, res) {
 
       const ucvc_id = result.insertId;
 
-      // Return response in PHP format - exact match with same data types
       return res.json({
         status: true,
         rcode: 200,
@@ -1315,7 +1229,6 @@ async getFundSizeList(req, res) {
   },
   async activateCard(req, res) {
     try {
-      // Support both query parameters and form data
       const { user_id, token, business_name, name, business_location, country_id, state_id, city_id, description } = {
         ...req.query,
         ...req.body
@@ -1324,7 +1237,6 @@ async getFundSizeList(req, res) {
       console.log('activateCard - Parameters:', { user_id, token, business_name, name, business_location, country_id, state_id, city_id, description });
       console.log('activateCard - Files:', req.files);
       
-      // Check if user_id and token are provided
       if (!user_id || !token) {
         return res.json({
           status: false,
@@ -1355,7 +1267,6 @@ async getFundSizeList(req, res) {
         });
       }
       
-      // Decode user ID
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
         return res.json({
@@ -1365,7 +1276,6 @@ async getFundSizeList(req, res) {
         });
       }
       
-      // Get user details and validate
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return res.json({
@@ -1377,7 +1287,6 @@ async getFundSizeList(req, res) {
       
       const user = userRows[0];
       
-      // Validate token
       if (user.unique_token !== token) {
         return res.json({
           status: false,
@@ -1386,7 +1295,6 @@ async getFundSizeList(req, res) {
         });
       }
 
-      // Save business card information
       const cardResult = await query(
         `INSERT INTO user_business_cards (user_id, business_name, name, business_location, country_id, state_id, city_id, description, status, deleted, created_dts) 
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, 0, NOW())`,
@@ -1395,7 +1303,6 @@ async getFundSizeList(req, res) {
 
       const ubc_id = cardResult.insertId;
 
-      // Save business documents files
       if (ubc_id > 0 && req.files && req.files.length > 0) {
         for (const file of req.files) {
           const timestamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\..+/, '');
@@ -1409,13 +1316,11 @@ async getFundSizeList(req, res) {
         }
       }
 
-      // Update card_requested in users table
       await query(
         'UPDATE users SET card_requested = 1 WHERE user_id = ?',
         [decodedUserId]
       );
 
-      // Return response in standard format
       return res.json({
         status: true,
         rcode: 200,
@@ -1435,27 +1340,19 @@ async getFundSizeList(req, res) {
     }
   },
 
-
-
-  // Jobs (read-only endpoints for parity)
-
-  // Save project details (with optional project_logo)
   async saveProjectDetails(req, res) {
     try {
       const { user_id, token, project_detail_id, project_name, description, project_url, start_month, start_year, closed_month, closed_year } = req.body;
       
-      // Check if user_id and token are provided
       if (!user_id || !token) {
         return fail(res, 500, 'user_id and token are required');
       }
       
-      // Decode user ID
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
         return fail(res, 500, 'Invalid user ID');
       }
       
-      // Get user details and validate
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return fail(res, 500, 'Not A Valid User');
@@ -1463,26 +1360,22 @@ async getFundSizeList(req, res) {
       
       const user = userRows[0];
       
-      // Validate token
       if (user.unique_token !== token) {
         return fail(res, 500, 'Token Mismatch Exception');
       }
 
-      // Check mandatory fields
       if (!project_name || !description || !start_month || !start_year || !closed_month || !closed_year) {
         return fail(res, 500, 'Please enter mandatory fields');
       }
 
       let finalProjectDetailId = project_detail_id || 0;
 
-      // Handle project logo upload if provided
       let projectLogo = null;
       if (req.file && req.file.filename) {
         projectLogo = req.file.filename;
       }
 
       if (finalProjectDetailId == 0) {
-        // Insert new project detail
         const result = await query(
           `INSERT INTO user_project_details (user_id, project_name, description, project_url, start_month, start_year, closed_month, closed_year, project_logo) 
            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -1490,11 +1383,9 @@ async getFundSizeList(req, res) {
         );
         finalProjectDetailId = result.insertId;
     } else {
-        // Update existing project detail
         const updateFields = ['project_name = ?', 'description = ?', 'project_url = ?', 'start_month = ?', 'start_year = ?', 'closed_month = ?', 'closed_year = ?'];
         const updateValues = [project_name, description, project_url || '', start_month, start_year, closed_month, closed_year];
         
-        // Add project_logo to update if provided
         if (projectLogo) {
           updateFields.push('project_logo = ?');
           updateValues.push(projectLogo);
@@ -1510,7 +1401,6 @@ async getFundSizeList(req, res) {
         );
       }
       
-      // Return response in PHP format
       return res.json({
         status: true,
         rcode: 200,
@@ -1526,7 +1416,6 @@ async getFundSizeList(req, res) {
     }
   },
 
-  // Events (read-only parity)
   async getEventInformation(req, res) {
     try {
       const { user_id, token } = {
@@ -1534,7 +1423,6 @@ async getFundSizeList(req, res) {
         ...req.body
       };
       
-      // Check if user_id and token are provided
       if (!user_id || !token) {
         return res.json({
           status: false,
@@ -1543,7 +1431,6 @@ async getFundSizeList(req, res) {
         });
       }
       
-      // Decode user ID
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
         return res.json({
@@ -1553,7 +1440,6 @@ async getFundSizeList(req, res) {
         });
       }
       
-      // Get user details and validate
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return res.json({
@@ -1565,7 +1451,6 @@ async getFundSizeList(req, res) {
       
       const user = userRows[0];
       
-      // Validate token
       if (user.unique_token !== token) {
         return res.json({
           status: false,
@@ -1574,7 +1459,6 @@ async getFundSizeList(req, res) {
         });
       }
       
-      // Get event information with joins (matching PHP implementation)
       const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
       const eventBannerPath = `${baseUrl}/uploads/events/`;
       
@@ -1598,7 +1482,6 @@ async getFundSizeList(req, res) {
         [eventBannerPath, decodedUserId]
       );
       
-      // Convert all integer values to strings
       const eventInformation = rows.map(row => ({
         event_id: row.event_id.toString(),
         user_id: row.user_id.toString(),
@@ -1634,7 +1517,6 @@ async getFundSizeList(req, res) {
         city: row.city || ""
       }));
       
-      // Return response in PHP format
       return res.json({
         status: true,
         rcode: 200,
@@ -1659,7 +1541,6 @@ async getFundSizeList(req, res) {
         ...req.body
       };
       
-      // Check if user_id, token, and event_id are provided
       if (!user_id || !token || !event_id) {
         return res.json({
           status: false,
@@ -1668,7 +1549,6 @@ async getFundSizeList(req, res) {
         });
       }
       
-      // Decode user ID
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
         return res.json({
@@ -1678,7 +1558,6 @@ async getFundSizeList(req, res) {
         });
       }
       
-      // Get user details and validate
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return res.json({
@@ -1690,7 +1569,6 @@ async getFundSizeList(req, res) {
       
       const user = userRows[0];
       
-      // Validate token
       if (user.unique_token !== token) {
         return res.json({
           status: false,
@@ -1699,7 +1577,6 @@ async getFundSizeList(req, res) {
         });
       }
       
-      // Get event detail with joins (matching PHP implementation)
       const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
       const eventBannerPath = `${baseUrl}/uploads/events/`;
       
@@ -1727,7 +1604,6 @@ async getFundSizeList(req, res) {
         });
       }
       
-      // Get event organisers list with full details
       const organisersRows = await query(
         `SELECT users.user_id AS organiser_id, 
                 COALESCE(full_name,'') AS full_name, 
@@ -1752,7 +1628,6 @@ async getFundSizeList(req, res) {
         [`${baseUrl}/uploads/profiles/`, event_id]
       );
       
-      // Get event attendees list with full details
       const attendeesRows = await query(
         `SELECT users.user_id AS attendee_id, 
                 COALESCE(full_name,'') AS full_name, 

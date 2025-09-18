@@ -8,7 +8,6 @@ const { logger } = require('../utils/logger');
 const { successResponse, errorResponse } = require('../utils/response');
 
 class AnalyticsController {
-  // Get platform overview analytics
   static async getPlatformOverview(req, res) {
     try {
       const { startDate, endDate, groupBy } = req.query;
@@ -26,7 +25,6 @@ class AnalyticsController {
     }
   }
 
-  // Get user analytics
   static async getUserAnalytics(req, res) {
     try {
       const { startDate, endDate, groupBy, metrics } = req.query;
@@ -45,7 +43,6 @@ class AnalyticsController {
     }
   }
 
-  // Get user registration analytics
   static async getUserRegistrationAnalytics(req, res) {
     try {
       const { startDate, endDate, groupBy, source, location } = req.query;
@@ -65,7 +62,6 @@ class AnalyticsController {
     }
   }
 
-  // Get user retention analytics
   static async getUserRetentionAnalytics(req, res) {
     try {
       const { startDate, endDate, cohort, period } = req.query;
@@ -84,7 +80,6 @@ class AnalyticsController {
     }
   }
 
-  // Get user profile completion analytics
   static async getUserProfileCompletionAnalytics(req, res) {
     try {
       const { startDate, endDate, groupBy, segments } = req.query;
@@ -103,7 +98,6 @@ class AnalyticsController {
     }
   }
 
-  // Get user segmentation analytics
   static async getUserSegmentationAnalytics(req, res) {
     try {
       const { startDate, endDate, criteria, groupBy } = req.query;
@@ -122,7 +116,6 @@ class AnalyticsController {
     }
   }
 
-  // Get engagement analytics
   static async getEngagementAnalytics(req, res) {
     try {
       const { startDate, endDate, groupBy, metrics } = req.query;
@@ -141,7 +134,6 @@ class AnalyticsController {
     }
   }
 
-  // Get connection analytics
   static async getConnectionAnalytics(req, res) {
     try {
       const { startDate, endDate, groupBy, type } = req.query;
@@ -160,7 +152,6 @@ class AnalyticsController {
     }
   }
 
-  // Get chat analytics
   static async getChatAnalytics(req, res) {
     try {
       const { startDate, endDate, groupBy, metrics } = req.query;
@@ -179,7 +170,6 @@ class AnalyticsController {
     }
   }
 
-  // Get notification analytics
   static async getNotificationAnalytics(req, res) {
     try {
       const { startDate, endDate, groupBy, type } = req.query;
@@ -198,7 +188,6 @@ class AnalyticsController {
     }
   }
 
-  // Get search analytics
   static async getSearchAnalytics(req, res) {
     try {
       const { startDate, endDate, groupBy, type } = req.query;
@@ -217,7 +206,6 @@ class AnalyticsController {
     }
   }
 
-  // Get business analytics
   static async getBusinessAnalytics(req, res) {
     try {
       const { startDate, endDate, groupBy, metrics } = req.query;
@@ -236,7 +224,6 @@ class AnalyticsController {
     }
   }
 
-  // Get job analytics
   static async getJobAnalytics(req, res) {
     try {
       const { startDate, endDate, groupBy, metrics } = req.query;
@@ -255,7 +242,6 @@ class AnalyticsController {
     }
   }
 
-  // Get event analytics
   static async getEventAnalytics(req, res) {
     try {
       const { startDate, endDate, groupBy, metrics } = req.query;
@@ -274,7 +260,6 @@ class AnalyticsController {
     }
   }
 
-  // Get service analytics
   static async getServiceAnalytics(req, res) {
     try {
       const { startDate, endDate, groupBy, metrics } = req.query;
@@ -293,7 +278,6 @@ class AnalyticsController {
     }
   }
 
-  // Get investor analytics
   static async getInvestorAnalytics(req, res) {
     try {
       const { startDate, endDate, groupBy, metrics } = req.query;
@@ -312,7 +296,6 @@ class AnalyticsController {
     }
   }
 
-  // Get growth analytics
   static async getGrowthAnalytics(req, res) {
     try {
       const { startDate, endDate, groupBy, metrics } = req.query;
@@ -331,7 +314,6 @@ class AnalyticsController {
     }
   }
 
-  // Get geographic analytics
   static async getGeographicAnalytics(req, res) {
     try {
       const { startDate, endDate, groupBy, metrics, regions } = req.query;
@@ -351,7 +333,6 @@ class AnalyticsController {
     }
   }
 
-  // Get performance analytics
   static async getPerformanceAnalytics(req, res) {
     try {
       const { startDate, endDate, groupBy, metrics } = req.query;
@@ -370,7 +351,6 @@ class AnalyticsController {
     }
   }
 
-  // Get custom report
   static async getCustomReport(req, res) {
     try {
       const { reportConfig } = req.body;
@@ -393,7 +373,6 @@ class AnalyticsController {
     }
   }
 
-  // Export analytics data
   static async exportAnalyticsData(req, res) {
     try {
       const { dataType, format = 'json', startDate, endDate, filters } = req.query;
@@ -429,7 +408,6 @@ class AnalyticsController {
     }
   }
 
-  // Get analytics dashboard
   static async getAnalyticsDashboard(req, res) {
     try {
       const { dashboardType = 'overview', startDate, endDate, refresh = false } = req.query;
@@ -453,7 +431,6 @@ class AnalyticsController {
     }
   }
 
-  // Get real-time analytics
   static async getRealTimeAnalytics(req, res) {
     try {
       const { metrics, interval = '5m' } = req.query;
@@ -470,7 +447,6 @@ class AnalyticsController {
     }
   }
 
-  // Get analytics insights
   static async getAnalyticsInsights(req, res) {
     try {
       const { startDate, endDate, type, limit = 10 } = req.query;
@@ -560,7 +536,6 @@ class AnalyticsController {
     }
   }
 
-  // Get analytics alerts
   static async getAnalyticsAlerts(req, res) {
     try {
       const { status, severity, startDate, endDate, page = 1, limit = 20 } = req.query;

@@ -4,9 +4,7 @@ const { errorResponse, phpResponse } = require('../utils/response');
 const { logger } = require('../utils/logger');
 
 const DashboardController = {
-  // ===== API CONTROLLER FUNCTIONS =====
   
-  // Dashboard function for mobile API (Flutter compatible)
   async dashboard(req, res) {
     try {
       const { user_id, token, location, lat, long, limit, start, length, filter_type } = { ...req.query, ...req.body };
@@ -15,20 +13,18 @@ const DashboardController = {
         return errorResponse(res, 'user_id and token are required', 400);
       }
 
-      // Decode user ID
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
         return errorResponse(res, 'Invalid user_id', 400);
       }
 
-      // Verify user token
       const userCheck = await query('SELECT user_id FROM users WHERE user_id = ? AND unique_token = ? AND deleted = 0', [decodedUserId, token]);
       if (userCheck.length === 0) {
         return errorResponse(res, 'Invalid token or user not found', 401);
       }
 
       let paginationStart = 0;
-      let paginationLength = 20; // Default limit
+      let paginationLength = 20; 
       
       if (start !== undefined && start !== null && start !== '') {
         paginationStart = parseInt(start) || 0;
@@ -37,17 +33,13 @@ const DashboardController = {
       if (length !== undefined && length !== null && length !== '') {
         paginationLength = parseInt(length) || 20;
       } else if (limit !== undefined && limit !== null && limit !== '') {
-        // Fallback to limit parameter for backward compatibility
         paginationLength = parseInt(limit) || 20;
       }
       
-      // Ensure pagination values are valid
       paginationStart = Math.max(0, paginationStart);
       paginationLength = Math.max(1, Math.min(100, paginationLength)); // Max 100 items per request
 
-      // Validation: Check if coordinates are provided
-      // If lat/lng are 0,0, show all events/jobs without location filtering
-      // If valid coordinates provided, enable location-based search
+      
       const hasCoordinates = lat && long;
       const isZeroCoordinates = hasCoordinates && parseFloat(lat) === 0 && parseFloat(long) === 0;
       const isValidCoordinates = hasCoordinates && !isZeroCoordinates;
@@ -58,13 +50,11 @@ const DashboardController = {
         return errorResponse(res, 'If location is provided, lat and long are also required', 400);
       }
 
-      // Get general settings for dashboard search radius
       const generalSettingsRows = await query('SELECT dashboard_search_radius FROM general_settings LIMIT 1');
       const radius = generalSettingsRows.length > 0 ? generalSettingsRows[0].dashboard_search_radius : 50; // Default 50km
 
       const arrAttendedEventids = [];
       
-      // Get events based on the coordinates that are attended by the user
       if (hasCoordinates && !isZeroCoordinates) {
         const eventsAttendedRows = await query(
           `SELECT event_attendees.event_id FROM event_attendees 
@@ -88,7 +78,6 @@ const DashboardController = {
         });
       }
 
-      // Get events based on the coordinates not posted by the logged in user
       let eventsList = [];
       if (hasCoordinates && !isZeroCoordinates) {
         let eventsQuery = `
@@ -113,7 +102,6 @@ const DashboardController = {
         
         const eventsParams = [lat, long, lat, decodedUserId];
         
-        // Filter by date
         if (filter_type === 'today') {
           eventsQuery += ' AND user_event_details.event_date = CURDATE()';
         } else if (filter_type === 'tomorrow') {
@@ -126,7 +114,6 @@ const DashboardController = {
         
         eventsQuery += ' GROUP BY user_event_details.event_id HAVING distance_in_km <= ? OR (user_event_details.event_lat = 0 AND user_event_details.event_lng = 0 AND user_event_details.event_link != "") ORDER BY user_event_details.event_date DESC';
         
-        // Add pagination
         eventsQuery += ' LIMIT ? OFFSET ?';
         eventsParams.push(radius, paginationLength, paginationStart);
         
@@ -167,7 +154,6 @@ const DashboardController = {
           has_attended: arrAttendedEventids.hasOwnProperty(row.event_id)
         }));
       } else {
-        // Agar coordinates nahi hain to latest events show karo (without location filtering)
         let eventsQuery = `
           SELECT user_event_details.*, 
                  event_mode.name as event_mode, 
@@ -183,7 +169,6 @@ const DashboardController = {
         
         const eventsParams = [decodedUserId];
         
-        // Filter by date (optional - show all if no filter)
         if (filter_type === 'today') {
           eventsQuery += ' AND user_event_details.event_date = CURDATE()';
         } else if (filter_type === 'tomorrow') {
@@ -191,13 +176,11 @@ const DashboardController = {
         } else if (filter_type === 'upcoming') {
           eventsQuery += ' AND user_event_details.event_date >= DATE_ADD(CURDATE(), INTERVAL 2 DAY)';
         } else {
-          // Show all events (past and future) when no coordinates provided
           eventsQuery += ' AND user_event_details.event_date >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)';
         }
         
         eventsQuery += ' GROUP BY user_event_details.event_id ORDER BY user_event_details.created_dts DESC';
         
-        // Add pagination
         eventsQuery += ' LIMIT ? OFFSET ?';
         eventsParams.push(paginationLength, paginationStart);
         
@@ -239,7 +222,6 @@ const DashboardController = {
         }));
       }
 
-      // Get jobs based on the coordinates not posted by the logged in user
       let jobsList = [];
       if (hasCoordinates && !isZeroCoordinates) {
         let jobsQuery = `
@@ -269,7 +251,7 @@ const DashboardController = {
         
         const jobsParams = [lat, long, lat, decodedUserId];
         
-        // Filter by date
+    
         if (filter_type === 'today') {
           jobsQuery += ' AND DATE(user_job_details.created_dts) = CURDATE()';
         } else if (filter_type === 'tomorrow') {
@@ -282,18 +264,15 @@ const DashboardController = {
         
         jobsQuery += ' GROUP BY user_job_details.job_id HAVING distance_in_km <= ? ORDER BY user_job_details.created_dts DESC';
         
-        // Add pagination
         jobsQuery += ' LIMIT ? OFFSET ?';
         jobsParams.push(radius, paginationLength, paginationStart);
         
         const jobsRows = await query(jobsQuery, jobsParams);
         
         jobsList = jobsRows.map(job => {
-          // Process skills from skill_names
           const skills = job.skill_names ? job.skill_names.split(', ') : [];
           const skillIds = job.skill_ids ? job.skill_ids.split(',') : [];
           
-          // Create mapped_skills array
           const mappedSkills = skillIds.map((id, index) => ({
             id: id.trim(),
             skill: skills[index] ? skills[index].trim() : ""
@@ -333,7 +312,6 @@ const DashboardController = {
           };
         });
       } else {
-        // Agar coordinates nahi hain to latest jobs show karo (without location filtering)
         let jobsQuery = `
           SELECT user_job_details.*, 
                  job_type.name as job_type_name, 
@@ -354,7 +332,6 @@ const DashboardController = {
         
         const jobsParams = [decodedUserId];
         
-        // Filter by date (optional - show all if no filter)
         if (filter_type === 'today') {
           jobsQuery += ' AND DATE(user_job_details.created_dts) = CURDATE()';
         } else if (filter_type === 'tomorrow') {
@@ -362,24 +339,20 @@ const DashboardController = {
         } else if (filter_type === 'upcoming') {
           jobsQuery += ' AND DATE(user_job_details.created_dts) >= DATE_ADD(CURDATE(), INTERVAL 2 DAY)';
         } else {
-          // Show all jobs (past and future) when no coordinates provided
           jobsQuery += ' AND user_job_details.created_dts >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)';
         }
         
         jobsQuery += ' GROUP BY user_job_details.job_id ORDER BY user_job_details.created_dts DESC';
         
-        // Add pagination
         jobsQuery += ' LIMIT ? OFFSET ?';
         jobsParams.push(paginationLength, paginationStart);
         
         const jobsRows = await query(jobsQuery, jobsParams);
         
         jobsList = jobsRows.map(job => {
-          // Process skills from skill_names
           const skills = job.skill_names ? job.skill_names.split(', ') : [];
           const skillIds = job.skill_ids ? job.skill_ids.split(',') : [];
           
-          // Create mapped_skills array
           const mappedSkills = skillIds.map((id, index) => ({
             id: id.trim(),
             skill: skills[index] ? skills[index].trim() : ""
@@ -420,7 +393,6 @@ const DashboardController = {
         });
       }
 
-      // Get unread notification count
       let unreadNotificationCount = 0;
       try {
         const NotificationController = require('./NotificationController');
@@ -433,7 +405,6 @@ const DashboardController = {
         unreadNotificationCount = 0;
       }
 
-      // Return Flutter compatible response format with pagination info
       return res.json({
         status: true,
         rcode: 200,
@@ -459,9 +430,6 @@ const DashboardController = {
     }
   },
 
-  // ===== ADMIN CONTROLLER FUNCTIONS =====
-
-  // Admin Dashboard - Overview statistics
   async getAdminDashboard(req, res) {
     try {
       const { user_id, token } = { ...req.query, ...req.body };
@@ -470,13 +438,11 @@ const DashboardController = {
         return errorResponse(res, 'user_id and token are required', 400);
       }
 
-      // Verify admin user
       const adminCheck = await query('SELECT user_id FROM admin_users WHERE user_id = ? AND unique_token = ? AND deleted = 0', [user_id, token]);
       if (adminCheck.length === 0) {
         return errorResponse(res, 'Invalid admin token', 401);
       }
 
-      // Get overall system statistics
       const [totalUsers] = await query('SELECT COUNT(*) as count FROM users WHERE deleted = 0');
       const [totalJobs] = await query('SELECT COUNT(*) as count FROM user_job_details WHERE deleted = 0');
       const [totalEvents] = await query('SELECT COUNT(*) as count FROM user_event_details WHERE deleted = 0');
@@ -484,7 +450,6 @@ const DashboardController = {
       const [totalInvestors] = await query('SELECT COUNT(*) as count FROM user_investor WHERE deleted = 0');
       const [totalBusinessCards] = await query('SELECT COUNT(*) as count FROM user_business_cards WHERE deleted = 0');
 
-      // Get recent activities
       const recentUsers = await query('SELECT user_id, full_name, email, created_dts FROM users WHERE deleted = 0 ORDER BY created_dts DESC LIMIT 5');
       const recentJobs = await query('SELECT job_id, job_title, company_name, created_dts FROM user_job_details WHERE deleted = 0 ORDER BY created_dts DESC LIMIT 5');
       const recentEvents = await query('SELECT event_id, event_name, event_date, created_dts FROM user_event_details WHERE deleted = 0 ORDER BY created_dts DESC LIMIT 5');
@@ -531,7 +496,7 @@ const DashboardController = {
     }
   },
 
-  // Admin Dashboard - User management overview
+
   async getAdminUserOverview(req, res) {
     try {
       const { user_id, token } = { ...req.query, ...req.body };
@@ -540,13 +505,11 @@ const DashboardController = {
         return errorResponse(res, 'user_id and token are required', 400);
       }
 
-      // Verify admin user
       const adminCheck = await query('SELECT user_id FROM admin_users WHERE user_id = ? AND unique_token = ? AND deleted = 0', [user_id, token]);
       if (adminCheck.length === 0) {
         return errorResponse(res, 'Invalid admin token', 401);
       }
 
-      // Get user statistics by country
       const usersByCountry = await query(`
         SELECT 
           c.name as country_name,
@@ -559,7 +522,6 @@ const DashboardController = {
         LIMIT 10
       `);
 
-      // Get user statistics by status
       const usersByStatus = await query(`
         SELECT 
           status,
@@ -569,7 +531,6 @@ const DashboardController = {
         GROUP BY status
       `);
 
-      // Get user registration trend (last 30 days)
       const userTrend = await query(`
         SELECT 
           DATE(created_dts) as date,

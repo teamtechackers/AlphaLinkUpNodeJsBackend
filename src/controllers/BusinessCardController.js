@@ -7,9 +7,7 @@ const { successResponse, errorResponse } = require('../utils/response');
 const { idEncode, idDecode } = require('../utils/idCodec');
 
 class BusinessCardController {
-  /**
-   * Activate business card for user
-   */
+  
   static async activateCard(req, res) {
     try {
       const { user_id, card_data } = req.body;
@@ -18,25 +16,20 @@ class BusinessCardController {
         return errorResponse(res, 'User ID and card data are required', 400);
       }
 
-      // Decode user ID
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
         return errorResponse(res, 'Invalid user ID', 400);
       }
 
-      // Validate card data
       if (!card_data.name || !card_data.mobile) {
         return errorResponse(res, 'Name and mobile are required for business card', 400);
       }
 
-      // Activate business card
       const activatedCard = await BusinessCardService.activateCard(decodedUserId, card_data);
       
-      // Generate QR code for the business card
       const qrResult = await QRCodeService.generateBusinessCardQR(decodedUserId, card_data);
       
       if (qrResult.success) {
-        // Update card with QR code information
         await BusinessCardService.updateCard(activatedCard.id, {
           qr_code: qrResult.filename,
           qr_url: qrResult.url
@@ -66,9 +59,7 @@ class BusinessCardController {
     }
   }
 
-  /**
-   * Get business card information
-   */
+
   static async getBusinessCard(req, res) {
     try {
       const { user_id } = req.params;
@@ -96,9 +87,6 @@ class BusinessCardController {
     }
   }
 
-  /**
-   * Update business card
-   */
   static async updateBusinessCard(req, res) {
     try {
       const { user_id } = req.params;
@@ -112,16 +100,13 @@ class BusinessCardController {
         return errorResponse(res, 'No update data provided', 400);
       }
 
-      // Decode user ID
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
         return errorResponse(res, 'Invalid user ID', 400);
       }
 
-      // Update business card
       const updatedCard = await BusinessCardService.updateBusinessCard(decodedUserId, updateData);
       
-      // Regenerate QR code if card data changed significantly
       if (updateData.name || updateData.mobile || updateData.company) {
         const qrResult = await QRCodeService.generateBusinessCardQR(decodedUserId, updatedCard);
         
@@ -153,9 +138,6 @@ class BusinessCardController {
     }
   }
 
-  /**
-   * Deactivate business card
-   */
   static async deactivateCard(req, res) {
     try {
       const { user_id } = req.params;
@@ -164,7 +146,6 @@ class BusinessCardController {
         return errorResponse(res, 'User ID is required', 400);
       }
 
-      // Decode user ID
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
         return errorResponse(res, 'Invalid user ID', 400);
@@ -189,9 +170,7 @@ class BusinessCardController {
     }
   }
 
-  /**
-   * Get business card by QR code
-   */
+  
   static async getBusinessCardByQR(req, res) {
     try {
       const { qr_code } = req.params;
@@ -206,7 +185,6 @@ class BusinessCardController {
         return errorResponse(res, 'Business card not found', 404);
       }
 
-      // Return public business card information
       const publicCard = {
         user_id: idEncode(businessCard.user_id),
         name: businessCard.name,
@@ -229,9 +207,7 @@ class BusinessCardController {
     }
   }
 
-  /**
-   * Get user's business card statistics
-   */
+
   static async getBusinessCardStats(req, res) {
     try {
       const userId = req.user.id;
@@ -245,9 +221,7 @@ class BusinessCardController {
     }
   }
 
-  /**
-   * Share business card
-   */
+ 
   static async shareBusinessCard(req, res) {
     try {
       const { user_id } = req.params;
@@ -257,7 +231,6 @@ class BusinessCardController {
         return errorResponse(res, 'User ID and share type are required', 400);
       }
 
-      // Decode user ID
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
         return errorResponse(res, 'Invalid user ID', 400);
@@ -286,9 +259,7 @@ class BusinessCardController {
     }
   }
 
-  /**
-   * Export business card data
-   */
+  
   static async exportBusinessCard(req, res) {
     try {
       const { user_id } = req.params;
@@ -298,7 +269,6 @@ class BusinessCardController {
         return errorResponse(res, 'User ID is required', 400);
       }
 
-      // Decode user ID
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
         return errorResponse(res, 'Invalid user ID', 400);
@@ -309,7 +279,6 @@ class BusinessCardController {
       if (format === 'json') {
         return successResponse(res, 'Business card data exported successfully', { data });
       } else {
-        // For CSV format, set appropriate headers
         res.setHeader('Content-Type', 'text/csv');
         res.setHeader('Content-Disposition', `attachment; filename="business_card_${user_id}.csv"`);
         return res.send(data);

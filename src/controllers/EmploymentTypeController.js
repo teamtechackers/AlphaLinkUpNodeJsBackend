@@ -125,7 +125,6 @@ class EmploymentTypeController {
         });
       }
 
-      // Check if user is admin (role_id = 1 or 2)
       const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
       if (!adminRows.length) {
         return res.json({
@@ -135,10 +134,8 @@ class EmploymentTypeController {
         });
       }
 
-      // Get all employment types ordered by name (matching PHP exactly)
       const employmentTypes = await query('SELECT * FROM employment_type WHERE deleted = 0 ORDER BY name ASC');
 
-      // Return response in PHP format (matching exactly)
       return res.json({
         status: true,
         rcode: 200,
@@ -160,7 +157,6 @@ class EmploymentTypeController {
 
   static async adminSubmitEmploymentType(req, res) {
     try {
-      // Support both query parameters and form data
       const { user_id, token, row_id, name, status } = {
         ...req.query,
         ...req.body
@@ -168,7 +164,6 @@ class EmploymentTypeController {
 
       console.log('submitEmploymentType - Parameters:', { user_id, token, row_id, name, status });
 
-      // Check if user_id and token are provided
       if (!user_id || !token) {
         return res.json({
           status: 'Error',
@@ -176,7 +171,6 @@ class EmploymentTypeController {
         });
       }
 
-      // Decode user ID
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
         return res.json({
@@ -185,7 +179,6 @@ class EmploymentTypeController {
         });
       }
 
-      // Get user details and validate
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return res.json({
@@ -196,7 +189,6 @@ class EmploymentTypeController {
 
       const user = userRows[0];
 
-      // Validate token
       if (user.unique_token !== token) {
         return res.json({
           status: 'Error',
@@ -204,7 +196,6 @@ class EmploymentTypeController {
         });
       }
 
-      // Check if user is admin (role_id = 1 or 2)
       const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
       if (!adminRows.length) {
         return res.json({
@@ -213,7 +204,6 @@ class EmploymentTypeController {
         });
       }
 
-      // Validate required fields
       if (!name || !status) {
         return res.json({
           status: 'Error',
@@ -224,7 +214,6 @@ class EmploymentTypeController {
       let info = '';
 
       if (!row_id || row_id === '0') {
-        // Insert new employment type (matching PHP exactly)
         const currentTime = new Date().toISOString().slice(0, 19).replace('T', ' ');
         await query(
           'INSERT INTO employment_type (name, status, created_at, created_by, deleted) VALUES (?, ?, ?, ?, 0)',
@@ -232,7 +221,6 @@ class EmploymentTypeController {
         );
         info = 'Data Created Successfully';
       } else {
-        // Update existing employment type (matching PHP exactly)
         const currentTime = new Date().toISOString().slice(0, 19).replace('T', ' ');
         await query(
           'UPDATE employment_type SET name = ?, status = ?, updated_at = ?, updated_by = ? WHERE id = ?',
@@ -241,7 +229,6 @@ class EmploymentTypeController {
         info = 'Data Updated Successfully';
       }
 
-      // Return response in PHP format (matching exactly)
       return res.json({
         status: 'Success',
         info: info
@@ -258,7 +245,6 @@ class EmploymentTypeController {
 
   static async adminListEmploymentTypeAjax(req, res) {
     try {
-      // Support both query parameters and form data
       const { user_id, token } = {
         ...req.query,
         ...req.body
@@ -266,7 +252,6 @@ class EmploymentTypeController {
 
       console.log('listEmploymentTypeAjax - Parameters:', { user_id, token });
 
-      // Check if user_id and token are provided
       if (!user_id || !token) {
         return res.json({
           status: false,
@@ -275,7 +260,6 @@ class EmploymentTypeController {
         });
       }
 
-      // Decode user ID
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
         return res.json({
@@ -285,7 +269,6 @@ class EmploymentTypeController {
         });
       }
 
-      // Get user details and validate
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return res.json({
@@ -297,7 +280,6 @@ class EmploymentTypeController {
 
       const user = userRows[0];
 
-      // Validate token
       if (user.unique_token !== token) {
         return res.json({
           status: false,
@@ -306,7 +288,6 @@ class EmploymentTypeController {
         });
       }
 
-      // Check if user is admin (role_id = 1 or 2)
       const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
       if (!adminRows.length) {
         return res.json({
@@ -316,34 +297,28 @@ class EmploymentTypeController {
         });
       }
 
-      // Get DataTable parameters
       const draw = parseInt(req.body.draw) || 1;
       const start = parseInt(req.body.start) || 0;
       const length = parseInt(req.body.length) || 10;
       const searchValue = req.body.search?.value || '';
 
-      // Get total count
       const totalCountResult = await query('SELECT COUNT(*) as count FROM employment_type WHERE deleted = 0');
       const totalCount = totalCountResult[0].count;
 
-      // Build query for filtered data
       let dataQuery = `
         FROM employment_type
         WHERE deleted = 0
       `;
       let dataParams = [];
 
-      // Add search filter
       if (searchValue) {
         dataQuery += ' AND name LIKE ?';
         dataParams.push(`%${searchValue}%`);
       }
 
-      // Get filtered count
       const filteredCountResult = await query(`SELECT COUNT(*) as count ${dataQuery}`, dataParams);
       const filteredCount = filteredCountResult[0].count;
 
-      // Get data with pagination
       dataQuery = `
         SELECT * ${dataQuery}
         ORDER BY name ASC
@@ -353,26 +328,22 @@ class EmploymentTypeController {
 
       const employmentTypes = await query(dataQuery, dataParams);
 
-      // Format data for DataTable
       const data = [];
       for (const row of employmentTypes) {
         const i = data.length + 1;
         console.log('Row ID type:', typeof row.id, 'Value:', row.id);
         
-        // Format status
         let status = '<span class="badge bg-soft-success text-success">Active</span>';
         if (row.status == 0) {
           status = '<span class="badge bg-soft-danger text-danger">Inactive</span>';
         }
 
-        // Format action buttons
         const action = `<a href="javascript:void(0);" id="edit_${row.id}" data-id="${row.id}" data-name="${row.name}" data-status="${row.status}" onclick="viewEditDetails(${row.id});" class="action-icon"> <i class="mdi mdi-square-edit-outline"></i></a>`;
         const deleteAction = `<a href="javascript:void(0);" class="action-icon delete_info" data-id="${row.id}"> <i class="mdi mdi-delete"></i></a>`;
 
         data.push([i, String(row.id), row.name, status, action + deleteAction]);
       }
 
-      // Return response in PHP format (matching exactly)
       return res.json({
         draw: draw,
         recordsTotal: totalCount,
@@ -392,7 +363,6 @@ class EmploymentTypeController {
 
   static async adminCheckDuplicateEmploymentType(req, res) {
     try {
-      // Support both query parameters and form data
       const { user_id, token, name, id } = {
         ...req.query,
         ...req.body
@@ -400,7 +370,6 @@ class EmploymentTypeController {
 
       console.log('checkDuplicateEmploymentType - Parameters:', { user_id, token, name, id });
 
-      // Check if user_id and token are provided
       if (!user_id || !token) {
         return res.json({
           status: false,
@@ -409,7 +378,6 @@ class EmploymentTypeController {
         });
       }
 
-      // Decode user ID
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
         return res.json({
@@ -419,7 +387,6 @@ class EmploymentTypeController {
         });
       }
 
-      // Get user details and validate
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return res.json({
@@ -431,7 +398,6 @@ class EmploymentTypeController {
 
       const user = userRows[0];
 
-      // Validate token
       if (user.unique_token !== token) {
         return res.json({
           status: false,
@@ -440,7 +406,6 @@ class EmploymentTypeController {
         });
       }
 
-      // Check if user is admin (role_id = 1 or 2)
       const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
       if (!adminRows.length) {
         return res.json({
@@ -450,7 +415,6 @@ class EmploymentTypeController {
         });
       }
 
-      // Validate required fields
       if (!name) {
         return res.json({
           validate: false,
@@ -458,25 +422,19 @@ class EmploymentTypeController {
         });
       }
 
-      // Build condition for duplicate check
       let condition = '';
       if (id && id > 0) {
-        // Editing existing employment type - exclude current record
         condition = `id != ${id} AND deleted = '0' AND name = '${name}'`;
       } else {
-        // Adding new employment type
         condition = `deleted = '0' AND name = '${name}'`;
       }
 
-      // Check for duplicate employment type name
       const duplicateResult = await query(
         `SELECT COUNT(*) as count FROM employment_type WHERE ${condition}`,
         []
       );
 
       const isDuplicate = duplicateResult[0].count > 0;
-
-      // Return response in PHP format (matching exactly)
       return res.json({
         validate: !isDuplicate
       });
@@ -493,7 +451,6 @@ class EmploymentTypeController {
 
   static async adminDeleteEmploymentType(req, res) {
     try {
-      // Support both query parameters and form data
       const { user_id, token, keys } = {
         ...req.query,
         ...req.body
@@ -501,7 +458,6 @@ class EmploymentTypeController {
 
       console.log('deleteEmploymentType - Parameters:', { user_id, token, keys });
 
-      // Check if user_id and token are provided
       if (!user_id || !token) {
         return res.json({
           status: 'Error',
@@ -509,7 +465,6 @@ class EmploymentTypeController {
         });
       }
 
-      // Decode user ID
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
         return res.json({
@@ -518,7 +473,6 @@ class EmploymentTypeController {
         });
       }
 
-      // Get user details and validate
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return res.json({
@@ -529,7 +483,6 @@ class EmploymentTypeController {
 
       const user = userRows[0];
 
-      // Validate token
       if (user.unique_token !== token) {
         return res.json({
           status: 'Error',
@@ -537,7 +490,6 @@ class EmploymentTypeController {
         });
       }
 
-      // Check if user is admin (role_id = 1 or 2)
       const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
       if (!adminRows.length) {
         return res.json({
@@ -546,7 +498,6 @@ class EmploymentTypeController {
         });
       }
 
-      // Check if keys (employment type ID) is provided
       if (!keys) {
         return res.json({
           status: 'Error',
@@ -554,14 +505,12 @@ class EmploymentTypeController {
         });
       }
 
-      // Soft delete the employment type (matching PHP exactly)
       const currentTime = new Date().toISOString().slice(0, 19).replace('T', ' ');
       await query(
         'UPDATE employment_type SET deleted = ?, deleted_at = ?, deleted_by = ? WHERE id = ?',
         [1, currentTime, decodedUserId, keys]
       );
 
-      // Return response in PHP format (matching exactly)
       return res.json({
         status: 'Success',
         info: 'Employment Type Deleted Successfully'

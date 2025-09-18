@@ -193,7 +193,6 @@ class AuthController {
         return errorResponse(res, 'Invalid token', 400);
       }
 
-      // Verify OTP with Twilio
       const verificationResult = await TwilioService.verifyOTP(mobileValue, otpValue, verificationSidValue);
       
       if (!verificationResult.success) {
@@ -235,7 +234,6 @@ class AuthController {
 
       await UserService.updateUser(decodedUserId, updateData);
       
-      // Subscribe to notification topics (FCM token is required)
       try {
         const NotificationService = require('../notification/NotificationService');
         await Promise.all([
@@ -246,7 +244,6 @@ class AuthController {
         console.log('User subscribed to notification topics:', decodedUserId);
       } catch (topicError) {
         console.error('Topic subscription error:', topicError);
-        // Don't fail OTP verification if topic subscription fails
       }
       
       logger.info(`OTP verified successfully for user: ${mobile}`);

@@ -7,7 +7,6 @@ const websocketService = require('../services/websocketService');
 
 class EventController {
   
-  // API function - Get event information
   static async getEventInformation(req, res) {
     try {
       const { user_id, token } = {
@@ -15,7 +14,6 @@ class EventController {
         ...req.body
       };
       
-      // Check if user_id and token are provided
       if (!user_id || !token) {
         return res.json({
           status: false,
@@ -24,7 +22,6 @@ class EventController {
         });
       }
       
-      // Decode user ID
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
         return res.json({
@@ -34,7 +31,6 @@ class EventController {
         });
       }
       
-      // Get user details and validate
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return res.json({
@@ -46,7 +42,6 @@ class EventController {
       
       const user = userRows[0];
       
-      // Validate token
       if (user.unique_token !== token) {
         return res.json({
           status: false,
@@ -55,7 +50,6 @@ class EventController {
         });
       }
       
-      // Get event information with joins (matching PHP implementation)
       const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
       const eventBannerPath = `${baseUrl}/uploads/events/`;
       
@@ -79,7 +73,6 @@ class EventController {
         [eventBannerPath, decodedUserId]
       );
       
-      // Convert all integer values to strings
       const eventInformation = rows.map(row => ({
         event_id: row.event_id.toString(),
         user_id: row.user_id.toString(),
@@ -115,7 +108,6 @@ class EventController {
         city: row.city || ""
       }));
       
-      // Return response in PHP format
       return res.json({
         status: true,
         rcode: 200,
@@ -137,18 +129,15 @@ class EventController {
     try {
       const { user_id, token, event_id, organiser_id } = req.body;
       
-      // Check if user_id and token are provided
       if (!user_id || !token) {
         return fail(res, 500, 'user_id and token are required');
       }
       
-      // Decode user ID
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
         return fail(res, 500, 'Invalid user ID');
       }
       
-      // Get user details and validate
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return fail(res, 500, 'Not A Valid User');
@@ -156,17 +145,14 @@ class EventController {
       
       const user = userRows[0];
       
-      // Validate token
       if (user.unique_token !== token) {
         return fail(res, 500, 'Token Mismatch Exception');
       }
 
-      // Check mandatory fields
       if (!event_id || event_id <= 0 || !organiser_id || organiser_id <= 0) {
         return fail(res, 500, 'Please enter mandatory fields');
       }
 
-      // Save event organiser
       const result = await query(
         'INSERT INTO event_organisers (event_id, user_id) VALUES (?, ?)',
         [event_id, organiser_id]
@@ -174,7 +160,6 @@ class EventController {
       
       const organiser_id_result = result.insertId;
       
-      // Return response in PHP format
       return res.json({
         status: true,
         rcode: 200,
@@ -195,7 +180,6 @@ class EventController {
         ...req.body
       };
       
-      // Check if user_id, token, and event_id are provided
       if (!user_id || !token || !event_id) {
         return res.json({
           status: false,
@@ -204,7 +188,6 @@ class EventController {
         });
       }
       
-      // Decode user ID
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
         return res.json({
@@ -214,7 +197,6 @@ class EventController {
         });
       }
       
-      // Get user details and validate
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return res.json({
@@ -226,7 +208,6 @@ class EventController {
       
       const user = userRows[0];
       
-      // Validate token
       if (user.unique_token !== token) {
         return res.json({
           status: false,
@@ -235,7 +216,6 @@ class EventController {
         });
       }
       
-      // Get event detail with joins (matching PHP implementation)
       const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
       const eventBannerPath = `${baseUrl}/uploads/events/`;
       
@@ -263,7 +243,6 @@ class EventController {
         });
       }
       
-      // Get event organisers list with full details
       const organisersRows = await query(
         `SELECT users.user_id AS organiser_id, 
                 COALESCE(full_name,'') AS full_name, 
@@ -288,7 +267,6 @@ class EventController {
         [`${baseUrl}/uploads/profiles/`, event_id]
       );
       
-      // Get event attendees list with full details
       const attendeesRows = await query(
         `SELECT users.user_id AS attendee_id, 
                 COALESCE(full_name,'') AS full_name, 
@@ -314,11 +292,9 @@ class EventController {
         [`${baseUrl}/uploads/profiles/`, event_id]
       );
       
-      // Check if user has attended or organised this event
       let has_attended = false;
       let has_organised = false;
       
-      // Convert decodedUserId to integer for comparison
       const userIdForComparison = parseInt(decodedUserId);
       
       if (organisersRows.length > 0) {
@@ -335,7 +311,6 @@ class EventController {
         }
       }
       
-      // Convert all integer values to strings for event_detail
       const eventDetail = eventRows.map(row => ({
         event_id: (row.event_id || 0).toString(),
         user_id: (row.user_id || 0).toString(),
@@ -369,7 +344,6 @@ class EventController {
         event_type: row.event_type || ""
       }));
       
-      // Convert all integer values to strings for organisers_list
       const organisersList = organisersRows.map(row => ({
         organiser_id: (row.organiser_id || 0).toString(),
         full_name: row.full_name || "",
@@ -387,7 +361,6 @@ class EventController {
         profile_photo: row.profile_photo || ""
       }));
       
-      // Convert all integer values to strings for attendees_list
       const attendeesList = attendeesRows.map(row => ({
         attendee_id: (row.attendee_id || 0).toString(),
         full_name: row.full_name || "",
@@ -406,7 +379,6 @@ class EventController {
         profile_photo: row.profile_photo || ""
       }));
       
-      // Return response in PHP format
       return res.json({
         status: true,
         rcode: 200,
@@ -430,7 +402,6 @@ class EventController {
   }
   static async saveEventInformation(req, res) {
     try {
-      // Handle both JSON and form data
       const event_id = parseInt(req.body.event_id || req.body['event_id'] || 0);
       const event_name = req.body.event_name || req.body['event_name'];
       const industry_type = req.body.industry_type || req.body['industry_type'];
@@ -450,22 +421,18 @@ class EventController {
       const event_geo_address = req.body.event_geo_address || req.body['event_geo_address'];
       const organiser_ids = req.body.organiser_ids || req.body['organiser_ids'];
       
-      // Get user_id and token from request (since we removed checkUser middleware)
       const user_id = req.body.user_id || req.body['user_id'];
       const token = req.body.token || req.body['token'];
       
-      // Check if user_id and token are provided
       if (!user_id || !token) {
         return fail(res, 500, 'user_id and token are required');
       }
       
-      // Decode user ID
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
         return fail(res, 500, 'Invalid user ID');
       }
       
-      // Get user details and validate
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return fail(res, 500, 'Not A Valid User');
@@ -473,35 +440,29 @@ class EventController {
       
       const user = userRows[0];
       
-      // Validate token
       if (user.unique_token !== token) {
         return fail(res, 500, 'Token Mismatch Exception');
       }
       
-      // Check mandatory fields - match PHP validation exactly
       if (event_name === "" || industry_type === "" || event_date === "" || event_start_time === "" || event_end_time === "" || event_mode_id === "" || event_type_id === "" || event_details === "" || organiser_ids === "" || event_lat === "" || event_lng === "" || event_geo_address === "") {
         return fail(res, 500, 'Please enter mandatory fields');
       }
       
-      // Handle event banner upload
       let eventBanner = '';
       if (req.file && req.file.filename) {
         eventBanner = req.file.filename;
       }
       
-      // Convert date from DD-MM-YYYY to YYYY-MM-DD format for MySQL
       let formattedEventDate = event_date;
       console.log('Original event_date:', event_date);
       if (event_date && event_date.includes('-')) {
         const dateParts = event_date.split('-');
         if (dateParts.length === 3) {
-          // Convert DD-MM-YYYY to YYYY-MM-DD
           formattedEventDate = `${dateParts[2]}-${dateParts[1]}-${dateParts[0]}`;
           console.log('Converted event_date:', formattedEventDate);
         }
       }
       
-      // Prepare event data
       const eventData = {
         event_name,
         industry_type,
@@ -511,9 +472,9 @@ class EventController {
       event_mode_id,
       event_type_id,
         event_details,
-        country_id: country_id || 1, // Default to country_id 1 if not provided
-        state_id: state_id || 1, // Default to state_id 1 if not provided
-        city_id: city_id || 1, // Default to city_id 1 if not provided
+        country_id: country_id || 1, 
+        state_id: state_id || 1, 
+        city_id: city_id || 1, 
         event_venue: event_venue || '',
         event_link: event_link || '',
         event_lat,
@@ -524,7 +485,6 @@ class EventController {
       let finalEventId = event_id;
       
       if (event_id == 0) {
-        // Insert new event
         eventData.user_id = decodedUserId;
         if (eventBanner) {
           eventData.event_banner = eventBanner;
@@ -538,7 +498,6 @@ class EventController {
         
         console.log('Event created with ID:', finalEventId);
 
-        // Send topic notification for event
         try {
           console.log('Sending event topic notification...');
           const NotificationService = require('../notification/NotificationService');
@@ -558,11 +517,9 @@ class EventController {
           await NotificationService.sendTopicNotification('event-notifications', 'New Event Available!', `${eventData.event_name} - ${eventData.event_venue}`, notificationData);
           console.log('Event topic notification sent successfully');
 
-          // Save notification to database for all users
           try {
             const NotificationController = require('./NotificationController');
             
-            // Get all users to send notification to
             const allUsers = await query('SELECT user_id FROM users WHERE status = 1');
             
             for (const user of allUsers) {
@@ -585,13 +542,11 @@ class EventController {
           console.error('Event topic notification error:', notificationError);
         }
         
-        // Create Event Creator as Organiser
       await query(
           'INSERT INTO event_organisers (event_id, user_id) VALUES (?, ?)',
           [finalEventId, decodedUserId]
       );
       
-      // Broadcast new event to all connected users
       try {
         const newEventData = {
           event_id: finalEventId,
@@ -620,7 +575,6 @@ class EventController {
         console.error('WebSocket broadcast error:', wsError);
       }
     } else {
-        // Update existing event
         if (eventBanner) {
           eventData.event_banner = eventBanner;
         }
@@ -647,7 +601,6 @@ class EventController {
           updateValues
         );
         
-        // Broadcast event update to all connected users
         try {
           const updateEventData = {
             event_id: event_id,
@@ -677,20 +630,17 @@ class EventController {
         }
       }
       
-      // Handle event organisers
       if (finalEventId > 0 && organiser_ids) {
         const organiserArray = organiser_ids.split(',').map(id => parseInt(id.trim())).filter(id => id > 0);
         
         if (organiserArray.length > 0) {
-          // Remove existing organisers (except the creator)
           await query(
             'DELETE FROM event_organisers WHERE user_id != ? AND event_id = ?',
             [decodedUserId, finalEventId]
           );
           
-          // Add new organisers
           for (const organiserUserId of organiserArray) {
-            if (organiserUserId !== decodedUserId) { // Don't add creator again
+            if (organiserUserId !== decodedUserId) { 
               await query(
                 'INSERT INTO event_organisers (event_id, user_id) VALUES (?, ?)',
                 [finalEventId, organiserUserId]
@@ -700,7 +650,6 @@ class EventController {
         }
       }
       
-      // Return response in PHP format
       const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
       const eventBannerUrl = eventBanner ? `${baseUrl}/uploads/events/${eventBanner}` : '';
       
@@ -722,24 +671,20 @@ class EventController {
 
   static async getEventOrganisersList(req, res) {
     try {
-      // Support both query parameters and form data
       const { user_id, token, event_id } = {
         ...req.query,
         ...req.body
       };
       
-      // Check if user_id and token are provided
       if (!user_id || !token) {
         return fail(res, 500, 'user_id and token are required');
       }
       
-      // Decode user ID
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
         return fail(res, 500, 'Invalid user ID');
       }
       
-      // Get user details and validate
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return fail(res, 500, 'Not A Valid User');
@@ -747,12 +692,10 @@ class EventController {
       
       const user = userRows[0];
       
-      // Validate token
       if (user.unique_token !== token) {
         return fail(res, 500, 'Token Mismatch Exception');
       }
 
-      // Get event organisers list with dynamic profile photo URLs
       const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
       const profilePhotoPath = `${baseUrl}/uploads/profiles/`;
       
@@ -781,7 +724,6 @@ class EventController {
         [profilePhotoPath, event_id]
       );
 
-      // Convert all integer values to strings for organisers_list
       const formattedOrganisersList = (organisersListRows || []).map(organiser => ({
         organiser_id: String(organiser.organiser_id || 0),
         full_name: organiser.full_name || "",
@@ -817,18 +759,15 @@ class EventController {
     try {
       const { user_id, token, event_id, organiser_id } = req.body;
       
-      // Check if user_id and token are provided
       if (!user_id || !token) {
         return fail(res, 500, 'user_id and token are required');
       }
       
-      // Decode user ID
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
         return fail(res, 500, 'Invalid user ID');
       }
       
-      // Get user details and validate
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return fail(res, 500, 'Not A Valid User');
@@ -836,17 +775,14 @@ class EventController {
       
       const user = userRows[0];
       
-      // Validate token
       if (user.unique_token !== token) {
         return fail(res, 500, 'Token Mismatch Exception');
       }
 
-      // Check mandatory fields
       if (!event_id || event_id <= 0 || !organiser_id || organiser_id <= 0) {
         return fail(res, 500, 'Please enter mandatory fields');
       }
 
-      // Delete event organiser
       const result = await query(
         'DELETE FROM event_organisers WHERE event_id = ? AND user_id = ?',
         [event_id, organiser_id]
@@ -872,24 +808,20 @@ class EventController {
 
   static async getEventAttendeesList(req, res) {
     try {
-      // Support both query parameters and form data
       const { user_id, token, event_id } = {
         ...req.query,
         ...req.body
       };
       
-      // Check if user_id and token are provided
       if (!user_id || !token) {
         return fail(res, 500, 'user_id and token are required');
       }
       
-      // Decode user ID
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
         return fail(res, 500, 'Invalid user ID');
       }
       
-      // Get user details and validate
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return fail(res, 500, 'Not A Valid User');
@@ -897,12 +829,10 @@ class EventController {
       
       const user = userRows[0];
       
-      // Validate token
       if (user.unique_token !== token) {
         return fail(res, 500, 'Token Mismatch Exception');
       }
 
-      // Get event attendees list with dynamic profile photo URLs
       const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
       const profilePhotoPath = `${baseUrl}/uploads/profiles/`;
       
@@ -932,7 +862,6 @@ class EventController {
         [profilePhotoPath, event_id]
       );
 
-      // Convert all integer values to strings for attendees_list
       const formattedAttendeesList = (attendeesListRows || []).map(attendee => ({
         attendee_id: String(attendee.attendee_id || 0),
         full_name: attendee.full_name || "",
@@ -967,7 +896,6 @@ class EventController {
 
   static async getEventsAttendedList(req, res) {
     try {
-      // Support both query parameters and form data
       const { user_id, token } = {
         ...req.query,
         ...req.body
@@ -975,18 +903,15 @@ class EventController {
       
       console.log('getEventsAttendedList - Parameters:', { user_id, token });
       
-      // Check if user_id and token are provided
       if (!user_id || !token) {
         return fail(res, 500, 'user_id and token are required');
       }
       
-      // Decode user ID
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
         return fail(res, 500, 'Invalid user ID');
       }
       
-      // Get user details and validate
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return fail(res, 500, 'Not A Valid User');
@@ -994,12 +919,10 @@ class EventController {
       
       const user = userRows[0];
       
-      // Validate token
       if (user.unique_token !== token) {
         return fail(res, 500, 'Token Mismatch Exception');
       }
 
-      // Get events attended list with comprehensive details
       const eventsAttendedList = await query(`
         SELECT 
           ued.*,
@@ -1024,7 +947,6 @@ class EventController {
         ORDER BY ued.event_id
       `, [decodedUserId]);
 
-      // Convert all integer values to strings for attended_list
       const formattedAttendedList = (eventsAttendedList || []).map(event => ({
         event_id: String(event.event_id || 0),
         user_id: String(event.user_id || 0),
@@ -1060,7 +982,6 @@ class EventController {
         city: event.city || ""
       }));
 
-      // Return response in PHP format (matching exactly)
       return res.json({
         status: true,
         rcode: 200,
@@ -1077,7 +998,6 @@ class EventController {
 
   static async getEventsOrganisedList(req, res) {
     try {
-      // Support both query parameters and form data
       const { user_id, token } = {
         ...req.query,
         ...req.body
@@ -1085,18 +1005,15 @@ class EventController {
       
       console.log('getEventsOrganisedList - Parameters:', { user_id, token });
       
-      // Check if user_id and token are provided
       if (!user_id || !token) {
         return fail(res, 500, 'user_id and token are required');
       }
       
-      // Decode user ID
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
         return fail(res, 500, 'Invalid user ID');
       }
       
-      // Get user details and validate
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return fail(res, 500, 'Not A Valid User');
@@ -1104,12 +1021,10 @@ class EventController {
       
       const user = userRows[0];
       
-      // Validate token
       if (user.unique_token !== token) {
         return fail(res, 500, 'Token Mismatch Exception');
       }
 
-      // Get events organised list with comprehensive details
       const eventsOrganisedList = await query(`
         SELECT 
           ued.*,
@@ -1134,7 +1049,6 @@ class EventController {
         ORDER BY ued.event_id
       `, [decodedUserId]);
 
-      // Convert all integer values to strings for organised_list
       const formattedOrganisedList = (eventsOrganisedList || []).map(event => ({
         event_id: String(event.event_id || 0),
         user_id: String(event.user_id || 0),
@@ -1170,7 +1084,6 @@ class EventController {
         city: event.city || ""
       }));
 
-      // Return response in PHP format (matching exactly)
       return res.json({
         status: true,
         rcode: 200,
@@ -1189,18 +1102,15 @@ class EventController {
     try {
       const { user_id, token, event_id } = req.body;
       
-      // Check if user_id and token are provided
       if (!user_id || !token) {
         return fail(res, 500, 'user_id and token are required');
       }
       
-      // Decode user ID
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
         return fail(res, 500, 'Invalid user ID');
       }
       
-      // Get user details and validate
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return fail(res, 500, 'Not A Valid User');
@@ -1208,19 +1118,16 @@ class EventController {
       
       const user = userRows[0];
       
-      // Validate token
       if (user.unique_token !== token) {
         return fail(res, 500, 'Token Mismatch Exception');
       }
 
-      // Check mandatory fields
       if (!event_id || event_id <= 0) {
         return fail(res, 500, 'Please enter mandatory fields');
       }
 
       const add_user_id = decodedUserId;
 
-      // Save event attendee
       const result = await query(
         'INSERT INTO event_attendees (event_id, user_id) VALUES (?, ?)',
         [event_id, add_user_id]
@@ -1228,7 +1135,6 @@ class EventController {
       
       const attendee_id = result.insertId;
       
-      // Update attendee_reference_id
       const attendee_reference_id = `ALPHA-${add_user_id}${event_id}${attendee_id.toString().padStart(3, '0')}`;
       
       await query(
@@ -1236,7 +1142,6 @@ class EventController {
         [attendee_reference_id, attendee_id]
       );
       
-      // Return response in PHP format
       return res.json({
         status: true,
         rcode: 200,
@@ -1255,18 +1160,15 @@ class EventController {
     try {
       const { user_id, token, event_id, attendee_id } = req.body;
       
-      // Check if user_id and token are provided
       if (!user_id || !token) {
         return fail(res, 500, 'user_id and token are required');
       }
       
-      // Decode user ID
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
         return fail(res, 500, 'Invalid user ID');
       }
       
-      // Get user details and validate
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return fail(res, 500, 'Not A Valid User');
@@ -1274,17 +1176,14 @@ class EventController {
       
       const user = userRows[0];
       
-      // Validate token
       if (user.unique_token !== token) {
         return fail(res, 500, 'Token Mismatch Exception');
       }
 
-      // Check mandatory fields - match PHP validation exactly
       if (event_id <= 0 || attendee_id <= 0) {
         return fail(res, 500, 'Please enter mandatory fields');
       }
 
-      // Delete event attendee - match PHP implementation exactly
       await query(
         'DELETE FROM event_attendees WHERE event_id = ? AND user_id = ?',
         [event_id, attendee_id]
@@ -1304,18 +1203,14 @@ class EventController {
     }
   }
 
-  // ===== ADMIN CONTROLLER FUNCTIONS =====
 
-  // View events - PHP compatible version
   static async viewEvents(req, res) {
     try {
-      // Support both query parameters and form data
       const { user_id, token } = {
         ...req.query,
         ...req.body
       };
 
-      // Check if user_id and token are provided
       if (!user_id || !token) {
         return res.json({
           status: false,
@@ -1324,7 +1219,6 @@ class EventController {
         });
       }
 
-      // Decode user ID
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
         return res.json({
@@ -1334,7 +1228,6 @@ class EventController {
         });
       }
 
-      // Check if user exists
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return res.json({
@@ -1344,7 +1237,6 @@ class EventController {
         });
       }
 
-      // Check if user is admin (role_id = 1 or 2)
       const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
       if (!adminRows.length) {
         return res.json({
@@ -1354,19 +1246,14 @@ class EventController {
         });
       }
 
-      // Get users list (matching PHP exactly)
       const users = await query('SELECT * FROM users WHERE deleted = 0 ORDER BY full_name ASC');
 
-      // Get countries list (matching PHP exactly)
       const countries = await query('SELECT * FROM countries WHERE status = 1 ORDER BY name ASC');
 
-      // Get event modes list (matching PHP exactly)
       const eventModes = await query('SELECT * FROM event_mode WHERE status = 1 AND deleted = 0 ORDER BY name ASC');
 
-      // Get event types list (matching PHP exactly)
       const eventTypes = await query('SELECT * FROM event_type WHERE status = 1 AND deleted = 0 ORDER BY name ASC');
 
-      // Get industry types list (matching PHP exactly)
       const industryTypes = await query('SELECT * FROM industry_type WHERE status = 1 AND deleted = 0 ORDER BY name ASC');
 
       return res.json({
@@ -1392,27 +1279,21 @@ class EventController {
     }
   }
 
-  // Submit events - PHP compatible version
   static async submitEvents(req, res) {
     try {
-      // Support both query parameters and form data
       const { user_id, token, row_id, user_id: event_user_id, event_name, industry_type, country_id, state_id, city_id, event_venue, event_link, event_lat, event_lng, event_geo_address, event_date, event_start_time, event_end_time, event_mode_id, event_type_id, event_details, status } = {
         ...req.query,
         ...req.body
       };
       
-      // Get uploaded event banner filename
       const event_banner_file = req.file ? req.file.filename : '';
       
-      // Extract event user_id from body (different from admin user_id)
       const eventUserId = req.body.user_id;
       
-      // Ensure admin user_id comes from query parameters
       const adminUserId = req.query.user_id;
 
       console.log('submitEvents - Parameters:', { user_id, token, row_id, eventUserId, event_name, industry_type, country_id, state_id, city_id, event_venue, event_link, event_lat, event_lng, event_geo_address, event_date, event_start_time, event_end_time, event_mode_id, event_type_id, event_details, status, event_banner_file });
 
-      // Check if user_id and token are provided
       if (!adminUserId || !token) {
         return res.json({
           status: false,
@@ -1421,7 +1302,6 @@ class EventController {
         });
       }
 
-      // Decode user ID
       const decodedUserId = idDecode(adminUserId);
       if (!decodedUserId) {
         return res.json({
@@ -1431,7 +1311,6 @@ class EventController {
         });
       }
 
-      // Check if user exists
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return res.json({
@@ -1441,7 +1320,6 @@ class EventController {
         });
       }
 
-      // Check if user is admin (role_id = 1 or 2)
       const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
       if (!adminRows.length) {
         return res.json({
@@ -1451,7 +1329,6 @@ class EventController {
         });
       }
 
-      // Check if required fields are provided
       if (!eventUserId) {
         return res.json({
           status: false,
@@ -1460,11 +1337,9 @@ class EventController {
         });
       }
 
-      // Get admin role_id
       const admin = adminRows[0];
 
       if (!row_id || row_id === '') {
-        // Insert new event (matching PHP exactly)
         const insertData = {
           user_id: parseInt(eventUserId),
           event_name: event_name ? event_name.trim() : '',
@@ -1502,8 +1377,7 @@ class EventController {
         });
 
       } else {
-        // Update existing event (matching PHP exactly)
-        // If event_banner_file is provided, update it; otherwise keep existing
+       
         let updateQuery, updateParams;
         if (event_banner_file) {
           updateQuery = 'UPDATE user_event_details SET user_id = ?, event_name = ?, industry_type = ?, country_id = ?, state_id = ?, city_id = ?, event_venue = ?, event_link = ?, event_lat = ?, event_lng = ?, event_geo_address = ?, event_date = ?, event_start_time = ?, event_end_time = ?, event_mode_id = ?, event_type_id = ?, event_details = ?, event_banner = ?, status = ?, updated_at = ?, updated_by = ? WHERE event_id = ?';
@@ -1530,16 +1404,13 @@ class EventController {
     }
   }
 
-  // List events ajax - PHP compatible version
   static async listEventsAjax(req, res) {
     try {
-      // Support both query parameters and form data
       const { user_id, token, draw, start, length, search, order, columns } = {
         ...req.query,
         ...req.body
       };
 
-      // Check if user_id and token are provided
       if (!user_id || !token) {
         return res.json({
           status: false,
@@ -1548,7 +1419,6 @@ class EventController {
         });
       }
 
-      // Decode user ID
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
         return res.json({
@@ -1558,7 +1428,6 @@ class EventController {
         });
       }
 
-      // Check if user exists
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return res.json({
@@ -1568,7 +1437,6 @@ class EventController {
         });
       }
 
-      // Check if user is admin (role_id = 1 or 2)
       const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
       if (!adminRows.length) {
         return res.json({
@@ -1578,7 +1446,6 @@ class EventController {
         });
       }
 
-      // Build base query with all required fields
       let baseQuery = `
         SELECT 
           ued.event_id,
@@ -1613,19 +1480,16 @@ class EventController {
         WHERE ued.deleted = 0
       `;
 
-      // Add search functionality
       const searchableColumns = ['u.full_name', 'ued.event_name', 'ued.event_venue', 'ued.status'];
       if (search && search.value) {
         const searchConditions = searchableColumns.map(col => `${col} LIKE ?`).join(' OR ');
         baseQuery += ` AND (${searchConditions})`;
       }
 
-      // Get total count
       const countQuery = baseQuery.replace(/SELECT[\s\S]*?FROM/, 'SELECT COUNT(*) as total FROM');
       const countResult = await query(countQuery, search && search.value ? searchableColumns.map(() => `%${search.value}%`) : []);
       const totalRecords = countResult[0].total;
 
-      // Add ordering
       const orderColumns = [null, 'u.full_name', 'ued.event_name', 'ued.event_venue', 'ued.status'];
       if (order && order[0]) {
         const orderColumn = orderColumns[order[0].column];
@@ -1637,15 +1501,12 @@ class EventController {
         baseQuery += ' ORDER BY ued.event_id DESC';
       }
 
-      // Add pagination
       if (length && length !== -1) {
         baseQuery += ` LIMIT ${parseInt(start) || 0}, ${parseInt(length)}`;
       }
 
-      // Execute query
       const events = await query(baseQuery, search && search.value ? searchableColumns.map(() => `%${search.value}%`) : []);
 
-      // Format data as objects
       const formattedEventsList = events.map((event, index) => ({
         row_id: (parseInt(start) || 0) + index + 1,
         event_id: String(event.event_id),
@@ -1698,16 +1559,13 @@ class EventController {
     }
   }
 
-  // Edit events - PHP compatible version
   static async editEvents(req, res) {
     try {
-      // Support both query parameters and form data
       const { user_id, token, keys } = {
         ...req.query,
         ...req.body
       };
 
-      // Check if user_id and token are provided
       if (!user_id || !token) {
         return res.json({
           status: false,
@@ -1716,7 +1574,6 @@ class EventController {
         });
       }
 
-      // Decode user ID
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
         return res.json({
@@ -1726,7 +1583,6 @@ class EventController {
         });
       }
 
-      // Check if user exists
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return res.json({
@@ -1736,7 +1592,6 @@ class EventController {
         });
       }
 
-      // Check if user is admin (role_id = 1 or 2)
       const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
       if (!adminRows.length) {
         return res.json({
@@ -1746,7 +1601,6 @@ class EventController {
         });
       }
 
-      // Check if keys is provided
       if (!keys) {
         return res.json({
           status: false,
@@ -1755,7 +1609,6 @@ class EventController {
         });
       }
 
-      // Get event details (matching PHP exactly)
       const eventRows = await query('SELECT * FROM user_event_details WHERE event_id = ? LIMIT 1', [keys]);
       if (!eventRows.length) {
         return res.json({
@@ -1767,7 +1620,6 @@ class EventController {
 
       const details = eventRows[0];
 
-      // Get state list (matching PHP exactly)
       const stateRows = await query('SELECT * FROM states WHERE country_id = ? ORDER BY name ASC', [details.country_id]);
       let listState = '<option value="">Select State</option>';
       stateRows.forEach(state => {
@@ -1775,7 +1627,6 @@ class EventController {
         listState += `<option value="${state.id}" ${selected}>${state.name}</option>`;
       });
 
-      // Get city list if state_id exists (matching PHP exactly)
       let listCities = '<option value="">Select City</option>';
       if (details.state_id) {
         const cityRows = await query('SELECT * FROM cities WHERE state_id = ? ORDER BY name ASC', [details.state_id]);
@@ -1785,11 +1636,9 @@ class EventController {
         });
       }
 
-      // Add dropdown lists to details
       details.list_state = listState;
       details.list_cities = listCities;
 
-      // Add event banner URL if exists (matching PHP exactly)
       if (details.event_banner) {
         details.event_banner = `http://localhost:3000/uploads/events/${details.event_banner}`;
       }
@@ -1806,16 +1655,13 @@ class EventController {
     }
   }
 
-  // Delete events - PHP compatible version
   static async deleteEvents(req, res) {
     try {
-      // Support both query parameters and form data
       const { user_id, token, keys } = {
         ...req.query,
         ...req.body
       };
 
-      // Check if user_id and token are provided
       if (!user_id || !token) {
         return res.json({
           status: false,
@@ -1824,7 +1670,6 @@ class EventController {
         });
       }
 
-      // Decode user ID
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
         return res.json({
@@ -1834,7 +1679,6 @@ class EventController {
         });
       }
 
-      // Check if user exists
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return res.json({
@@ -1844,7 +1688,6 @@ class EventController {
         });
       }
 
-      // Check if user is admin (role_id = 1 or 2)
       const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
       if (!adminRows.length) {
         return res.json({
@@ -1854,7 +1697,6 @@ class EventController {
         });
       }
 
-      // Check if keys is provided
       if (!keys) {
         return res.json({
           status: false,
@@ -1863,10 +1705,8 @@ class EventController {
         });
       }
 
-      // Get admin role_id
       const admin = adminRows[0];
 
-      // Soft delete event (matching PHP exactly)
       await query(
         'UPDATE user_event_details SET deleted = 1, deleted_at = ?, deleted_by = ? WHERE event_id = ?',
         [new Date().toISOString().slice(0, 19).replace('T', ' '), admin.role_id, keys]
@@ -1886,16 +1726,13 @@ class EventController {
     }
   }
 
-  // View events details - PHP compatible version
   static async viewEventsDetails(req, res) {
     try {
-      // Support both query parameters and form data
       const { user_id, token, keys } = {
         ...req.query,
         ...req.body
       };
 
-      // Check if user_id and token are provided
       if (!user_id || !token) {
         return res.json({
           status: false,
@@ -1904,7 +1741,6 @@ class EventController {
         });
       }
 
-      // Decode user ID
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
         return res.json({
@@ -1914,7 +1750,6 @@ class EventController {
         });
       }
 
-      // Check if user exists
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return res.json({
@@ -1924,7 +1759,6 @@ class EventController {
         });
       }
 
-      // Check if user is admin (role_id = 1 or 2)
       const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
       if (!adminRows.length) {
         return res.json({
@@ -1934,7 +1768,6 @@ class EventController {
         });
       }
 
-      // Check if keys is provided
       if (!keys) {
         return res.json({
           status: false,
@@ -1943,7 +1776,6 @@ class EventController {
         });
       }
 
-      // Get event details with joins (matching PHP exactly)
       const detailsRows = await query(`
         SELECT user_event_details.*, countries.name as country_name, states.name as state_name, cities.name as city_name, users.full_name, event_mode.name as event_mode_name, event_type.name as event_type_name, industry_type.name as industry_name
         FROM user_event_details
@@ -1968,10 +1800,9 @@ class EventController {
 
       const details = detailsRows[0];
 
-      // Format dates and times (matching PHP exactly)
       if (details.event_date) {
         const date = new Date(details.event_date);
-        details.event_date = date.toLocaleDateString('en-GB'); // dd-mm-yyyy format
+        details.event_date = date.toLocaleDateString('en-GB'); 
       }
       if (details.event_start_time) {
         const time = new Date(`2000-01-01T${details.event_start_time}`);

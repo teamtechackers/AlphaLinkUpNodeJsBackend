@@ -164,7 +164,6 @@ class EventTypeController {
         });
       }
 
-      // Verify admin user
       const adminUser = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       console.log('adminSubmitEventType - adminUser:', adminUser);
       if (!adminUser.length) {
@@ -175,7 +174,6 @@ class EventTypeController {
         });
       }
 
-      // Check if user is admin (skip admin_users table check as it doesn't exist)
       console.log('adminSubmitEventType - Skipping admin_users check, using users table');
 
       if (!name || name.trim() === '') {
@@ -189,13 +187,11 @@ class EventTypeController {
       const currentTime = new Date().toISOString().slice(0, 19).replace('T', ' ');
 
       if (row_id && row_id !== '') {
-        // Update existing event type (matching PHP exactly)
         await query(
           'UPDATE event_type SET name = ?, status = ?, updated_at = ?, updated_by = ? WHERE id = ?',
           [name.trim(), status || 1, currentTime, decodedUserId, row_id]
         );
       } else {
-        // Insert new event type (matching PHP exactly)
         await query(
           'INSERT INTO event_type (name, status, created_at, created_by, deleted) VALUES (?, ?, ?, ?, 0)',
           [name.trim(), status || 1, currentTime, decodedUserId]
@@ -217,10 +213,8 @@ class EventTypeController {
     }
   }
 
-  // Admin function - List event type ajax
   static async adminListEventTypeAjax(req, res) {
     try {
-      // Support both query parameters and form data
       const { user_id, token } = {
         ...req.query,
         ...req.body
@@ -228,7 +222,6 @@ class EventTypeController {
 
       console.log('adminListEventTypeAjax - Parameters:', { user_id, token });
 
-      // Check if user_id and token are provided
       if (!user_id || !token) {
         return res.json({
           status: false,
@@ -237,7 +230,6 @@ class EventTypeController {
         });
       }
 
-      // Decode user ID
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
         return res.json({
@@ -247,7 +239,6 @@ class EventTypeController {
         });
       }
 
-      // Get user details and validate
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return res.json({
@@ -259,7 +250,6 @@ class EventTypeController {
 
       const user = userRows[0];
 
-      // Validate token
       if (user.unique_token !== token) {
         return res.json({
           status: false,

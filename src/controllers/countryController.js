@@ -5,9 +5,6 @@ const { idEncode, idDecode } = require('../utils/idCodec');
 
 const CountryController = {
 
-  // ===== API CONTROLLER FUNCTIONS =====
-
-  // Get country list for mobile app
   async getCountryList(req, res) {
     console.log('=== getCountryList method called ===');
     try {
@@ -36,7 +33,6 @@ const CountryController = {
         });
       }
 
-      // Check if user exists and has valid token
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return res.json({
@@ -78,12 +74,9 @@ const CountryController = {
     }
   },
 
-  // ===== ADMIN CONTROLLER FUNCTIONS =====
 
-  // Get country list for admin - PHP compatible version
   async getAdminCountryList(req, res) {
     try {
-      // Support both query parameters and form data
       const { user_id, token } = {
         ...req.query,
         ...req.body
@@ -91,7 +84,6 @@ const CountryController = {
       
       console.log('getCountryList - Parameters:', { user_id, token });
       
-      // Check if user_id and token are provided
       if (!user_id || !token) {
         return res.json({
           status: false,
@@ -100,7 +92,7 @@ const CountryController = {
         });
       }
       
-      // Decode user ID
+   
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
         return res.json({
@@ -110,7 +102,6 @@ const CountryController = {
         });
       }
       
-      // Get user details and validate
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return res.json({
@@ -122,7 +113,6 @@ const CountryController = {
       
       const user = userRows[0];
       
-      // Validate token
       if (user.unique_token !== token) {
         return res.json({
           status: false,
@@ -131,7 +121,6 @@ const CountryController = {
         });
       }
 
-      // Get countries list
       const countriesList = await query(`
         SELECT 
           c.id,
@@ -168,10 +157,8 @@ const CountryController = {
     }
   },
 
-  // Get country list for DataTables - PHP compatible version
   async getAdminCountryLists(req, res) {
     try {
-      // Support both query parameters and form data
       const { user_id, token, draw, start, length, search, order } = {
         ...req.query,
         ...req.body
@@ -179,7 +166,6 @@ const CountryController = {
       
       console.log('getCountryLists - Parameters:', { user_id, token, draw, start, length, search, order });
       
-      // Check if user_id and token are provided
       if (!user_id || !token) {
         return res.json({
           status: false,
@@ -188,7 +174,6 @@ const CountryController = {
         });
       }
       
-      // Decode user ID
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
         return res.json({
@@ -198,7 +183,6 @@ const CountryController = {
         });
       }
       
-      // Get user details and validate
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return res.json({
@@ -210,7 +194,6 @@ const CountryController = {
       
       const user = userRows[0];
       
-      // Validate token
       if (user.unique_token !== token) {
         return res.json({
           status: false,
@@ -219,7 +202,6 @@ const CountryController = {
         });
       }
 
-      // Build search condition
       let searchCondition = '';
       let searchParams = [];
       
@@ -228,7 +210,6 @@ const CountryController = {
         searchParams.push(`%${search.value}%`);
       }
 
-      // Get total count
       const totalCountResult = await query(`
         SELECT COUNT(*) as total 
         FROM countries c 
@@ -236,7 +217,6 @@ const CountryController = {
       `);
       const totalCount = totalCountResult[0].total;
 
-      // Get filtered count
       const filteredCountResult = await query(`
         SELECT COUNT(*) as filtered 
         FROM countries c 
@@ -244,7 +224,6 @@ const CountryController = {
       `, searchParams);
       const filteredCount = filteredCountResult[0].filtered;
 
-      // Build order clause
       let orderClause = 'ORDER BY c.name ASC';
       if (order && order.length > 0) {
         const orderColumn = order[0].column;
@@ -255,7 +234,6 @@ const CountryController = {
         }
       }
 
-      // Get paginated data
       const countriesList = await query(`
         SELECT 
           c.id,
@@ -274,7 +252,6 @@ const CountryController = {
         LIMIT ? OFFSET ?
       `, [...searchParams, parseInt(length), parseInt(start)]);
 
-      // Return DataTables format response
       return res.json({
         draw: parseInt(draw),
         recordsTotal: totalCount,
@@ -292,10 +269,8 @@ const CountryController = {
     }
   },
 
-  // Save country - PHP compatible version
   async saveAdminCountry(req, res) {
     try {
-      // Support both query parameters and form data
       const { user_id, token, id, name, status } = {
         ...req.query,
         ...req.body
@@ -303,7 +278,6 @@ const CountryController = {
       
       console.log('saveCountry - Parameters:', { user_id, token, id, name, status });
       
-      // Check if user_id and token are provided
       if (!user_id || !token) {
         return res.json({
           status: false,
@@ -312,7 +286,6 @@ const CountryController = {
         });
       }
       
-      // Check mandatory fields
       if (!name || name.trim() === '') {
         return res.json({
           status: false,
@@ -321,7 +294,6 @@ const CountryController = {
         });
       }
       
-      // Decode user ID
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
         return res.json({
@@ -331,7 +303,6 @@ const CountryController = {
         });
       }
       
-      // Get user details and validate
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return res.json({
@@ -343,7 +314,6 @@ const CountryController = {
       
       const user = userRows[0];
       
-      // Validate token
       if (user.unique_token !== token) {
         return res.json({
           status: false,
@@ -352,7 +322,6 @@ const CountryController = {
         });
       }
 
-      // Check for duplicate name
       let duplicateCheckQuery = 'SELECT COUNT(*) as count FROM countries WHERE name = ? AND deleted = 0';
       let duplicateCheckParams = [name.trim()];
       
@@ -375,7 +344,6 @@ const CountryController = {
       const currentTime = new Date().toISOString().slice(0, 19).replace('T', ' ');
 
       if (id && id > 0) {
-        // Update existing country
         result = await query(`
           UPDATE countries 
           SET name = ?, status = ?, updated_at = ?, updated_by = ?
@@ -390,14 +358,12 @@ const CountryController = {
           });
         }
       } else {
-        // Insert new country
         result = await query(`
           INSERT INTO countries (name, status, created_at, created_by, deleted, deleted_by, deleted_at)
           VALUES (?, ?, ?, ?, 0, NULL, NULL)
         `, [name.trim(), status || 1, currentTime, decodedUserId]);
       }
 
-      // Return success response
       return res.json({
         status: true,
         rcode: 200,
@@ -417,21 +383,17 @@ const CountryController = {
     }
   },
 
-  // View/Edit country form - PHP compatible version
   async viewAdminAddEditForm(req, res) {
     try {
-      // Support both query parameters and form data
       const { user_id, token } = {
         ...req.query,
         ...req.body
       };
       
-      // Get country ID from URL parameter
       const countryId = req.params.id || req.params[0];
 
       console.log('viewAddEditForm - Parameters:', { user_id, token, countryId });
 
-      // Check if user_id and token are provided
       if (!user_id || !token) {
         return res.json({
           status: false,
@@ -440,7 +402,6 @@ const CountryController = {
         });
       }
       
-      // Decode user ID
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
         return res.json({
@@ -450,7 +411,6 @@ const CountryController = {
         });
       }
       
-      // Get user details and validate
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return res.json({
@@ -462,7 +422,6 @@ const CountryController = {
       
       const user = userRows[0];
       
-      // Validate token
       if (user.unique_token !== token) {
         return res.json({
           status: false,
@@ -474,7 +433,6 @@ const CountryController = {
       let countryData = null;
       
       if (countryId && countryId > 0) {
-        // Get country details for editing
         const countryRows = await query(`
           SELECT 
             c.id,
@@ -502,7 +460,6 @@ const CountryController = {
         }
       }
 
-      // Return response in PHP format
       return res.json({
         status: true,
         rcode: 200,
@@ -522,21 +479,17 @@ const CountryController = {
     }
   },
 
-  // Delete country - PHP compatible version
   async deleteAdminCountry(req, res) {
     try {
-      // Support both query parameters and form data
       const { user_id, token } = {
         ...req.query,
         ...req.body
       };
       
-      // Get country ID from URL parameter
       const countryId = req.params.id || req.params[0];
 
       console.log('deleteCountry - Parameters:', { user_id, token, countryId });
 
-      // Check if user_id and token are provided
       if (!user_id || !token) {
         return res.json({
           status: false,
@@ -545,7 +498,6 @@ const CountryController = {
         });
       }
       
-      // Check if country ID is provided
       if (!countryId || countryId <= 0) {
         return res.json({
           status: false,
@@ -554,7 +506,6 @@ const CountryController = {
         });
       }
       
-      // Decode user ID
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
         return res.json({
@@ -564,7 +515,6 @@ const CountryController = {
         });
       }
       
-      // Get user details and validate
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return res.json({
@@ -576,7 +526,6 @@ const CountryController = {
       
       const user = userRows[0];
       
-      // Validate token
       if (user.unique_token !== token) {
         return res.json({
           status: false,
@@ -585,7 +534,6 @@ const CountryController = {
         });
       }
 
-      // Check if country exists and is not already deleted
       const countryRows = await query(`
         SELECT id, name FROM countries 
         WHERE id = ? AND deleted = 0
@@ -599,7 +547,6 @@ const CountryController = {
         });
       }
 
-      // Check if country is being used in other tables
       const stateCount = await query('SELECT COUNT(*) as count FROM states WHERE country_id = ? AND deleted = 0', [countryId]);
       const userCount = await query('SELECT COUNT(*) as count FROM users WHERE country_id = ?', [countryId]);
       
@@ -619,7 +566,6 @@ const CountryController = {
         });
       }
 
-      // Soft delete the country
       const currentTime = new Date().toISOString().slice(0, 19).replace('T', ' ');
       const result = await query(`
         UPDATE countries 
@@ -635,7 +581,6 @@ const CountryController = {
         });
       }
 
-      // Return success response
       return res.json({
         status: true,
         rcode: 200,
@@ -654,10 +599,8 @@ const CountryController = {
     }
   },
 
-  // Check duplicate country - PHP compatible version
   async checkAdminDuplicateCountry(req, res) {
     try {
-      // Support both query parameters and form data
       const { user_id, token, name, id } = {
         ...req.query,
         ...req.body
@@ -665,7 +608,6 @@ const CountryController = {
 
       console.log('checkDuplicateCountry - Parameters:', { user_id, token, name, id });
 
-      // Check if user_id and token are provided
       if (!user_id || !token) {
         return res.json({
           status: false,
@@ -674,7 +616,6 @@ const CountryController = {
         });
       }
       
-      // Check if name is provided
       if (!name || name.trim() === '') {
         return res.json({
           status: false,
@@ -682,9 +623,7 @@ const CountryController = {
           message: 'Please enter mandatory fields'
         });
       }
-      
-      // Decode user ID
-      const decodedUserId = idDecode(user_id);
+            const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
         return res.json({
           status: false,
@@ -693,7 +632,6 @@ const CountryController = {
         });
       }
       
-      // Get user details and validate
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return res.json({
@@ -705,7 +643,6 @@ const CountryController = {
       
       const user = userRows[0];
       
-      // Validate token
       if (user.unique_token !== token) {
         return res.json({
           status: false,
@@ -714,7 +651,6 @@ const CountryController = {
         });
       }
 
-      // Check for duplicate name
       let duplicateCheckQuery = 'SELECT COUNT(*) as count FROM countries WHERE name = ? AND deleted = 0';
       let duplicateCheckParams = [name.trim()];
       
@@ -726,7 +662,6 @@ const CountryController = {
       const duplicateResult = await query(duplicateCheckQuery, duplicateCheckParams);
       const isDuplicate = duplicateResult[0].count > 0;
 
-      // Return response in PHP format
       return res.json({
         status: true,
         rcode: 200,

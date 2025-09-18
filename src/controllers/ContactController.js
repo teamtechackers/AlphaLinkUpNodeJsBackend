@@ -6,9 +6,7 @@ const { successResponse, errorResponse } = require('../utils/response');
 const { idEncode, idDecode } = require('../utils/idCodec');
 
 class ContactController {
-  /**
-   * Add a new contact
-   */
+ 
   static async addContact(req, res) {
     try {
       const userId = req.user.id;
@@ -37,9 +35,7 @@ class ContactController {
     }
   }
 
-  /**
-   * Get all contacts for a user
-   */
+ 
   static async getUserContacts(req, res) {
     try {
       const userId = req.user.id;
@@ -61,9 +57,7 @@ class ContactController {
     }
   }
 
-  /**
-   * Get a specific contact
-   */
+ 
   static async getContact(req, res) {
     try {
       const { contact_id } = req.params;
@@ -84,9 +78,7 @@ class ContactController {
     }
   }
 
-  /**
-   * Update a contact
-   */
+  
   static async updateContact(req, res) {
     try {
       const { contact_id } = req.params;
@@ -117,9 +109,7 @@ class ContactController {
     }
   }
 
-  /**
-   * Delete a contact
-   */
+ 
   static async deleteContact(req, res) {
     try {
       const { contact_id } = req.params;
@@ -146,9 +136,7 @@ class ContactController {
     }
   }
 
-  /**
-   * Move contact to different folder
-   */
+ 
   static async moveContact(req, res) {
     try {
       const { contact_id } = req.params;
@@ -181,9 +169,7 @@ class ContactController {
     }
   }
 
-  /**
-   * Search contacts
-   */
+  
   static async searchContacts(req, res) {
     try {
       const userId = req.user.id;
@@ -207,9 +193,7 @@ class ContactController {
     }
   }
 
-  /**
-   * Get contact statistics
-   */
+ 
   static async getContactStats(req, res) {
     try {
       const userId = req.user.id;
@@ -223,9 +207,7 @@ class ContactController {
     }
   }
 
-  /**
-   * Import contacts from file
-   */
+  
   static async importContacts(req, res) {
     try {
       const userId = req.user.id;
@@ -252,9 +234,7 @@ class ContactController {
     }
   }
 
-  /**
-   * Export contacts
-   */
+  
   static async exportContacts(req, res) {
     try {
       const userId = req.user.id;
@@ -280,9 +260,7 @@ class ContactController {
     }
   }
 
-  /**
-   * Get contact suggestions
-   */
+  
   static async getContactSuggestions(req, res) {
     try {
       const userId = req.user.id;
@@ -301,9 +279,6 @@ class ContactController {
     }
   }
 
-  /**
-   * Sync contacts with external service
-   */
   static async syncContacts(req, res) {
     try {
       const userId = req.user.id;
@@ -332,9 +307,7 @@ class ContactController {
     }
   }
 
-  /**
-   * Get contact categories
-   */
+  
   static async getContactCategories(req, res) {
     try {
       const userId = req.user.id;
@@ -348,9 +321,7 @@ class ContactController {
     }
   }
 
-  /**
-   * Add contact category
-   */
+ 
   static async addContactCategory(req, res) {
     try {
       const userId = req.user.id;
@@ -380,9 +351,7 @@ class ContactController {
     }
   }
 
-  /**
-   * Update contact category
-   */
+
   static async updateContactCategory(req, res) {
     try {
       const { category_id } = req.params;
@@ -409,9 +378,6 @@ class ContactController {
     }
   }
 
-  /**
-   * Delete contact category
-   */
   static async deleteContactCategory(req, res) {
     try {
       const { category_id } = req.params;

@@ -4,9 +4,7 @@ const { errorResponse, phpResponse } = require('../utils/response');
 const { logger } = require('../utils/logger');
 
 const CityController = {
-  // ===== API CONTROLLER FUNCTIONS =====
   
-  // Get city list for mobile API
   async getCityList(req, res) {
     try {
       const { user_id, token, state_id } = { ...req.query, ...req.body };
@@ -15,19 +13,18 @@ const CityController = {
         return errorResponse(res, 'user_id, token, and state_id are required', 400);
       }
 
-      // Decode user ID
+  
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
         return errorResponse(res, 'Invalid user_id', 400);
       }
 
-      // Verify user token
+ 
       const userCheck = await query('SELECT user_id FROM users WHERE user_id = ? AND unique_token = ? AND deleted = 0', [decodedUserId, token]);
       if (userCheck.length === 0) {
         return errorResponse(res, 'Invalid token or user not found', 401);
       }
 
-      // Get cities for the specified state
       const rows = await query('SELECT id AS city_id, name AS city_name FROM cities WHERE state_id = ?', [state_id]);
       
       if (rows.length === 0) {
@@ -49,12 +46,9 @@ const CityController = {
     }
   },
 
-  // ===== ADMIN CONTROLLER FUNCTIONS =====
 
-  // View cities - PHP compatible version
   async viewCities(req, res) {
     try {
-      // Support both query parameters and form data
       const { user_id, token } = {
         ...req.query,
         ...req.body
@@ -62,7 +56,6 @@ const CityController = {
 
       console.log('viewCities - Parameters:', { user_id, token });
 
-      // Check if user_id and token are provided
       if (!user_id || !token) {
         return res.json({
           status: false,
@@ -71,7 +64,6 @@ const CityController = {
         });
       }
 
-      // Decode user ID
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
         return res.json({
@@ -81,7 +73,6 @@ const CityController = {
         });
       }
 
-      // Get user details and validate
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return res.json({
@@ -93,7 +84,6 @@ const CityController = {
 
       const user = userRows[0];
 
-      // Validate token
       if (user.unique_token !== token) {
         return res.json({
           status: false,
@@ -102,7 +92,6 @@ const CityController = {
         });
       }
 
-      // Check if user is admin (role_id = 1 or 2)
       const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
       if (!adminRows.length) {
         return res.json({
@@ -112,8 +101,8 @@ const CityController = {
         });
       }
 
-      // Get cities with state names - with LIMIT to prevent large responses
-      const limit = 1000; // Default limit to prevent 3.9MB responses
+
+      const limit = 1000; 
       const cities = await query(`
         SELECT c.id, c.name, c.status, c.state_id, s.name as state_name 
         FROM cities c 
@@ -123,7 +112,6 @@ const CityController = {
         LIMIT ?
       `, [limit]);
 
-      // Return response in PHP format (matching exactly)
       return res.json({
         status: true,
         rcode: 200,
@@ -145,10 +133,8 @@ const CityController = {
     }
   },
 
-  // Submit cities - PHP compatible version
   async submitCities(req, res) {
     try {
-      // Support both query parameters and form data
       const { user_id, token, row_id, state_id, name, status } = {
         ...req.query,
         ...req.body
@@ -156,7 +142,6 @@ const CityController = {
 
       console.log('submitCities - Parameters:', { user_id, token, row_id, state_id, name, status });
 
-      // Check if user_id and token are provided
       if (!user_id || !token) {
         return res.json({
           status: false,
@@ -165,7 +150,6 @@ const CityController = {
         });
       }
 
-      // Decode user ID
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
         return res.json({
@@ -175,7 +159,6 @@ const CityController = {
         });
       }
 
-      // Get user details and validate
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return res.json({
@@ -187,7 +170,6 @@ const CityController = {
 
       const user = userRows[0];
 
-      // Validate token
       if (user.unique_token !== token) {
         return res.json({
           status: false,
@@ -196,7 +178,6 @@ const CityController = {
         });
       }
 
-      // Check if user is admin (role_id = 1 or 2)
       const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
       if (!adminRows.length) {
         return res.json({
@@ -206,7 +187,6 @@ const CityController = {
         });
       }
 
-      // Check if required fields are provided
       if (!state_id || !name) {
         return res.json({
           status: false,
@@ -215,11 +195,9 @@ const CityController = {
         });
       }
 
-      // Get admin role_id
       const admin = adminRows[0];
 
       if (!row_id || row_id === '') {
-        // Insert new city (matching PHP exactly)
         const insertData = {
           state_id: state_id,
           name: name.trim(),
@@ -235,14 +213,12 @@ const CityController = {
 
         const info = 'Data Created Successfully';
 
-        // Return response in PHP format (matching exactly)
         return res.json({
           status: 'Success',
           info: info
         });
 
       } else {
-        // Update existing city (matching PHP exactly)
         const updateData = {
           state_id: state_id,
           name: name.trim(),
@@ -257,8 +233,6 @@ const CityController = {
         );
 
         const info = 'Data Updated Successfully';
-
-        // Return response in PHP format (matching exactly)
         return res.json({
           status: 'Success',
           info: info
@@ -274,10 +248,8 @@ const CityController = {
     }
   },
 
-  // List cities ajax - PHP compatible version
   async listCitiesAjax(req, res) {
     try {
-      // Support both query parameters and form data
       const { user_id, token } = {
         ...req.query,
         ...req.body
@@ -285,7 +257,6 @@ const CityController = {
 
       console.log('listCitiesAjax - Parameters:', { user_id, token });
 
-      // Check if user_id and token are provided
       if (!user_id || !token) {
         return res.json({
           status: false,
@@ -294,7 +265,6 @@ const CityController = {
         });
       }
 
-      // Decode user ID
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
         return res.json({
@@ -304,7 +274,6 @@ const CityController = {
         });
       }
 
-      // Get user details and validate
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return res.json({
@@ -316,7 +285,6 @@ const CityController = {
 
       const user = userRows[0];
 
-      // Validate token
       if (user.unique_token !== token) {
         return res.json({
           status: false,
@@ -325,7 +293,6 @@ const CityController = {
         });
       }
 
-      // Check if user is admin (role_id = 1 or 2)
       const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
       if (!adminRows.length) {
         return res.json({
@@ -335,17 +302,14 @@ const CityController = {
         });
       }
 
-      // DataTables parameters
       const drawValue = parseInt(req.body.draw || req.query.draw || 1);
       const startValue = parseInt(req.body.start || req.query.start || 0);
       const lengthValue = parseInt(req.body.length || req.query.length || 10);
       const searchValue = req.body.search?.value || req.query.search || '';
 
-      // Get total count
       const totalCountResult = await query('SELECT COUNT(*) as count FROM cities WHERE deleted = 0');
       const totalCount = totalCountResult[0]?.count || 0;
 
-      // Build search query
       let searchQuery = '';
       let searchParams = [];
       if (searchValue) {
@@ -355,7 +319,6 @@ const CityController = {
         searchQuery = 'WHERE cities.deleted = 0';
       }
 
-      // Get filtered count
       let filteredCountQuery = `
         SELECT COUNT(*) as count
         FROM cities
