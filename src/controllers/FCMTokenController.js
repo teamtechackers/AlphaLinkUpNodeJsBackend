@@ -2,10 +2,7 @@ const { query } = require('../config/db');
 const { idDecode } = require('../utils/idCodec');
 
 class FCMTokenController {
-  /**
-   * Update FCM token for user
-   * POST /Api-Update-FCM-Token
-   */
+
   static async updateFCMToken(req, res) {
     try {
       const { user_id, token, fcm_token } = {
@@ -15,7 +12,6 @@ class FCMTokenController {
 
       console.log('updateFCMToken - Parameters:', { user_id, token, fcm_token });
 
-      // Check if user_id and token are provided
       if (!user_id || !token) {
         return res.json({
           status: false,
@@ -32,7 +28,6 @@ class FCMTokenController {
         });
       }
 
-      // Decode user_id
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
         return res.json({
@@ -42,7 +37,6 @@ class FCMTokenController {
         });
       }
 
-      // Verify user and token
       const userRows = await query(
         'SELECT user_id FROM users WHERE user_id = ? AND token = ? LIMIT 1',
         [decodedUserId, token]
@@ -56,7 +50,6 @@ class FCMTokenController {
         });
       }
 
-      // Update FCM token
       await query(
         'UPDATE users SET fcm_token = ?, updated_at = NOW() WHERE user_id = ?',
         [fcm_token, decodedUserId]
@@ -84,10 +77,7 @@ class FCMTokenController {
     }
   }
 
-  /**
-   * Get FCM token for user
-   * GET /Api-Get-FCM-Token
-   */
+ 
   static async getFCMToken(req, res) {
     try {
       const { user_id, token } = {
@@ -97,7 +87,6 @@ class FCMTokenController {
 
       console.log('getFCMToken - Parameters:', { user_id, token });
 
-      // Check if user_id and token are provided
       if (!user_id || !token) {
         return res.json({
           status: false,
@@ -106,7 +95,6 @@ class FCMTokenController {
         });
       }
 
-      // Decode user_id
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
         return res.json({
@@ -116,7 +104,6 @@ class FCMTokenController {
         });
       }
 
-      // Verify user and token
       const userRows = await query(
         'SELECT fcm_token FROM users WHERE user_id = ? AND token = ? LIMIT 1',
         [decodedUserId, token]

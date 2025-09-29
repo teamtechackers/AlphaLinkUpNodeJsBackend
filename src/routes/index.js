@@ -113,10 +113,10 @@ router.post('/Api-Save-Work-Details', uploadFormData.none(), UserProfileControll
 router.get('/Api-View-Work-Details', UserProfileController.getWorkDetails);
 router.post('/Api-View-Work-Details', uploadFormData.none(), UserProfileController.getWorkDetails);
 router.post('/Api-Delete-Work-Detail', uploadFormData.none(), UserProfileController.deleteWorkDetail);
-router.post('/Api-Save-Project-Details', uploadProjectLogo.single('project_logo'), UserProfileController.saveProjectDetails);
-router.get('/Api-View-Project-Details', UserProfileController.getProjectDetails);
-router.post('/Api-View-Project-Details', uploadFormData.none(), UserProfileController.getProjectDetails);
-router.post('/Api-Delete-Project-Detail', uploadFormData.none(), UserProfileController.deleteProjectDetail);
+router.post('/Api-Save-Project-Details', uploadProjectLogo.single('project_logo'), ApiController.saveProjectDetails);
+router.get('/Api-View-Project-Details', ApiController.getProjectDetails);
+router.post('/Api-View-Project-Details', uploadFormData.none(), ApiController.getProjectDetails);
+router.post('/Api-Delete-Project-Detail', uploadFormData.none(), ApiController.deleteProjectDetail);
 router.post('/Api-Save-Education-Details', uploadFormData.none(), UserProfileController.saveEducationDetails);
 router.get('/Api-View-Education-Details', UserProfileController.getEducationDetails);
 router.post('/Api-Delete-Education-Detail', uploadFormData.none(), UserProfileController.deleteEducationDetail);

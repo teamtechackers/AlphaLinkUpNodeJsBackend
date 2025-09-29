@@ -337,7 +337,19 @@ class EventModeController {
 
       console.log('adminCheckDuplicateEventMode - Parameters:', { user_id, token, name, id });
 
-      const adminUser = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [user_id]);
+      // Decode user ID
+      const decodedUserId = idDecode(user_id);
+      console.log('adminCheckDuplicateEventMode - decodedUserId:', decodedUserId);
+      if (!decodedUserId) {
+        return res.status(400).json({
+          status: false,
+          rcode: 400,
+          message: 'Invalid user ID'
+        });
+      }
+
+      const adminUser = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      console.log('adminCheckDuplicateEventMode - adminUser:', adminUser);
       if (!adminUser.length) {
         return res.status(400).json({
           status: false,
@@ -346,14 +358,7 @@ class EventModeController {
         });
       }
 
-      const adminUserData = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
-      if (!adminUserData.length) {
-        return res.status(400).json({
-          status: false,
-          rcode: 400,
-          message: 'Invalid admin user'
-        });
-      }
+      console.log('adminCheckDuplicateEventMode - Skipping admin_users check, using users table');
 
       if (!name || name.trim() === '') {
         return res.json({

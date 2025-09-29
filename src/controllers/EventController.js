@@ -1343,7 +1343,7 @@ class EventController {
         const insertData = {
           user_id: parseInt(eventUserId),
           event_name: event_name ? event_name.trim() : '',
-          industry_type: industry_type ? industry_type.trim() : '',
+          industry_type: industry_type ? parseInt(industry_type) : null,
           country_id: country_id ? parseInt(country_id) : 166, // Default to Pakistan
           state_id: state_id ? parseInt(state_id) : 2728, // Default to Punjab
           city_id: city_id ? parseInt(city_id) : 31439, // Default to Lahore
@@ -1381,10 +1381,10 @@ class EventController {
         let updateQuery, updateParams;
         if (event_banner_file) {
           updateQuery = 'UPDATE user_event_details SET user_id = ?, event_name = ?, industry_type = ?, country_id = ?, state_id = ?, city_id = ?, event_venue = ?, event_link = ?, event_lat = ?, event_lng = ?, event_geo_address = ?, event_date = ?, event_start_time = ?, event_end_time = ?, event_mode_id = ?, event_type_id = ?, event_details = ?, event_banner = ?, status = ?, updated_at = ?, updated_by = ? WHERE event_id = ?';
-          updateParams = [parseInt(eventUserId), event_name ? event_name.trim() : '', industry_type ? industry_type.trim() : '', country_id ? parseInt(country_id) : 166, state_id ? parseInt(state_id) : 2728, city_id ? parseInt(city_id) : 31439, event_venue ? event_venue.trim() : '', event_link ? event_link.trim() : '', event_lat ? event_lat.toString() : '', event_lng ? event_lng.toString() : '', event_geo_address ? event_geo_address.trim() : '', event_date ? event_date.trim() : null, event_start_time ? event_start_time.trim() : null, event_end_time ? event_end_time.trim() : null, event_mode_id ? parseInt(event_mode_id) : null, event_type_id ? parseInt(event_type_id) : null, event_details ? event_details.trim() : '', event_banner_file, status !== undefined ? parseInt(status) : 1, new Date().toISOString().slice(0, 19).replace('T', ' '), admin.role_id, row_id];
+          updateParams = [parseInt(eventUserId), event_name ? event_name.trim() : '', industry_type ? parseInt(industry_type) : null, country_id ? parseInt(country_id) : 166, state_id ? parseInt(state_id) : 2728, city_id ? parseInt(city_id) : 31439, event_venue ? event_venue.trim() : '', event_link ? event_link.trim() : '', event_lat ? event_lat.toString() : '', event_lng ? event_lng.toString() : '', event_geo_address ? event_geo_address.trim() : '', event_date ? event_date.trim() : null, event_start_time ? event_start_time.trim() : null, event_end_time ? event_end_time.trim() : null, event_mode_id ? parseInt(event_mode_id) : null, event_type_id ? parseInt(event_type_id) : null, event_details ? event_details.trim() : '', event_banner_file, status !== undefined ? parseInt(status) : 1, new Date().toISOString().slice(0, 19).replace('T', ' '), admin.role_id, row_id];
         } else {
           updateQuery = 'UPDATE user_event_details SET user_id = ?, event_name = ?, industry_type = ?, country_id = ?, state_id = ?, city_id = ?, event_venue = ?, event_link = ?, event_lat = ?, event_lng = ?, event_geo_address = ?, event_date = ?, event_start_time = ?, event_end_time = ?, event_mode_id = ?, event_type_id = ?, event_details = ?, status = ?, updated_at = ?, updated_by = ? WHERE event_id = ?';
-          updateParams = [parseInt(eventUserId), event_name ? event_name.trim() : '', industry_type ? industry_type.trim() : '', country_id ? parseInt(country_id) : 166, state_id ? parseInt(state_id) : 2728, city_id ? parseInt(city_id) : 31439, event_venue ? event_venue.trim() : '', event_link ? event_link.trim() : '', event_lat ? event_lat.toString() : '', event_lng ? event_lng.toString() : '', event_geo_address ? event_geo_address.trim() : '', event_date ? event_date.trim() : null, event_start_time ? event_start_time.trim() : null, event_end_time ? event_end_time.trim() : null, event_mode_id ? parseInt(event_mode_id) : null, event_type_id ? parseInt(event_type_id) : null, event_details ? event_details.trim() : '', status !== undefined ? parseInt(status) : 1, new Date().toISOString().slice(0, 19).replace('T', ' '), admin.role_id, row_id];
+          updateParams = [parseInt(eventUserId), event_name ? event_name.trim() : '', industry_type ? parseInt(industry_type) : null, country_id ? parseInt(country_id) : 166, state_id ? parseInt(state_id) : 2728, city_id ? parseInt(city_id) : 31439, event_venue ? event_venue.trim() : '', event_link ? event_link.trim() : '', event_lat ? event_lat.toString() : '', event_lng ? event_lng.toString() : '', event_geo_address ? event_geo_address.trim() : '', event_date ? event_date.trim() : null, event_start_time ? event_start_time.trim() : null, event_end_time ? event_end_time.trim() : null, event_mode_id ? parseInt(event_mode_id) : null, event_type_id ? parseInt(event_type_id) : null, event_details ? event_details.trim() : '', status !== undefined ? parseInt(status) : 1, new Date().toISOString().slice(0, 19).replace('T', ' '), admin.role_id, row_id];
         }
 
         await query(updateQuery, updateParams);
@@ -1452,6 +1452,7 @@ class EventController {
           ued.user_id,
           ued.event_name,
           ued.industry_type,
+          it.name as industry_name,
           ued.country_id,
           ued.state_id,
           ued.city_id,
@@ -1477,6 +1478,7 @@ class EventController {
         LEFT JOIN countries c ON ued.country_id = c.id
         LEFT JOIN states s ON ued.state_id = s.id
         LEFT JOIN cities ci ON ued.city_id = ci.id
+        LEFT JOIN industry_type it ON it.id = ued.industry_type
         WHERE ued.deleted = 0
       `;
 
@@ -1513,8 +1515,8 @@ class EventController {
         user_id: String(event.user_id),
         user_name: event.user_name || "",
         event_name: event.event_name || "",
-        industry_id: "",
-        industry_name: event.industry_type || "",
+        industry_id: event.industry_type ? String(event.industry_type) : "",
+        industry_name: event.industry_name || "",
         country_id: event.country_id ? String(event.country_id) : "",
         country_name: event.country_name || "",
         state_id: event.state_id ? String(event.state_id) : "",
