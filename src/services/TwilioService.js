@@ -7,6 +7,14 @@ class TwilioService {
   constructor() {
     this.client = null;
     this.verifyServiceSid = null;
+    // Test numbers with fixed OTP for testing (bypass Twilio)
+    this.testNumbers = {
+      '+923001234567': '123456',  // Test Number 1
+      '+923007654321': '123456',  // Test Number 2
+      '+923009876543': '123456',  // Test Number 3
+      '+923111234567': '123456',  // Test Number 4
+      '+923451234567': '123456'   // Test Number 5
+    };
     this.initializeTwilio();
   }
 
@@ -59,13 +67,27 @@ class TwilioService {
    */
   async sendOTP(mobile) {
     try {
-      // Ensure Twilio client is initialized
+      // Format mobile number first
+      const formattedMobile = this.formatMobileNumber(mobile);
+      
+      // Check if this is a test number
+      if (this.testNumbers[formattedMobile]) {
+        logger.info(`Test number detected: ${formattedMobile}. Bypassing Twilio. Use OTP: ${this.testNumbers[formattedMobile]}`);
+        return {
+          success: true,
+          verificationSid: `TEST_${Date.now()}`, // Mock verification SID
+          status: 'pending',
+          channel: 'sms',
+          to: formattedMobile,
+          isTestNumber: true,
+          testOTP: this.testNumbers[formattedMobile]
+        };
+      }
+
+      // Ensure Twilio client is initialized for real numbers
       if (!this.client || !this.verifyServiceSid) {
         throw new Error('Twilio client not properly initialized');
       }
-
-      // Format mobile number for Twilio
-      const formattedMobile = this.formatMobileNumber(mobile);
       
       logger.info(`Sending OTP via Twilio to ${formattedMobile}`);
       
@@ -134,18 +156,43 @@ class TwilioService {
    */
   async verifyOTP(mobile, otp, verificationSid) {
     try {
-      // Ensure Twilio client is initialized
-      if (!this.client || !this.verifyServiceSid) {
-        throw new Error('Twilio client not properly initialized');
-      }
-
       // Validate input parameters
       if (!otp || !verificationSid) {
         throw new Error('OTP code and verification SID are required');
       }
 
-      // Format mobile number for Twilio
+      // Format mobile number
       const formattedMobile = this.formatMobileNumber(mobile);
+      
+      // Check if this is a test number
+      if (this.testNumbers[formattedMobile]) {
+        logger.info(`Test number detected: ${formattedMobile}. Verifying test OTP.`);
+        const isValid = otp === this.testNumbers[formattedMobile];
+        
+        if (isValid) {
+          logger.info(`Test OTP verification successful for ${formattedMobile}`);
+          return {
+            success: true,
+            status: 'approved',
+            message: 'OTP verified successfully',
+            verificationSid: verificationSid,
+            isTestNumber: true
+          };
+        } else {
+          logger.warn(`Invalid test OTP for ${formattedMobile}. Expected: ${this.testNumbers[formattedMobile]}, Got: ${otp}`);
+          return {
+            success: false,
+            status: 'denied',
+            message: 'Invalid OTP code',
+            isTestNumber: true
+          };
+        }
+      }
+
+      // Ensure Twilio client is initialized for real numbers
+      if (!this.client || !this.verifyServiceSid) {
+        throw new Error('Twilio client not properly initialized');
+      }
       
       logger.info(`Verifying OTP for ${formattedMobile} with code: ${otp}`);
       
