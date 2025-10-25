@@ -1,0 +1,2318 @@
+[
+  {
+    "method": "GET",
+    "path": "/404_override",
+    "controller": "'errors",
+    "action": "page_missing'"
+  },
+  {
+    "method": "GET",
+    "path": "/default_controller",
+    "controller": "admin.'/Login",
+    "action": "index'"
+  },
+  {
+    "method": "GET",
+    "path": "/admin-login",
+    "controller": "admin.'/Login",
+    "action": "index'"
+  },
+  {
+    "method": "GET",
+    "path": "/admin-logout",
+    "controller": "admin.'/Login",
+    "action": "logout'"
+  },
+  {
+    "method": "GET",
+    "path": "/permission-denied",
+    "controller": "admin.'/Permission",
+    "action": "index'"
+  },
+  {
+    "method": "GET",
+    "path": "/admin-dashboard",
+    "controller": "admin.'/Dashboard",
+    "action": "index'"
+  },
+  {
+    "method": "GET",
+    "path": "/list-country",
+    "controller": "admin.'/Masters",
+    "action": "countryList'"
+  },
+  {
+    "method": "GET",
+    "path": "/list-country-ajax",
+    "controller": "admin.'/Masters",
+    "action": "getCountryLists'"
+  },
+  {
+    "method": "GET",
+    "path": "/save-country",
+    "controller": "admin.'/Masters",
+    "action": "saveCountry'"
+  },
+  {
+    "method": "GET",
+    "path": "/edit-country/{param}",
+    "controller": "admin.'/Masters/viewAddEditForm",
+    "action": "$1'"
+  },
+  {
+    "method": "GET",
+    "path": "/delete-country/{param}",
+    "controller": "admin.'/Masters/deleteCountry",
+    "action": "$1'"
+  },
+  {
+    "method": "GET",
+    "path": "/check-duplicate-country",
+    "controller": "admin.'/Masters",
+    "action": "CheckDuplicateCountry'"
+  },
+  {
+    "method": "GET",
+    "path": "/list-state",
+    "controller": "admin.'/Masters",
+    "action": "view_state'"
+  },
+  {
+    "method": "GET",
+    "path": "/submit_state",
+    "controller": "admin.'/Masters",
+    "action": "submit_state'"
+  },
+  {
+    "method": "GET",
+    "path": "/list_state_ajax",
+    "controller": "admin.'/Masters",
+    "action": "list_state_ajax'"
+  },
+  {
+    "method": "GET",
+    "path": "/check_duplicate_state",
+    "controller": "admin.'/Masters",
+    "action": "check_duplicate_state'"
+  },
+  {
+    "method": "GET",
+    "path": "/delete_state",
+    "controller": "admin.'/Masters",
+    "action": "delete_state'"
+  },
+  {
+    "method": "GET",
+    "path": "/list-city",
+    "controller": "admin.'/Masters",
+    "action": "view_cities'"
+  },
+  {
+    "method": "GET",
+    "path": "/submit_cities",
+    "controller": "admin.'/Masters",
+    "action": "submit_cities'"
+  },
+  {
+    "method": "GET",
+    "path": "/list_cities_ajax",
+    "controller": "admin.'/Masters",
+    "action": "list_cities_ajax'"
+  },
+  {
+    "method": "GET",
+    "path": "/check_duplicate_cities",
+    "controller": "admin.'/Masters",
+    "action": "check_duplicate_cities'"
+  },
+  {
+    "method": "GET",
+    "path": "/delete_cities",
+    "controller": "admin.'/Masters",
+    "action": "delete_cities'"
+  },
+  {
+    "method": "GET",
+    "path": "/list-employment-type",
+    "controller": "admin.'/Masters",
+    "action": "view_employment_type'"
+  },
+  {
+    "method": "GET",
+    "path": "/submit_employment_type",
+    "controller": "admin.'/Masters",
+    "action": "submit_employment_type'"
+  },
+  {
+    "method": "GET",
+    "path": "/list_employment_type_ajax",
+    "controller": "admin.'/Masters",
+    "action": "list_employment_type_ajax'"
+  },
+  {
+    "method": "GET",
+    "path": "/check_duplicate_employment_type",
+    "controller": "admin.'/Masters",
+    "action": "check_duplicate_employment_type'"
+  },
+  {
+    "method": "GET",
+    "path": "/delete_employment_type",
+    "controller": "admin.'/Masters",
+    "action": "delete_employment_type'"
+  },
+  {
+    "method": "GET",
+    "path": "/list-interests",
+    "controller": "admin.'/Masters",
+    "action": "view_interests'"
+  },
+  {
+    "method": "GET",
+    "path": "/submit_interest",
+    "controller": "admin.'/Masters",
+    "action": "submit_interest'"
+  },
+  {
+    "method": "GET",
+    "path": "/list_interest_ajax",
+    "controller": "admin.'/Masters",
+    "action": "list_interest_ajax'"
+  },
+  {
+    "method": "GET",
+    "path": "/check_duplicate_interest",
+    "controller": "admin.'/Masters",
+    "action": "check_duplicate_interest'"
+  },
+  {
+    "method": "GET",
+    "path": "/delete_interest",
+    "controller": "admin.'/Masters",
+    "action": "delete_interest'"
+  },
+  {
+    "method": "GET",
+    "path": "/list-job-type",
+    "controller": "admin.'/Masters",
+    "action": "view_job_type'"
+  },
+  {
+    "method": "GET",
+    "path": "/submit_job_type",
+    "controller": "admin.'/Masters",
+    "action": "submit_job_type'"
+  },
+  {
+    "method": "GET",
+    "path": "/list_job_type_ajax",
+    "controller": "admin.'/Masters",
+    "action": "list_job_type_ajax'"
+  },
+  {
+    "method": "GET",
+    "path": "/check_duplicate_job_type",
+    "controller": "admin.'/Masters",
+    "action": "check_duplicate_job_type'"
+  },
+  {
+    "method": "GET",
+    "path": "/delete_job_type",
+    "controller": "admin.'/Masters",
+    "action": "delete_job_type'"
+  },
+  {
+    "method": "GET",
+    "path": "/list-pay",
+    "controller": "admin.'/Masters",
+    "action": "view_pay'"
+  },
+  {
+    "method": "GET",
+    "path": "/submit_pay",
+    "controller": "admin.'/Masters",
+    "action": "submit_pay'"
+  },
+  {
+    "method": "GET",
+    "path": "/list_pay_ajax",
+    "controller": "admin.'/Masters",
+    "action": "list_pay_ajax'"
+  },
+  {
+    "method": "GET",
+    "path": "/check_duplicate_pay",
+    "controller": "admin.'/Masters",
+    "action": "check_duplicate_pay'"
+  },
+  {
+    "method": "GET",
+    "path": "/delete_pay",
+    "controller": "admin.'/Masters",
+    "action": "delete_pay'"
+  },
+  {
+    "method": "GET",
+    "path": "/list-event-mode",
+    "controller": "admin.'/Masters",
+    "action": "view_event_mode'"
+  },
+  {
+    "method": "GET",
+    "path": "/submit_event_mode",
+    "controller": "admin.'/Masters",
+    "action": "submit_event_mode'"
+  },
+  {
+    "method": "GET",
+    "path": "/list_event_mode_ajax",
+    "controller": "admin.'/Masters",
+    "action": "list_event_mode_ajax'"
+  },
+  {
+    "method": "GET",
+    "path": "/check_duplicate_event_mode",
+    "controller": "admin.'/Masters",
+    "action": "check_duplicate_event_mode'"
+  },
+  {
+    "method": "GET",
+    "path": "/delete_event_mode",
+    "controller": "admin.'/Masters",
+    "action": "delete_event_mode'"
+  },
+  {
+    "method": "GET",
+    "path": "/list-event-type",
+    "controller": "admin.'/Masters",
+    "action": "view_event_type'"
+  },
+  {
+    "method": "GET",
+    "path": "/submit_event_type",
+    "controller": "admin.'/Masters",
+    "action": "submit_event_type'"
+  },
+  {
+    "method": "GET",
+    "path": "/list_event_type_ajax",
+    "controller": "admin.'/Masters",
+    "action": "list_event_type_ajax'"
+  },
+  {
+    "method": "GET",
+    "path": "/check_duplicate_event_type",
+    "controller": "admin.'/Masters",
+    "action": "check_duplicate_event_type'"
+  },
+  {
+    "method": "GET",
+    "path": "/delete_event_type",
+    "controller": "admin.'/Masters",
+    "action": "delete_event_type'"
+  },
+  {
+    "method": "GET",
+    "path": "/list-industry-type",
+    "controller": "admin.'/Masters",
+    "action": "view_industry_type'"
+  },
+  {
+    "method": "GET",
+    "path": "/submit_industry_type",
+    "controller": "admin.'/Masters",
+    "action": "submit_industry_type'"
+  },
+  {
+    "method": "GET",
+    "path": "/list_industry_type_ajax",
+    "controller": "admin.'/Masters",
+    "action": "list_industry_type_ajax'"
+  },
+  {
+    "method": "GET",
+    "path": "/check_duplicate_industry_type",
+    "controller": "admin.'/Masters",
+    "action": "check_duplicate_industry_type'"
+  },
+  {
+    "method": "GET",
+    "path": "/delete_industry_type",
+    "controller": "admin.'/Masters",
+    "action": "delete_industry_type'"
+  },
+  {
+    "method": "GET",
+    "path": "/list-fund-size",
+    "controller": "admin.'/Masters",
+    "action": "view_fund_size'"
+  },
+  {
+    "method": "GET",
+    "path": "/submit_fund_size",
+    "controller": "admin.'/Masters",
+    "action": "submit_fund_size'"
+  },
+  {
+    "method": "GET",
+    "path": "/list_fund_size_ajax",
+    "controller": "admin.'/Masters",
+    "action": "list_fund_size_ajax'"
+  },
+  {
+    "method": "GET",
+    "path": "/check_duplicate_fund_size",
+    "controller": "admin.'/Masters",
+    "action": "check_duplicate_fund_size'"
+  },
+  {
+    "method": "GET",
+    "path": "/delete_fund_size",
+    "controller": "admin.'/Masters",
+    "action": "delete_fund_size'"
+  },
+  {
+    "method": "GET",
+    "path": "/list-folders",
+    "controller": "admin.'/Masters",
+    "action": "view_folders'"
+  },
+  {
+    "method": "GET",
+    "path": "/submit_folders",
+    "controller": "admin.'/Masters",
+    "action": "submit_folders'"
+  },
+  {
+    "method": "GET",
+    "path": "/list_folders_ajax",
+    "controller": "admin.'/Masters",
+    "action": "list_folders_ajax'"
+  },
+  {
+    "method": "GET",
+    "path": "/check_duplicate_folders",
+    "controller": "admin.'/Masters",
+    "action": "check_duplicate_folders'"
+  },
+  {
+    "method": "GET",
+    "path": "/delete_folders",
+    "controller": "admin.'/Masters",
+    "action": "delete_folders'"
+  },
+  {
+    "method": "GET",
+    "path": "/list-users",
+    "controller": "admin.'/Users",
+    "action": "view_users'"
+  },
+  {
+    "method": "GET",
+    "path": "/submit_users",
+    "controller": "admin.'/Users",
+    "action": "submit_users'"
+  },
+  {
+    "method": "GET",
+    "path": "/list_users_ajax",
+    "controller": "admin.'/Users",
+    "action": "list_users_ajax'"
+  },
+  {
+    "method": "GET",
+    "path": "/edit_users",
+    "controller": "admin.'/Users",
+    "action": "edit_users'"
+  },
+  {
+    "method": "GET",
+    "path": "/check_duplicate_folders",
+    "controller": "admin.'/Users",
+    "action": "check_duplicate_users'"
+  },
+  {
+    "method": "GET",
+    "path": "/delete_users",
+    "controller": "admin.'/Users",
+    "action": "delete_users'"
+  },
+  {
+    "method": "GET",
+    "path": "/get_state_list",
+    "controller": "admin.'/Users",
+    "action": "get_state_list'"
+  },
+  {
+    "method": "GET",
+    "path": "/get_city_list",
+    "controller": "admin.'/Users",
+    "action": "get_city_list'"
+  },
+  {
+    "method": "GET",
+    "path": "/list-service-provider",
+    "controller": "admin.'/Service_provider",
+    "action": "view_service_provider'"
+  },
+  {
+    "method": "GET",
+    "path": "/list_service_provider_ajax",
+    "controller": "admin.'/Service_provider",
+    "action": "list_service_provider_ajax'"
+  },
+  {
+    "method": "GET",
+    "path": "/list_service_details_ajax",
+    "controller": "admin.'/Service_provider",
+    "action": "list_service_details_ajax'"
+  },
+  {
+    "method": "GET",
+    "path": "/submit_service_provider",
+    "controller": "admin.'/Service_provider",
+    "action": "submit_service_provider'"
+  },
+  {
+    "method": "GET",
+    "path": "/edit_service_provider",
+    "controller": "admin.'/Service_provider",
+    "action": "edit_service_provider'"
+  },
+  {
+    "method": "GET",
+    "path": "/delete_service_provider",
+    "controller": "admin.'/Service_provider",
+    "action": "delete_service_provider'"
+  },
+  {
+    "method": "GET",
+    "path": "/view_service_provider_details",
+    "controller": "admin.'/Service_provider",
+    "action": "view_service_provider_details'"
+  },
+  {
+    "method": "GET",
+    "path": "/list-card-activation-requests",
+    "controller": "admin.'/Card_activation_requests",
+    "action": "view_card_activation_requests'"
+  },
+  {
+    "method": "GET",
+    "path": "/list_card_activation_requests_ajax",
+    "controller": "admin.'/Card_activation_requests",
+    "action": "list_card_activation_requests_ajax'"
+  },
+  {
+    "method": "GET",
+    "path": "/submit_card_activation_requests",
+    "controller": "admin.'/Card_activation_requests",
+    "action": "submit_card_activation_requests'"
+  },
+  {
+    "method": "GET",
+    "path": "/edit_card_activation_requests",
+    "controller": "admin.'/Card_activation_requests",
+    "action": "edit_card_activation_requests'"
+  },
+  {
+    "method": "GET",
+    "path": "/delete_card_activation_requests",
+    "controller": "admin.'/Card_activation_requests",
+    "action": "delete_card_activation_requests'"
+  },
+  {
+    "method": "GET",
+    "path": "/images_card_activation_requests",
+    "controller": "admin.'/Card_activation_requests",
+    "action": "images_card_activation_requests'"
+  },
+  {
+    "method": "GET",
+    "path": "/list-investors",
+    "controller": "admin.'/Investors",
+    "action": "view_investors'"
+  },
+  {
+    "method": "GET",
+    "path": "/list_investors_ajax",
+    "controller": "admin.'/Investors",
+    "action": "list_investors_ajax'"
+  },
+  {
+    "method": "GET",
+    "path": "/submit_investors",
+    "controller": "admin.'/Investors",
+    "action": "submit_investors'"
+  },
+  {
+    "method": "GET",
+    "path": "/edit_investors",
+    "controller": "admin.'/Investors",
+    "action": "edit_investors'"
+  },
+  {
+    "method": "GET",
+    "path": "/delete_investors",
+    "controller": "admin.'/Investors",
+    "action": "delete_investors'"
+  },
+  {
+    "method": "GET",
+    "path": "/view_investors_details",
+    "controller": "admin.'/Investors",
+    "action": "view_investors_details'"
+  },
+  {
+    "method": "GET",
+    "path": "/list-jobs",
+    "controller": "admin.'/Jobs",
+    "action": "view_jobs'"
+  },
+  {
+    "method": "GET",
+    "path": "/list_jobs_ajax",
+    "controller": "admin.'/Jobs",
+    "action": "list_jobs_ajax'"
+  },
+  {
+    "method": "GET",
+    "path": "/submit_jobs",
+    "controller": "admin.'/Jobs",
+    "action": "submit_jobs'"
+  },
+  {
+    "method": "GET",
+    "path": "/edit_jobs",
+    "controller": "admin.'/Jobs",
+    "action": "edit_jobs'"
+  },
+  {
+    "method": "GET",
+    "path": "/delete_jobs",
+    "controller": "admin.'/Jobs",
+    "action": "delete_jobs'"
+  },
+  {
+    "method": "GET",
+    "path": "/view_jobs_details",
+    "controller": "admin.'/Jobs",
+    "action": "view_jobs_details'"
+  },
+  {
+    "method": "GET",
+    "path": "/list-events",
+    "controller": "admin.'/Events",
+    "action": "view_events'"
+  },
+  {
+    "method": "GET",
+    "path": "/list_events_ajax",
+    "controller": "admin.'/Events",
+    "action": "list_events_ajax'"
+  },
+  {
+    "method": "GET",
+    "path": "/submit_events",
+    "controller": "admin.'/Events",
+    "action": "submit_events'"
+  },
+  {
+    "method": "GET",
+    "path": "/edit_events",
+    "controller": "admin.'/Events",
+    "action": "edit_events'"
+  },
+  {
+    "method": "GET",
+    "path": "/delete_events",
+    "controller": "admin.'/Events",
+    "action": "delete_events'"
+  },
+  {
+    "method": "GET",
+    "path": "/view_events_details",
+    "controller": "admin.'/Events",
+    "action": "view_events_details'"
+  },
+  {
+    "method": "GET",
+    "path": "/legal-terms",
+    "controller": "front.'/Home",
+    "action": "legal_terms'"
+  },
+  {
+    "method": "GET",
+    "path": "/delete-request",
+    "controller": "front.'/Home",
+    "action": "delete_request'"
+  },
+  {
+    "method": "GET",
+    "path": "/thank-you",
+    "controller": "front.'/Home",
+    "action": "thank_you'"
+  },
+  {
+    "method": "GET",
+    "path": "/export-report",
+    "controller": "admin.'/Export",
+    "action": "export_report'"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-Login",
+    "controller": "api.'",
+    "action": "login'"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-Logout",
+    "controller": "api.'",
+    "action": "logout'"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-Country-List",
+    "controller": "api.'",
+    "action": "getCountryList'"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-State-List",
+    "controller": "api.'",
+    "action": "getStateList'"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-City-List",
+    "controller": "api.'",
+    "action": "getCityList'"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-Interests-List",
+    "controller": "api.'",
+    "action": "getInterestsList'"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-Employment-Type-List",
+    "controller": "api.'",
+    "action": "getEmploymentTypeList'"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-Job-Type-List",
+    "controller": "api.'",
+    "action": "getJobTypeList'"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-Pay-List",
+    "controller": "api.'",
+    "action": "getPayList'"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-Event-Mode-List",
+    "controller": "api.'",
+    "action": "getEventModeList'"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-Event-Type-List",
+    "controller": "api.'",
+    "action": "getEventTypeList'"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-Fund-Size-List",
+    "controller": "api.'",
+    "action": "getFundSizeList'"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-Update-Profile",
+    "controller": "api.'",
+    "action": "updateProfile'"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-View-Profile",
+    "controller": "api.'",
+    "action": "getProfile'"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-View-User-Detail-By-Mobile",
+    "controller": "api.'",
+    "action": "getUserDetailByMobile'"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-View-User-Detail-By-Qrcode",
+    "controller": "api.'",
+    "action": "getUserDetailByQrCode'"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-View-Profile-By-Mobile",
+    "controller": "api.'",
+    "action": "getUserProfileByMobile'"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-Save-Education-Details",
+    "controller": "api.'",
+    "action": "saveEducationDetails'"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-View-Education-Details",
+    "controller": "api.'",
+    "action": "getEducationDetails'"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-Delete-Education-Detail",
+    "controller": "api.'",
+    "action": "deleteEducationDetail'"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-Save-Project-Details",
+    "controller": "api.'",
+    "action": "saveProjectDetails'"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-View-Project-Details",
+    "controller": "api.'",
+    "action": "getProjectDetails'"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-Delete-Project-Detail",
+    "controller": "api.'",
+    "action": "deleteProjectDetail'"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-Save-Work-Details",
+    "controller": "api.'",
+    "action": "saveWorkDetails'"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-View-Work-Details",
+    "controller": "api.'",
+    "action": "getWorkDetails'"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-Delete-Work-Detail",
+    "controller": "api.'",
+    "action": "deleteWorkDetail'"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-Dashboard",
+    "controller": "api.'",
+    "action": "dashboard'"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-Save-Job-Information",
+    "controller": "api.'",
+    "action": "saveJobInformation'"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-View-Job-Information",
+    "controller": "api.'",
+    "action": "getJobInformation'"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-Apply-Job",
+    "controller": "api.'",
+    "action": "saveJobApplication'"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-View-Job-Details",
+    "controller": "api.'",
+    "action": "getJobDetail'"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-Job-Applicants-List",
+    "controller": "api.'",
+    "action": "getJobApplicantsList'"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-View-Resumes",
+    "controller": "api.'",
+    "action": "getResumes'"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-Delete-Resume",
+    "controller": "api.'",
+    "action": "deleteResume'"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-Send-Otp",
+    "controller": "api.'",
+    "action": "sendOtp'"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-Verify-Otp",
+    "controller": "api.'",
+    "action": "verifyOtp'"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-Save-Event-Information",
+    "controller": "api.'",
+    "action": "saveEventInformation'"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-View-Event-Information",
+    "controller": "api.'",
+    "action": "getEventInformation'"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-View-Event-Details",
+    "controller": "api.'",
+    "action": "getEventDetail'"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-Event-Organisers-List",
+    "controller": "api.'",
+    "action": "getEventOrganisersList'"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-Save-Event-Organiser",
+    "controller": "api.'",
+    "action": "saveEventOrganiser'"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-Delete-Event-Organiser",
+    "controller": "api.'",
+    "action": "deleteEventOrganiser'"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-Event-Attendees-List",
+    "controller": "api.'",
+    "action": "getEventAttendeesList'"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-Save-Event-Attendee",
+    "controller": "api.'",
+    "action": "saveEventAttendee'"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-Delete-Event-Attendee",
+    "controller": "api.'",
+    "action": "deleteEventAttendee'"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-View-Events-Attended",
+    "controller": "api.'",
+    "action": "getEventsAttendedList'"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-View-Events-Organised",
+    "controller": "api.'",
+    "action": "getEventsOrganisedList'"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-Folders-List-By-Type",
+    "controller": "api.'",
+    "action": "getFoldersListByType'"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-Add-Folder-By-Type",
+    "controller": "api.'",
+    "action": "saveFolderByType'"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-Sub-Folders-List",
+    "controller": "api.'",
+    "action": "getSubFoldersList'"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-Add-Sub-Folder",
+    "controller": "api.'",
+    "action": "saveSubFolder'"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-Edit-Sub-Folder",
+    "controller": "api.'",
+    "action": "editSubFolder'"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-Delete-Sub-Folder",
+    "controller": "api.'",
+    "action": "deleteSubFolder'"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-Add-Contact",
+    "controller": "api.'",
+    "action": "saveContact'"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-Contacts-List",
+    "controller": "api.'",
+    "action": "getContactsList'"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-Add-Contact-Visiting-Card",
+    "controller": "api.'",
+    "action": "saveContactVisitingCard'"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-View-Contact-Visiting-Card",
+    "controller": "api.'",
+    "action": "getContactVisitingCardInformation'"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-Legal-Terms",
+    "controller": "api.'",
+    "action": "legalTerms'"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-Activate-Card",
+    "controller": "api.'",
+    "action": "activateCard'"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-View-Business-Card",
+    "controller": "api.'",
+    "action": "getBusinessCardInformation'"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-Promotions-List",
+    "controller": "api.'",
+    "action": "getPromotionsList'"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-Service-Master-List",
+    "controller": "api.'",
+    "action": "getServicesMasterList'"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-Save-Service-Provider",
+    "controller": "api.'",
+    "action": "saveServiceProvider'"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-Services-List",
+    "controller": "api.'",
+    "action": "getServicesList'"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-Save-Service-Details",
+    "controller": "api.'",
+    "action": "saveServiceDetails'"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-View-Service-Details",
+    "controller": "api.'",
+    "action": "getServiceDetail'"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-All-Services-List",
+    "controller": "api.'",
+    "action": "getAllServicesList'"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-Service-Unlock",
+    "controller": "api.'",
+    "action": "serviceUnlock'"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-All-Service-Unlock-List",
+    "controller": "api.'",
+    "action": "getAllServiceUnlockList'"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-Add-Review-Rating",
+    "controller": "api.'",
+    "action": "saveReviewRating'"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-Save-Investor",
+    "controller": "api.'",
+    "action": "saveInvestor'"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-All-Investors-List",
+    "controller": "api.'",
+    "action": "getAllInvestorsList'"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-View-Investor-Details",
+    "controller": "api.'",
+    "action": "getInvestorDetail'"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-Investor-Unlock",
+    "controller": "api.'",
+    "action": "investorUnlock'"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-Add-Investor-Review-Rating",
+    "controller": "api.'",
+    "action": "saveInvestorReviewRating'"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-My-Investor-Profile",
+    "controller": "api.'",
+    "action": "getInvestorProfile'"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-My-Investor-Meets",
+    "controller": "api.'",
+    "action": "getInvestorMeets'"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-Investor-Desk",
+    "controller": "api.'",
+    "action": "getInvestorDesk'"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-Chat-Users-List",
+    "controller": "api.'",
+    "action": "getChatUsersList'"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-Save-Chat",
+    "controller": "api.'",
+    "action": "saveChat'"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-View-Chat",
+    "controller": "api.'",
+    "action": "getChat'"
+  },
+  {
+    "method": "GET",
+    "path": "/default_controller",
+    "controller": "'welcome'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/404_override",
+    "controller": "'errors/page_missing'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/translate_uri_dashes",
+    "controller": "FALSE",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/default_controller",
+    "controller": "admin.'/Login/index'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/404_override",
+    "controller": "''",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/translate_uri_dashes",
+    "controller": "FALSE",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/admin-login",
+    "controller": "admin.'/Login/index'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/admin-logout",
+    "controller": "admin.'/Login/logout'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/permission-denied",
+    "controller": "admin.'/Permission/index'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/admin-dashboard",
+    "controller": "admin.'/Dashboard/index'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/list-country",
+    "controller": "admin.'/Masters/countryList'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/list-country-ajax",
+    "controller": "admin.'/Masters/getCountryLists'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/save-country",
+    "controller": "admin.'/Masters/saveCountry'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/edit-country/{param}",
+    "controller": "admin.'/Masters/viewAddEditForm/$1'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/delete-country/{param}",
+    "controller": "admin.'/Masters/deleteCountry/$1'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/check-duplicate-country",
+    "controller": "admin.'/Masters/CheckDuplicateCountry'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/list-state",
+    "controller": "admin.'/Masters/view_state'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/submit_state",
+    "controller": "admin.'/Masters/submit_state'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/list_state_ajax",
+    "controller": "admin.'/Masters/list_state_ajax'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/check_duplicate_state",
+    "controller": "admin.'/Masters/check_duplicate_state'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/delete_state",
+    "controller": "admin.'/Masters/delete_state'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/list-city",
+    "controller": "admin.'/Masters/view_cities'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/submit_cities",
+    "controller": "admin.'/Masters/submit_cities'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/list_cities_ajax",
+    "controller": "admin.'/Masters/list_cities_ajax'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/check_duplicate_cities",
+    "controller": "admin.'/Masters/check_duplicate_cities'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/delete_cities",
+    "controller": "admin.'/Masters/delete_cities'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/list-employment-type",
+    "controller": "admin.'/Masters/view_employment_type'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/submit_employment_type",
+    "controller": "admin.'/Masters/submit_employment_type'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/list_employment_type_ajax",
+    "controller": "admin.'/Masters/list_employment_type_ajax'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/check_duplicate_employment_type",
+    "controller": "admin.'/Masters/check_duplicate_employment_type'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/delete_employment_type",
+    "controller": "admin.'/Masters/delete_employment_type'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/list-interests",
+    "controller": "admin.'/Masters/view_interests'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/submit_interest",
+    "controller": "admin.'/Masters/submit_interest'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/list_interest_ajax",
+    "controller": "admin.'/Masters/list_interest_ajax'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/check_duplicate_interest",
+    "controller": "admin.'/Masters/check_duplicate_interest'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/delete_interest",
+    "controller": "admin.'/Masters/delete_interest'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/list-job-type",
+    "controller": "admin.'/Masters/view_job_type'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/submit_job_type",
+    "controller": "admin.'/Masters/submit_job_type'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/list_job_type_ajax",
+    "controller": "admin.'/Masters/list_job_type_ajax'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/check_duplicate_job_type",
+    "controller": "admin.'/Masters/check_duplicate_job_type'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/delete_job_type",
+    "controller": "admin.'/Masters/delete_job_type'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/list-pay",
+    "controller": "admin.'/Masters/view_pay'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/submit_pay",
+    "controller": "admin.'/Masters/submit_pay'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/list_pay_ajax",
+    "controller": "admin.'/Masters/list_pay_ajax'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/check_duplicate_pay",
+    "controller": "admin.'/Masters/check_duplicate_pay'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/delete_pay",
+    "controller": "admin.'/Masters/delete_pay'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/list-event-mode",
+    "controller": "admin.'/Masters/view_event_mode'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/submit_event_mode",
+    "controller": "admin.'/Masters/submit_event_mode'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/list_event_mode_ajax",
+    "controller": "admin.'/Masters/list_event_mode_ajax'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/check_duplicate_event_mode",
+    "controller": "admin.'/Masters/check_duplicate_event_mode'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/delete_event_mode",
+    "controller": "admin.'/Masters/delete_event_mode'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/list-event-type",
+    "controller": "admin.'/Masters/view_event_type'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/submit_event_type",
+    "controller": "admin.'/Masters/submit_event_type'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/list_event_type_ajax",
+    "controller": "admin.'/Masters/list_event_type_ajax'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/check_duplicate_event_type",
+    "controller": "admin.'/Masters/check_duplicate_event_type'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/delete_event_type",
+    "controller": "admin.'/Masters/delete_event_type'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/list-industry-type",
+    "controller": "admin.'/Masters/view_industry_type'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/submit_industry_type",
+    "controller": "admin.'/Masters/submit_industry_type'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/list_industry_type_ajax",
+    "controller": "admin.'/Masters/list_industry_type_ajax'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/check_duplicate_industry_type",
+    "controller": "admin.'/Masters/check_duplicate_industry_type'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/delete_industry_type",
+    "controller": "admin.'/Masters/delete_industry_type'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/list-fund-size",
+    "controller": "admin.'/Masters/view_fund_size'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/submit_fund_size",
+    "controller": "admin.'/Masters/submit_fund_size'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/list_fund_size_ajax",
+    "controller": "admin.'/Masters/list_fund_size_ajax'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/check_duplicate_fund_size",
+    "controller": "admin.'/Masters/check_duplicate_fund_size'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/delete_fund_size",
+    "controller": "admin.'/Masters/delete_fund_size'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/list-folders",
+    "controller": "admin.'/Masters/view_folders'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/submit_folders",
+    "controller": "admin.'/Masters/submit_folders'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/list_folders_ajax",
+    "controller": "admin.'/Masters/list_folders_ajax'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/check_duplicate_folders",
+    "controller": "admin.'/Masters/check_duplicate_folders'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/delete_folders",
+    "controller": "admin.'/Masters/delete_folders'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/list-users",
+    "controller": "admin.'/Users/view_users'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/submit_users",
+    "controller": "admin.'/Users/submit_users'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/list_users_ajax",
+    "controller": "admin.'/Users/list_users_ajax'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/edit_users",
+    "controller": "admin.'/Users/edit_users'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/check_duplicate_folders",
+    "controller": "admin.'/Users/check_duplicate_users'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/delete_users",
+    "controller": "admin.'/Users/delete_users'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/get_state_list",
+    "controller": "admin.'/Users/get_state_list'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/get_city_list",
+    "controller": "admin.'/Users/get_city_list'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/list-service-provider",
+    "controller": "admin.'/Service_provider/view_service_provider'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/list_service_provider_ajax",
+    "controller": "admin.'/Service_provider/list_service_provider_ajax'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/list_service_details_ajax",
+    "controller": "admin.'/Service_provider/list_service_details_ajax'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/submit_service_provider",
+    "controller": "admin.'/Service_provider/submit_service_provider'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/edit_service_provider",
+    "controller": "admin.'/Service_provider/edit_service_provider'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/delete_service_provider",
+    "controller": "admin.'/Service_provider/delete_service_provider'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/view_service_provider_details",
+    "controller": "admin.'/Service_provider/view_service_provider_details'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/list-card-activation-requests",
+    "controller": "admin.'/Card_activation_requests/view_card_activation_requests'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/list_card_activation_requests_ajax",
+    "controller": "admin.'/Card_activation_requests/list_card_activation_requests_ajax'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/submit_card_activation_requests",
+    "controller": "admin.'/Card_activation_requests/submit_card_activation_requests'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/edit_card_activation_requests",
+    "controller": "admin.'/Card_activation_requests/edit_card_activation_requests'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/delete_card_activation_requests",
+    "controller": "admin.'/Card_activation_requests/delete_card_activation_requests'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/images_card_activation_requests",
+    "controller": "admin.'/Card_activation_requests/images_card_activation_requests'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/list-investors",
+    "controller": "admin.'/Investors/view_investors'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/list_investors_ajax",
+    "controller": "admin.'/Investors/list_investors_ajax'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/submit_investors",
+    "controller": "admin.'/Investors/submit_investors'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/edit_investors",
+    "controller": "admin.'/Investors/edit_investors'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/delete_investors",
+    "controller": "admin.'/Investors/delete_investors'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/view_investors_details",
+    "controller": "admin.'/Investors/view_investors_details'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/list-jobs",
+    "controller": "admin.'/Jobs/view_jobs'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/list_jobs_ajax",
+    "controller": "admin.'/Jobs/list_jobs_ajax'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/submit_jobs",
+    "controller": "admin.'/Jobs/submit_jobs'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/edit_jobs",
+    "controller": "admin.'/Jobs/edit_jobs'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/delete_jobs",
+    "controller": "admin.'/Jobs/delete_jobs'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/view_jobs_details",
+    "controller": "admin.'/Jobs/view_jobs_details'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/list-events",
+    "controller": "admin.'/Events/view_events'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/list_events_ajax",
+    "controller": "admin.'/Events/list_events_ajax'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/submit_events",
+    "controller": "admin.'/Events/submit_events'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/edit_events",
+    "controller": "admin.'/Events/edit_events'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/delete_events",
+    "controller": "admin.'/Events/delete_events'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/view_events_details",
+    "controller": "admin.'/Events/view_events_details'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/legal-terms",
+    "controller": "front.'/Home/legal_terms'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/delete-request",
+    "controller": "front.'/Home/delete_request'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/thank-you",
+    "controller": "front.'/Home/thank_you'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/export-report",
+    "controller": "admin.'/Export/export_report'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-Login",
+    "controller": "api.'/login'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-Logout",
+    "controller": "api.'/logout'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-Country-List",
+    "controller": "api.'/getCountryList'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-State-List",
+    "controller": "api.'/getStateList'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-City-List",
+    "controller": "api.'/getCityList'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-Interests-List",
+    "controller": "api.'/getInterestsList'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-Employment-Type-List",
+    "controller": "api.'/getEmploymentTypeList'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-Job-Type-List",
+    "controller": "api.'/getJobTypeList'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-Pay-List",
+    "controller": "api.'/getPayList'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-Event-Mode-List",
+    "controller": "api.'/getEventModeList'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-Event-Type-List",
+    "controller": "api.'/getEventTypeList'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-Fund-Size-List",
+    "controller": "api.'/getFundSizeList'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-Update-Profile",
+    "controller": "api.'/updateProfile'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-View-Profile",
+    "controller": "api.'/getProfile'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-View-User-Detail-By-Mobile",
+    "controller": "api.'/getUserDetailByMobile'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-View-User-Detail-By-Qrcode",
+    "controller": "api.'/getUserDetailByQrCode'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-View-Profile-By-Mobile",
+    "controller": "api.'/getUserProfileByMobile'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-Save-Education-Details",
+    "controller": "api.'/saveEducationDetails'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-View-Education-Details",
+    "controller": "api.'/getEducationDetails'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-Delete-Education-Detail",
+    "controller": "api.'/deleteEducationDetail'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-Save-Project-Details",
+    "controller": "api.'/saveProjectDetails'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-View-Project-Details",
+    "controller": "api.'/getProjectDetails'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-Delete-Project-Detail",
+    "controller": "api.'/deleteProjectDetail'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-Save-Work-Details",
+    "controller": "api.'/saveWorkDetails'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-View-Work-Details",
+    "controller": "api.'/getWorkDetails'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-Delete-Work-Detail",
+    "controller": "api.'/deleteWorkDetail'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-Dashboard",
+    "controller": "api.'/dashboard'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-Save-Job-Information",
+    "controller": "api.'/saveJobInformation'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-View-Job-Information",
+    "controller": "api.'/getJobInformation'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-Apply-Job",
+    "controller": "api.'/saveJobApplication'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-View-Job-Details",
+    "controller": "api.'/getJobDetail'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-Job-Applicants-List",
+    "controller": "api.'/getJobApplicantsList'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-View-Resumes",
+    "controller": "api.'/getResumes'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-Delete-Resume",
+    "controller": "api.'/deleteResume'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-Send-Otp",
+    "controller": "api.'/sendOtp'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-Verify-Otp",
+    "controller": "api.'/verifyOtp'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-Save-Event-Information",
+    "controller": "api.'/saveEventInformation'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-View-Event-Information",
+    "controller": "api.'/getEventInformation'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-View-Event-Details",
+    "controller": "api.'/getEventDetail'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-Event-Organisers-List",
+    "controller": "api.'/getEventOrganisersList'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-Save-Event-Organiser",
+    "controller": "api.'/saveEventOrganiser'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-Delete-Event-Organiser",
+    "controller": "api.'/deleteEventOrganiser'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-Event-Attendees-List",
+    "controller": "api.'/getEventAttendeesList'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-Save-Event-Attendee",
+    "controller": "api.'/saveEventAttendee'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-Delete-Event-Attendee",
+    "controller": "api.'/deleteEventAttendee'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-View-Events-Attended",
+    "controller": "api.'/getEventsAttendedList'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-View-Events-Organised",
+    "controller": "api.'/getEventsOrganisedList'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-Folders-List-By-Type",
+    "controller": "api.'/getFoldersListByType'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-Add-Folder-By-Type",
+    "controller": "api.'/saveFolderByType'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-Sub-Folders-List",
+    "controller": "api.'/getSubFoldersList'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-Add-Sub-Folder",
+    "controller": "api.'/saveSubFolder'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-Edit-Sub-Folder",
+    "controller": "api.'/editSubFolder'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-Delete-Sub-Folder",
+    "controller": "api.'/deleteSubFolder'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-Add-Contact",
+    "controller": "api.'/saveContact'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-Contacts-List",
+    "controller": "api.'/getContactsList'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-Add-Contact-Visiting-Card",
+    "controller": "api.'/saveContactVisitingCard'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-View-Contact-Visiting-Card",
+    "controller": "api.'/getContactVisitingCardInformation'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-Legal-Terms",
+    "controller": "api.'/legalTerms'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-Activate-Card",
+    "controller": "api.'/activateCard'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-View-Business-Card",
+    "controller": "api.'/getBusinessCardInformation'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-Promotions-List",
+    "controller": "api.'/getPromotionsList'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-Service-Master-List",
+    "controller": "api.'/getServicesMasterList'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-Save-Service-Provider",
+    "controller": "api.'/saveServiceProvider'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-Services-List",
+    "controller": "api.'/getServicesList'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-Save-Service-Details",
+    "controller": "api.'/saveServiceDetails'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-View-Service-Details",
+    "controller": "api.'/getServiceDetail'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-All-Services-List",
+    "controller": "api.'/getAllServicesList'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-Service-Unlock",
+    "controller": "api.'/serviceUnlock'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-All-Service-Unlock-List",
+    "controller": "api.'/getAllServiceUnlockList'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-Add-Review-Rating",
+    "controller": "api.'/saveReviewRating'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-Save-Investor",
+    "controller": "api.'/saveInvestor'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-All-Investors-List",
+    "controller": "api.'/getAllInvestorsList'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-View-Investor-Details",
+    "controller": "api.'/getInvestorDetail'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-Investor-Unlock",
+    "controller": "api.'/investorUnlock'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-Add-Investor-Review-Rating",
+    "controller": "api.'/saveInvestorReviewRating'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-My-Investor-Profile",
+    "controller": "api.'/getInvestorProfile'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-My-Investor-Meets",
+    "controller": "api.'/getInvestorMeets'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-Investor-Desk",
+    "controller": "api.'/getInvestorDesk'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-Chat-Users-List",
+    "controller": "api.'/getChatUsersList'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-Save-Chat",
+    "controller": "api.'/saveChat'",
+    "action": "index"
+  },
+  {
+    "method": "GET",
+    "path": "/Api-View-Chat",
+    "controller": "api.'/getChat'",
+    "action": "index"
+  }
+]

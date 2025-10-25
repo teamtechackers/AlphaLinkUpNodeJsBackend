@@ -1,0 +1,4 @@
+node_method,node_path,php_method,php_path
+GET,/dashboard,GET,/404_override
+GET,/dashboard,GET,/default_controller
+GET,/dashboard,GET,/404_override

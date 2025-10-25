@@ -1,0 +1,30 @@
+node_modules
+
+# Environment variables - Temporarily allowed for deployment
+#.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+server.log
+
+# Uploads
+uploads/
+
+# Node modules
+node_modules/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Ignore environment and credential files - Temporarily allowed
+#*.env
+*.env.*
+serviceAccountKey.json
+
+# Environment and service keys - Temporarily allowed
+#AlphaLinkUpNodeJsBackend/.env
+AlphaLinkUpNodeJsBackend/.env.example
+AlphaLinkUpNodeJsBackend/serviceAccountKey.json

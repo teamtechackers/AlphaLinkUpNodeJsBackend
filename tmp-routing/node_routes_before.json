@@ -1,0 +1,2592 @@
+[
+  {
+    "file": "src/app.js",
+    "method": "USE",
+    "path": "/",
+    "handler": "routes);",
+    "line": 121
+  },
+  {
+    "file": "src/app.js",
+    "method": "USE",
+    "path": "*",
+    "handler": "(req",
+    "line": 124
+  },
+  {
+    "file": "src/routes/adminRoutes.js",
+    "method": "POST",
+    "path": "/login",
+    "handler": "",
+    "line": 19
+  },
+  {
+    "file": "src/routes/adminRoutes.js",
+    "method": "GET",
+    "path": "/dashboard",
+    "handler": "AdminController.getDashboardData);",
+    "line": 30
+  },
+  {
+    "file": "src/routes/adminRoutes.js",
+    "method": "GET",
+    "path": "/overview",
+    "handler": "AdminController.getPlatformOverview);",
+    "line": 31
+  },
+  {
+    "file": "src/routes/adminRoutes.js",
+    "method": "GET",
+    "path": "/users",
+    "handler": "AdminController.getUserManagementData);",
+    "line": 34
+  },
+  {
+    "file": "src/routes/adminRoutes.js",
+    "method": "PUT",
+    "path": "/users/:userId/status",
+    "handler": "",
+    "line": 35
+  },
+  {
+    "file": "src/routes/adminRoutes.js",
+    "method": "PUT",
+    "path": "/users/bulk-status",
+    "handler": "",
+    "line": 40
+  },
+  {
+    "file": "src/routes/adminRoutes.js",
+    "method": "GET",
+    "path": "/moderation",
+    "handler": "AdminController.getContentModerationData);",
+    "line": 46
+  },
+  {
+    "file": "src/routes/adminRoutes.js",
+    "method": "PUT",
+    "path": "/reports/:reportId/assign",
+    "handler": "",
+    "line": 47
+  },
+  {
+    "file": "src/routes/adminRoutes.js",
+    "method": "PUT",
+    "path": "/reports/:reportId/status",
+    "handler": "",
+    "line": 52
+  },
+  {
+    "file": "src/routes/adminRoutes.js",
+    "method": "GET",
+    "path": "/notifications",
+    "handler": "AdminController.getSystemNotifications);",
+    "line": 58
+  },
+  {
+    "file": "src/routes/adminRoutes.js",
+    "method": "POST",
+    "path": "/notifications",
+    "handler": "",
+    "line": 59
+  },
+  {
+    "file": "src/routes/adminRoutes.js",
+    "method": "GET",
+    "path": "/activity-log",
+    "handler": "AdminController.getAdminActivityLog);",
+    "line": 65
+  },
+  {
+    "file": "src/routes/adminRoutes.js",
+    "method": "POST",
+    "path": "/activity-log",
+    "handler": "",
+    "line": 66
+  },
+  {
+    "file": "src/routes/adminRoutes.js",
+    "method": "GET",
+    "path": "/system/health",
+    "handler": "AdminController.getSystemHealth);",
+    "line": 72
+  },
+  {
+    "file": "src/routes/adminRoutes.js",
+    "method": "GET",
+    "path": "/system/performance",
+    "handler": "AdminController.getPerformanceMetrics);",
+    "line": 73
+  },
+  {
+    "file": "src/routes/adminRoutes.js",
+    "method": "GET",
+    "path": "/analytics/users",
+    "handler": "AdminController.getUserAnalytics);",
+    "line": 76
+  },
+  {
+    "file": "src/routes/adminRoutes.js",
+    "method": "GET",
+    "path": "/analytics/business",
+    "handler": "AdminController.getBusinessMetrics);",
+    "line": 77
+  },
+  {
+    "file": "src/routes/adminRoutes.js",
+    "method": "GET",
+    "path": "/export",
+    "handler": "AdminController.exportAdminData);",
+    "line": 80
+  },
+  {
+    "file": "src/routes/adminRoutes.js",
+    "method": "GET",
+    "path": "/permissions",
+    "handler": "AdminController.getAdminPermissions);",
+    "line": 83
+  },
+  {
+    "file": "src/routes/adminRoutes.js",
+    "method": "PUT",
+    "path": "/profile",
+    "handler": "",
+    "line": 84
+  },
+  {
+    "file": "src/routes/adminRoutes.js",
+    "method": "PUT",
+    "path": "/change-password",
+    "handler": "",
+    "line": 89
+  },
+  {
+    "file": "src/routes/adminRoutes.js",
+    "method": "GET",
+    "path": "/stats",
+    "handler": "AdminController.getAdminStats);",
+    "line": 95
+  },
+  {
+    "file": "src/routes/analyticsRoutes.js",
+    "method": "GET",
+    "path": "/overview",
+    "handler": "AnalyticsController.getPlatformOverview);",
+    "line": 21
+  },
+  {
+    "file": "src/routes/analyticsRoutes.js",
+    "method": "GET",
+    "path": "/users",
+    "handler": "AnalyticsController.getUserAnalytics);",
+    "line": 24
+  },
+  {
+    "file": "src/routes/analyticsRoutes.js",
+    "method": "GET",
+    "path": "/users/registrations",
+    "handler": "AnalyticsController.getUserRegistrationAnalytics);",
+    "line": 25
+  },
+  {
+    "file": "src/routes/analyticsRoutes.js",
+    "method": "GET",
+    "path": "/users/retention",
+    "handler": "AnalyticsController.getUserRetentionAnalytics);",
+    "line": 26
+  },
+  {
+    "file": "src/routes/analyticsRoutes.js",
+    "method": "GET",
+    "path": "/users/profile-completion",
+    "handler": "AnalyticsController.getUserProfileCompletionAnalytics);",
+    "line": 27
+  },
+  {
+    "file": "src/routes/analyticsRoutes.js",
+    "method": "GET",
+    "path": "/users/segmentation",
+    "handler": "AnalyticsController.getUserSegmentationAnalytics);",
+    "line": 28
+  },
+  {
+    "file": "src/routes/analyticsRoutes.js",
+    "method": "GET",
+    "path": "/engagement",
+    "handler": "AnalyticsController.getEngagementAnalytics);",
+    "line": 31
+  },
+  {
+    "file": "src/routes/analyticsRoutes.js",
+    "method": "GET",
+    "path": "/connections",
+    "handler": "AnalyticsController.getConnectionAnalytics);",
+    "line": 32
+  },
+  {
+    "file": "src/routes/analyticsRoutes.js",
+    "method": "GET",
+    "path": "/chat",
+    "handler": "AnalyticsController.getChatAnalytics);",
+    "line": 33
+  },
+  {
+    "file": "src/routes/analyticsRoutes.js",
+    "method": "GET",
+    "path": "/notifications",
+    "handler": "AnalyticsController.getNotificationAnalytics);",
+    "line": 34
+  },
+  {
+    "file": "src/routes/analyticsRoutes.js",
+    "method": "GET",
+    "path": "/search",
+    "handler": "AnalyticsController.getSearchAnalytics);",
+    "line": 35
+  },
+  {
+    "file": "src/routes/analyticsRoutes.js",
+    "method": "GET",
+    "path": "/business",
+    "handler": "AnalyticsController.getBusinessAnalytics);",
+    "line": 38
+  },
+  {
+    "file": "src/routes/analyticsRoutes.js",
+    "method": "GET",
+    "path": "/jobs",
+    "handler": "AnalyticsController.getJobAnalytics);",
+    "line": 39
+  },
+  {
+    "file": "src/routes/analyticsRoutes.js",
+    "method": "GET",
+    "path": "/events",
+    "handler": "AnalyticsController.getEventAnalytics);",
+    "line": 40
+  },
+  {
+    "file": "src/routes/analyticsRoutes.js",
+    "method": "GET",
+    "path": "/services",
+    "handler": "AnalyticsController.getServiceAnalytics);",
+    "line": 41
+  },
+  {
+    "file": "src/routes/analyticsRoutes.js",
+    "method": "GET",
+    "path": "/investors",
+    "handler": "AnalyticsController.getInvestorAnalytics);",
+    "line": 42
+  },
+  {
+    "file": "src/routes/analyticsRoutes.js",
+    "method": "GET",
+    "path": "/growth",
+    "handler": "AnalyticsController.getGrowthAnalytics);",
+    "line": 45
+  },
+  {
+    "file": "src/routes/analyticsRoutes.js",
+    "method": "GET",
+    "path": "/geographic",
+    "handler": "AnalyticsController.getGeographicAnalytics);",
+    "line": 46
+  },
+  {
+    "file": "src/routes/analyticsRoutes.js",
+    "method": "GET",
+    "path": "/performance",
+    "handler": "AnalyticsController.getPerformanceAnalytics);",
+    "line": 49
+  },
+  {
+    "file": "src/routes/analyticsRoutes.js",
+    "method": "POST",
+    "path": "/custom-report",
+    "handler": "",
+    "line": 52
+  },
+  {
+    "file": "src/routes/analyticsRoutes.js",
+    "method": "GET",
+    "path": "/dashboard",
+    "handler": "AnalyticsController.getAnalyticsDashboard);",
+    "line": 57
+  },
+  {
+    "file": "src/routes/analyticsRoutes.js",
+    "method": "GET",
+    "path": "/real-time",
+    "handler": "AnalyticsController.getRealTimeAnalytics);",
+    "line": 58
+  },
+  {
+    "file": "src/routes/analyticsRoutes.js",
+    "method": "GET",
+    "path": "/insights",
+    "handler": "AnalyticsController.getAnalyticsInsights);",
+    "line": 61
+  },
+  {
+    "file": "src/routes/analyticsRoutes.js",
+    "method": "GET",
+    "path": "/trends",
+    "handler": "AnalyticsController.getAnalyticsTrends);",
+    "line": 62
+  },
+  {
+    "file": "src/routes/analyticsRoutes.js",
+    "method": "GET",
+    "path": "/comparison",
+    "handler": "AnalyticsController.getAnalyticsComparison);",
+    "line": 63
+  },
+  {
+    "file": "src/routes/analyticsRoutes.js",
+    "method": "GET",
+    "path": "/forecast",
+    "handler": "AnalyticsController.getAnalyticsForecast);",
+    "line": 64
+  },
+  {
+    "file": "src/routes/analyticsRoutes.js",
+    "method": "GET",
+    "path": "/alerts",
+    "handler": "AnalyticsController.getAnalyticsAlerts);",
+    "line": 67
+  },
+  {
+    "file": "src/routes/analyticsRoutes.js",
+    "method": "POST",
+    "path": "/alerts",
+    "handler": "",
+    "line": 68
+  },
+  {
+    "file": "src/routes/analyticsRoutes.js",
+    "method": "GET",
+    "path": "/export",
+    "handler": "AnalyticsController.exportAnalyticsData);",
+    "line": 74
+  },
+  {
+    "file": "src/routes/authRoutes.js",
+    "method": "POST",
+    "path": "/send-otp",
+    "handler": "AuthController.sendOtp);",
+    "line": 10
+  },
+  {
+    "file": "src/routes/authRoutes.js",
+    "method": "POST",
+    "path": "/verify-otp",
+    "handler": "AuthController.verifyOtp);",
+    "line": 11
+  },
+  {
+    "file": "src/routes/authRoutes.js",
+    "method": "GET",
+    "path": "/user/mobile/:mobile",
+    "handler": "AuthController.getUserByMobile);",
+    "line": 14
+  },
+  {
+    "file": "src/routes/authRoutes.js",
+    "method": "GET",
+    "path": "/user/qr/:qr_code",
+    "handler": "AuthController.getUserByQRCode);",
+    "line": 15
+  },
+  {
+    "file": "src/routes/authRoutes.js",
+    "method": "GET",
+    "path": "/status",
+    "handler": "AuthController.checkAuthStatus);",
+    "line": 18
+  },
+  {
+    "file": "src/routes/authRoutes.js",
+    "method": "POST",
+    "path": "/logout",
+    "handler": "AuthController.logout);",
+    "line": 21
+  },
+  {
+    "file": "src/routes/businessCardRoutes.js",
+    "method": "GET",
+    "path": "/qr/:qr_code",
+    "handler": "BusinessCardController.getBusinessCardByQR);",
+    "line": 18
+  },
+  {
+    "file": "src/routes/businessCardRoutes.js",
+    "method": "POST",
+    "path": "/activate",
+    "handler": "",
+    "line": 21
+  },
+  {
+    "file": "src/routes/businessCardRoutes.js",
+    "method": "GET",
+    "path": "/:user_id",
+    "handler": "",
+    "line": 28
+  },
+  {
+    "file": "src/routes/businessCardRoutes.js",
+    "method": "PUT",
+    "path": "/:user_id",
+    "handler": "",
+    "line": 33
+  },
+  {
+    "file": "src/routes/businessCardRoutes.js",
+    "method": "DELETE",
+    "path": "/:user_id",
+    "handler": "",
+    "line": 40
+  },
+  {
+    "file": "src/routes/businessCardRoutes.js",
+    "method": "GET",
+    "path": "/:user_id/stats",
+    "handler": "",
+    "line": 46
+  },
+  {
+    "file": "src/routes/businessCardRoutes.js",
+    "method": "POST",
+    "path": "/:user_id/share",
+    "handler": "",
+    "line": 52
+  },
+  {
+    "file": "src/routes/businessCardRoutes.js",
+    "method": "GET",
+    "path": "/:user_id/export",
+    "handler": "",
+    "line": 59
+  },
+  {
+    "file": "src/routes/chatRoutes.js",
+    "method": "POST",
+    "path": "/messages/:receiverId",
+    "handler": "ChatController.sendMessage);",
+    "line": 16
+  },
+  {
+    "file": "src/routes/chatRoutes.js",
+    "method": "GET",
+    "path": "/conversations/:otherUserId",
+    "handler": "ChatController.getConversation);",
+    "line": 18
+  },
+  {
+    "file": "src/routes/chatRoutes.js",
+    "method": "GET",
+    "path": "/conversations",
+    "handler": "ChatController.getUserConversations);",
+    "line": 19
+  },
+  {
+    "file": "src/routes/chatRoutes.js",
+    "method": "GET",
+    "path": "/conversations/:conversationUserId/archive",
+    "handler": "ChatController.archiveConversation);",
+    "line": 20
+  },
+  {
+    "file": "src/routes/chatRoutes.js",
+    "method": "GET",
+    "path": "/conversations/:conversationUserId/unarchive",
+    "handler": "ChatController.unarchiveConversation);",
+    "line": 21
+  },
+  {
+    "file": "src/routes/chatRoutes.js",
+    "method": "GET",
+    "path": "/conversations/archived",
+    "handler": "ChatController.getArchivedConversations);",
+    "line": 22
+  },
+  {
+    "file": "src/routes/chatRoutes.js",
+    "method": "PUT",
+    "path": "/messages/:messageId",
+    "handler": "ChatController.editMessage);",
+    "line": 25
+  },
+  {
+    "file": "src/routes/chatRoutes.js",
+    "method": "DELETE",
+    "path": "/messages/:messageId",
+    "handler": "ChatController.deleteMessage);",
+    "line": 27
+  },
+  {
+    "file": "src/routes/chatRoutes.js",
+    "method": "PUT",
+    "path": "/conversations/:conversationUserId/read",
+    "handler": "ChatController.markMessagesAsRead);",
+    "line": 29
+  },
+  {
+    "file": "src/routes/chatRoutes.js",
+    "method": "PUT",
+    "path": "/conversations/read-all",
+    "handler": "ChatController.markAllMessagesAsRead);",
+    "line": 30
+  },
+  {
+    "file": "src/routes/chatRoutes.js",
+    "method": "GET",
+    "path": "/unread/count",
+    "handler": "ChatController.getUnreadCount);",
+    "line": 31
+  },
+  {
+    "file": "src/routes/chatRoutes.js",
+    "method": "GET",
+    "path": "/messages/search",
+    "handler": "ChatController.searchMessages);",
+    "line": 34
+  },
+  {
+    "file": "src/routes/chatRoutes.js",
+    "method": "GET",
+    "path": "/messages/stats",
+    "handler": "ChatController.getMessageStats);",
+    "line": 35
+  },
+  {
+    "file": "src/routes/chatRoutes.js",
+    "method": "GET",
+    "path": "/analytics",
+    "handler": "ChatController.getChatAnalytics);",
+    "line": 36
+  },
+  {
+    "file": "src/routes/chatRoutes.js",
+    "method": "POST",
+    "path": "/groups",
+    "handler": "ChatController.createGroupChat);",
+    "line": 39
+  },
+  {
+    "file": "src/routes/chatRoutes.js",
+    "method": "GET",
+    "path": "/groups",
+    "handler": "ChatController.getUserGroups);",
+    "line": 41
+  },
+  {
+    "file": "src/routes/chatRoutes.js",
+    "method": "POST",
+    "path": "/groups/:groupId/members",
+    "handler": "ChatController.addGroupMembers);",
+    "line": 42
+  },
+  {
+    "file": "src/routes/chatRoutes.js",
+    "method": "DELETE",
+    "path": "/groups/:groupId/members/:memberId",
+    "handler": "ChatController.removeGroupMember);",
+    "line": 44
+  },
+  {
+    "file": "src/routes/chatRoutes.js",
+    "method": "POST",
+    "path": "/groups/:groupId/messages",
+    "handler": "ChatController.sendGroupMessage);",
+    "line": 47
+  },
+  {
+    "file": "src/routes/chatRoutes.js",
+    "method": "GET",
+    "path": "/groups/:groupId/messages",
+    "handler": "ChatController.getGroupMessages);",
+    "line": 49
+  },
+  {
+    "file": "src/routes/chatRoutes.js",
+    "method": "POST",
+    "path": "/block/:userToBlockId",
+    "handler": "ChatController.blockUserFromChat);",
+    "line": 52
+  },
+  {
+    "file": "src/routes/chatRoutes.js",
+    "method": "DELETE",
+    "path": "/block/:userToUnblockId",
+    "handler": "ChatController.unblockUserFromChat);",
+    "line": 54
+  },
+  {
+    "file": "src/routes/chatRoutes.js",
+    "method": "GET",
+    "path": "/blocked",
+    "handler": "ChatController.getBlockedUsers);",
+    "line": 55
+  },
+  {
+    "file": "src/routes/chatRoutes.js",
+    "method": "GET",
+    "path": "/history/:conversationUserId",
+    "handler": "ChatController.getChatHistory);",
+    "line": 58
+  },
+  {
+    "file": "src/routes/chatRoutes.js",
+    "method": "GET",
+    "path": "/:conversationUserId/export",
+    "handler": "ChatController.exportChatData);",
+    "line": 59
+  },
+  {
+    "file": "src/routes/chatRoutes.js",
+    "method": "DELETE",
+    "path": "/:conversationUserId/history",
+    "handler": "ChatController.clearChatHistory);",
+    "line": 60
+  },
+  {
+    "file": "src/routes/chatRoutes.js",
+    "method": "GET",
+    "path": "/:conversationUserId/insights",
+    "handler": "ChatController.getChatInsights);",
+    "line": 62
+  },
+  {
+    "file": "src/routes/chatRoutes.js",
+    "method": "POST",
+    "path": "/typing/:receiverId",
+    "handler": "ChatController.sendTypingIndicator);",
+    "line": 65
+  },
+  {
+    "file": "src/routes/chatRoutes.js",
+    "method": "PUT",
+    "path": "/messages/:messageId/delivered",
+    "handler": "ChatController.markMessageAsDelivered);",
+    "line": 67
+  },
+  {
+    "file": "src/routes/chatRoutes.js",
+    "method": "GET",
+    "path": "/suggestions",
+    "handler": "ChatController.getConversationSuggestions);",
+    "line": 70
+  },
+  {
+    "file": "src/routes/contactRoutes.js",
+    "method": "POST",
+    "path": "/",
+    "handler": "",
+    "line": 18
+  },
+  {
+    "file": "src/routes/contactRoutes.js",
+    "method": "GET",
+    "path": "/",
+    "handler": "",
+    "line": 25
+  },
+  {
+    "file": "src/routes/contactRoutes.js",
+    "method": "GET",
+    "path": "/search",
+    "handler": "",
+    "line": 31
+  },
+  {
+    "file": "src/routes/contactRoutes.js",
+    "method": "GET",
+    "path": "/stats",
+    "handler": "",
+    "line": 37
+  },
+  {
+    "file": "src/routes/contactRoutes.js",
+    "method": "GET",
+    "path": "/suggestions",
+    "handler": "",
+    "line": 43
+  },
+  {
+    "file": "src/routes/contactRoutes.js",
+    "method": "GET",
+    "path": "/categories",
+    "handler": "",
+    "line": 49
+  },
+  {
+    "file": "src/routes/contactRoutes.js",
+    "method": "POST",
+    "path": "/categories",
+    "handler": "",
+    "line": 55
+  },
+  {
+    "file": "src/routes/contactRoutes.js",
+    "method": "PUT",
+    "path": "/categories/:category_id",
+    "handler": "",
+    "line": 62
+  },
+  {
+    "file": "src/routes/contactRoutes.js",
+    "method": "DELETE",
+    "path": "/categories/:category_id",
+    "handler": "",
+    "line": 69
+  },
+  {
+    "file": "src/routes/contactRoutes.js",
+    "method": "GET",
+    "path": "/:contact_id",
+    "handler": "",
+    "line": 76
+  },
+  {
+    "file": "src/routes/contactRoutes.js",
+    "method": "PUT",
+    "path": "/:contact_id",
+    "handler": "",
+    "line": 82
+  },
+  {
+    "file": "src/routes/contactRoutes.js",
+    "method": "DELETE",
+    "path": "/:contact_id",
+    "handler": "",
+    "line": 89
+  },
+  {
+    "file": "src/routes/contactRoutes.js",
+    "method": "PUT",
+    "path": "/:contact_id/move",
+    "handler": "",
+    "line": 95
+  },
+  {
+    "file": "src/routes/contactRoutes.js",
+    "method": "POST",
+    "path": "/import",
+    "handler": "",
+    "line": 103
+  },
+  {
+    "file": "src/routes/contactRoutes.js",
+    "method": "GET",
+    "path": "/export",
+    "handler": "",
+    "line": 110
+  },
+  {
+    "file": "src/routes/contactRoutes.js",
+    "method": "POST",
+    "path": "/sync",
+    "handler": "",
+    "line": 117
+  },
+  {
+    "file": "src/routes/eventRoutes.js",
+    "method": "GET",
+    "path": "/",
+    "handler": "EventController.getEvents);",
+    "line": 18
+  },
+  {
+    "file": "src/routes/eventRoutes.js",
+    "method": "GET",
+    "path": "/:eventId",
+    "handler": "EventController.getEvent);",
+    "line": 19
+  },
+  {
+    "file": "src/routes/eventRoutes.js",
+    "method": "GET",
+    "path": "/categories/popular",
+    "handler": "EventController.getPopularEventCategories);",
+    "line": 20
+  },
+  {
+    "file": "src/routes/eventRoutes.js",
+    "method": "GET",
+    "path": "/locations/trending",
+    "handler": "EventController.getTrendingEventLocations);",
+    "line": 21
+  },
+  {
+    "file": "src/routes/eventRoutes.js",
+    "method": "POST",
+    "path": "/",
+    "handler": "",
+    "line": 27
+  },
+  {
+    "file": "src/routes/eventRoutes.js",
+    "method": "PUT",
+    "path": "/:eventId",
+    "handler": "",
+    "line": 33
+  },
+  {
+    "file": "src/routes/eventRoutes.js",
+    "method": "DELETE",
+    "path": "/:eventId",
+    "handler": "EventController.deleteEvent);",
+    "line": 38
+  },
+  {
+    "file": "src/routes/eventRoutes.js",
+    "method": "PUT",
+    "path": "/:eventId/cancel",
+    "handler": "",
+    "line": 39
+  },
+  {
+    "file": "src/routes/eventRoutes.js",
+    "method": "PUT",
+    "path": "/:eventId/reschedule",
+    "handler": "",
+    "line": 43
+  },
+  {
+    "file": "src/routes/eventRoutes.js",
+    "method": "POST",
+    "path": "/:eventId/register",
+    "handler": "",
+    "line": 49
+  },
+  {
+    "file": "src/routes/eventRoutes.js",
+    "method": "DELETE",
+    "path": "/:eventId/register",
+    "handler": "EventController.cancelRegistration);",
+    "line": 54
+  },
+  {
+    "file": "src/routes/eventRoutes.js",
+    "method": "GET",
+    "path": "/:eventId/registrations",
+    "handler": "EventController.getEventRegistrations);",
+    "line": 55
+  },
+  {
+    "file": "src/routes/eventRoutes.js",
+    "method": "GET",
+    "path": "/registrations/my",
+    "handler": "EventController.getUserRegistrations);",
+    "line": 56
+  },
+  {
+    "file": "src/routes/eventRoutes.js",
+    "method": "PUT",
+    "path": "/registrations/:registrationId/status",
+    "handler": "",
+    "line": 57
+  },
+  {
+    "file": "src/routes/eventRoutes.js",
+    "method": "GET",
+    "path": "/search",
+    "handler": "EventController.searchEvents);",
+    "line": 63
+  },
+  {
+    "file": "src/routes/eventRoutes.js",
+    "method": "GET",
+    "path": "/recommendations",
+    "handler": "EventController.getEventRecommendations);",
+    "line": 64
+  },
+  {
+    "file": "src/routes/eventRoutes.js",
+    "method": "GET",
+    "path": "/stats",
+    "handler": "EventController.getEventStats);",
+    "line": 67
+  },
+  {
+    "file": "src/routes/eventRoutes.js",
+    "method": "GET",
+    "path": "/:eventId/insights",
+    "handler": "EventController.getEventInsights);",
+    "line": 68
+  },
+  {
+    "file": "src/routes/eventRoutes.js",
+    "method": "POST",
+    "path": "/:eventId/save",
+    "handler": "EventController.saveEvent);",
+    "line": 71
+  },
+  {
+    "file": "src/routes/eventRoutes.js",
+    "method": "DELETE",
+    "path": "/:eventId/save",
+    "handler": "EventController.removeSavedEvent);",
+    "line": 72
+  },
+  {
+    "file": "src/routes/eventRoutes.js",
+    "method": "GET",
+    "path": "/saved",
+    "handler": "EventController.getSavedEvents);",
+    "line": 73
+  },
+  {
+    "file": "src/routes/eventRoutes.js",
+    "method": "POST",
+    "path": "/:eventId/share",
+    "handler": "",
+    "line": 74
+  },
+  {
+    "file": "src/routes/eventRoutes.js",
+    "method": "POST",
+    "path": "/:eventId/report",
+    "handler": "",
+    "line": 80
+  },
+  {
+    "file": "src/routes/eventRoutes.js",
+    "method": "POST",
+    "path": "/:eventId/reminders",
+    "handler": "",
+    "line": 86
+  },
+  {
+    "file": "src/routes/eventRoutes.js",
+    "method": "GET",
+    "path": "/:eventId/export",
+    "handler": "EventController.exportEventData);",
+    "line": 92
+  },
+  {
+    "file": "src/routes/index.js",
+    "method": "GET",
+    "path": "/health",
+    "handler": "(req",
+    "line": 20
+  },
+  {
+    "file": "src/routes/index.js",
+    "method": "GET",
+    "path": "/version",
+    "handler": "(req",
+    "line": 32
+  },
+  {
+    "file": "src/routes/index.js",
+    "method": "USE",
+    "path": "/api/v1/auth",
+    "handler": "authRoutes);",
+    "line": 55
+  },
+  {
+    "file": "src/routes/index.js",
+    "method": "USE",
+    "path": "/api/v1/users",
+    "handler": "userRoutes);",
+    "line": 56
+  },
+  {
+    "file": "src/routes/index.js",
+    "method": "USE",
+    "path": "/api/v1/jobs",
+    "handler": "jobRoutes);",
+    "line": 57
+  },
+  {
+    "file": "src/routes/index.js",
+    "method": "USE",
+    "path": "/api/v1/events",
+    "handler": "eventRoutes);",
+    "line": 58
+  },
+  {
+    "file": "src/routes/index.js",
+    "method": "USE",
+    "path": "/api/v1/chat",
+    "handler": "chatRoutes);",
+    "line": 59
+  },
+  {
+    "file": "src/routes/index.js",
+    "method": "USE",
+    "path": "/api/v1/admin",
+    "handler": "adminRoutes);",
+    "line": 60
+  },
+  {
+    "file": "src/routes/index.js",
+    "method": "USE",
+    "path": "/api/v1/search",
+    "handler": "searchRoutes);",
+    "line": 61
+  },
+  {
+    "file": "src/routes/index.js",
+    "method": "USE",
+    "path": "/api/v1/analytics",
+    "handler": "analyticsRoutes);",
+    "line": 62
+  },
+  {
+    "file": "src/routes/index.js",
+    "method": "USE",
+    "path": "/api/v1/payments",
+    "handler": "paymentRoutes);",
+    "line": 63
+  },
+  {
+    "file": "src/routes/index.js",
+    "method": "USE",
+    "path": "/api/v1/business-cards",
+    "handler": "businessCardRoutes);",
+    "line": 64
+  },
+  {
+    "file": "src/routes/index.js",
+    "method": "USE",
+    "path": "/api/v1/unlocks",
+    "handler": "unlockRoutes);",
+    "line": 65
+  },
+  {
+    "file": "src/routes/index.js",
+    "method": "USE",
+    "path": "/api/v1/contacts",
+    "handler": "contactRoutes);",
+    "line": 66
+  },
+  {
+    "file": "src/routes/index.js",
+    "method": "USE",
+    "path": "/api/v1/master-data",
+    "handler": "masterDataRoutes);",
+    "line": 67
+  },
+  {
+    "file": "src/routes/index.js",
+    "method": "USE",
+    "path": "*",
+    "handler": "(req",
+    "line": 70
+  },
+  {
+    "file": "src/routes/jobRoutes.js",
+    "method": "GET",
+    "path": "/",
+    "handler": "JobController.getJobs);",
+    "line": 18
+  },
+  {
+    "file": "src/routes/jobRoutes.js",
+    "method": "GET",
+    "path": "/:jobId",
+    "handler": "JobController.getJob);",
+    "line": 19
+  },
+  {
+    "file": "src/routes/jobRoutes.js",
+    "method": "GET",
+    "path": "/categories/popular",
+    "handler": "JobController.getPopularJobCategories);",
+    "line": 20
+  },
+  {
+    "file": "src/routes/jobRoutes.js",
+    "method": "GET",
+    "path": "/locations/trending",
+    "handler": "JobController.getTrendingJobLocations);",
+    "line": 21
+  },
+  {
+    "file": "src/routes/jobRoutes.js",
+    "method": "POST",
+    "path": "/",
+    "handler": "",
+    "line": 27
+  },
+  {
+    "file": "src/routes/jobRoutes.js",
+    "method": "PUT",
+    "path": "/:jobId",
+    "handler": "",
+    "line": 33
+  },
+  {
+    "file": "src/routes/jobRoutes.js",
+    "method": "DELETE",
+    "path": "/:jobId",
+    "handler": "JobController.deleteJob);",
+    "line": 38
+  },
+  {
+    "file": "src/routes/jobRoutes.js",
+    "method": "PUT",
+    "path": "/:jobId/close",
+    "handler": "JobController.closeJob);",
+    "line": 39
+  },
+  {
+    "file": "src/routes/jobRoutes.js",
+    "method": "PUT",
+    "path": "/:jobId/reopen",
+    "handler": "JobController.reopenJob);",
+    "line": 40
+  },
+  {
+    "file": "src/routes/jobRoutes.js",
+    "method": "POST",
+    "path": "/:jobId/apply",
+    "handler": "",
+    "line": 43
+  },
+  {
+    "file": "src/routes/jobRoutes.js",
+    "method": "GET",
+    "path": "/:jobId/applications",
+    "handler": "JobController.getJobApplications);",
+    "line": 48
+  },
+  {
+    "file": "src/routes/jobRoutes.js",
+    "method": "GET",
+    "path": "/applications/my",
+    "handler": "JobController.getUserApplications);",
+    "line": 49
+  },
+  {
+    "file": "src/routes/jobRoutes.js",
+    "method": "PUT",
+    "path": "/applications/:applicationId/status",
+    "handler": "",
+    "line": 50
+  },
+  {
+    "file": "src/routes/jobRoutes.js",
+    "method": "DELETE",
+    "path": "/applications/:applicationId",
+    "handler": "JobController.withdrawApplication);",
+    "line": 54
+  },
+  {
+    "file": "src/routes/jobRoutes.js",
+    "method": "GET",
+    "path": "/search",
+    "handler": "JobController.searchJobs);",
+    "line": 57
+  },
+  {
+    "file": "src/routes/jobRoutes.js",
+    "method": "GET",
+    "path": "/recommendations",
+    "handler": "JobController.getJobRecommendations);",
+    "line": 58
+  },
+  {
+    "file": "src/routes/jobRoutes.js",
+    "method": "GET",
+    "path": "/stats",
+    "handler": "JobController.getJobStats);",
+    "line": 61
+  },
+  {
+    "file": "src/routes/jobRoutes.js",
+    "method": "GET",
+    "path": "/:jobId/insights",
+    "handler": "JobController.getJobInsights);",
+    "line": 62
+  },
+  {
+    "file": "src/routes/jobRoutes.js",
+    "method": "POST",
+    "path": "/:jobId/save",
+    "handler": "JobController.saveJob);",
+    "line": 65
+  },
+  {
+    "file": "src/routes/jobRoutes.js",
+    "method": "DELETE",
+    "path": "/:jobId/save",
+    "handler": "JobController.removeSavedJob);",
+    "line": 66
+  },
+  {
+    "file": "src/routes/jobRoutes.js",
+    "method": "GET",
+    "path": "/saved",
+    "handler": "JobController.getSavedJobs);",
+    "line": 67
+  },
+  {
+    "file": "src/routes/jobRoutes.js",
+    "method": "POST",
+    "path": "/:jobId/share",
+    "handler": "",
+    "line": 68
+  },
+  {
+    "file": "src/routes/jobRoutes.js",
+    "method": "POST",
+    "path": "/:jobId/report",
+    "handler": "",
+    "line": 74
+  },
+  {
+    "file": "src/routes/jobRoutes.js",
+    "method": "GET",
+    "path": "/:jobId/export",
+    "handler": "JobController.exportJobData);",
+    "line": 80
+  },
+  {
+    "file": "src/routes/masterDataRoutes.js",
+    "method": "GET",
+    "path": "/categories",
+    "handler": "",
+    "line": 19
+  },
+  {
+    "file": "src/routes/masterDataRoutes.js",
+    "method": "GET",
+    "path": "/categories/:category",
+    "handler": "",
+    "line": 24
+  },
+  {
+    "file": "src/routes/masterDataRoutes.js",
+    "method": "GET",
+    "path": "/categories/:category/items/:item_id",
+    "handler": "",
+    "line": 29
+  },
+  {
+    "file": "src/routes/masterDataRoutes.js",
+    "method": "GET",
+    "path": "/location-hierarchy",
+    "handler": "",
+    "line": 34
+  },
+  {
+    "file": "src/routes/masterDataRoutes.js",
+    "method": "GET",
+    "path": "/search",
+    "handler": "",
+    "line": 39
+  },
+  {
+    "file": "src/routes/masterDataRoutes.js",
+    "method": "GET",
+    "path": "/suggestions",
+    "handler": "",
+    "line": 44
+  },
+  {
+    "file": "src/routes/masterDataRoutes.js",
+    "method": "GET",
+    "path": "/stats",
+    "handler": "",
+    "line": 49
+  },
+  {
+    "file": "src/routes/masterDataRoutes.js",
+    "method": "GET",
+    "path": "/export",
+    "handler": "",
+    "line": 54
+  },
+  {
+    "file": "src/routes/masterDataRoutes.js",
+    "method": "GET",
+    "path": "/validate",
+    "handler": "",
+    "line": 59
+  },
+  {
+    "file": "src/routes/masterDataRoutes.js",
+    "method": "GET",
+    "path": "/categories/:category/items/:item_id/dependencies",
+    "handler": "",
+    "line": 64
+  },
+  {
+    "file": "src/routes/masterDataRoutes.js",
+    "method": "POST",
+    "path": "/categories/:category/items",
+    "handler": "",
+    "line": 70
+  },
+  {
+    "file": "src/routes/masterDataRoutes.js",
+    "method": "PUT",
+    "path": "/categories/:category/items/:item_id",
+    "handler": "",
+    "line": 78
+  },
+  {
+    "file": "src/routes/masterDataRoutes.js",
+    "method": "DELETE",
+    "path": "/categories/:category/items/:item_id",
+    "handler": "",
+    "line": 86
+  },
+  {
+    "file": "src/routes/masterDataRoutes.js",
+    "method": "POST",
+    "path": "/import",
+    "handler": "",
+    "line": 93
+  },
+  {
+    "file": "src/routes/masterDataRoutes.js",
+    "method": "POST",
+    "path": "/bulk-update",
+    "handler": "",
+    "line": 101
+  },
+  {
+    "file": "src/routes/masterDataRoutes.js",
+    "method": "GET",
+    "path": "/audit-log",
+    "handler": "",
+    "line": 109
+  },
+  {
+    "file": "src/routes/masterDataRoutes.js",
+    "method": "POST",
+    "path": "/sync",
+    "handler": "",
+    "line": 116
+  },
+  {
+    "file": "src/routes/paymentRoutes.js",
+    "method": "GET",
+    "path": "/plans",
+    "handler": "PaymentController.getSubscriptionPlans);",
+    "line": 18
+  },
+  {
+    "file": "src/routes/paymentRoutes.js",
+    "method": "GET",
+    "path": "/plans/:planId",
+    "handler": "PaymentController.getPlanDetails);",
+    "line": 19
+  },
+  {
+    "file": "src/routes/paymentRoutes.js",
+    "method": "POST",
+    "path": "/process",
+    "handler": "",
+    "line": 25
+  },
+  {
+    "file": "src/routes/paymentRoutes.js",
+    "method": "POST",
+    "path": "/subscriptions",
+    "handler": "",
+    "line": 32
+  },
+  {
+    "file": "src/routes/paymentRoutes.js",
+    "method": "GET",
+    "path": "/subscriptions",
+    "handler": "PaymentController.getUserSubscriptions);",
+    "line": 37
+  },
+  {
+    "file": "src/routes/paymentRoutes.js",
+    "method": "GET",
+    "path": "/subscriptions/:subscriptionId",
+    "handler": "PaymentController.getSubscriptionDetails);",
+    "line": 38
+  },
+  {
+    "file": "src/routes/paymentRoutes.js",
+    "method": "PUT",
+    "path": "/subscriptions/:subscriptionId/cancel",
+    "handler": "",
+    "line": 39
+  },
+  {
+    "file": "src/routes/paymentRoutes.js",
+    "method": "PUT",
+    "path": "/subscriptions/:subscriptionId/renew",
+    "handler": "",
+    "line": 44
+  },
+  {
+    "file": "src/routes/paymentRoutes.js",
+    "method": "PUT",
+    "path": "/subscriptions/:subscriptionId/upgrade",
+    "handler": "",
+    "line": 49
+  },
+  {
+    "file": "src/routes/paymentRoutes.js",
+    "method": "POST",
+    "path": "/payments/:paymentId/refund",
+    "handler": "",
+    "line": 55
+  },
+  {
+    "file": "src/routes/paymentRoutes.js",
+    "method": "GET",
+    "path": "/payments/history",
+    "handler": "PaymentController.getPaymentHistory);",
+    "line": 61
+  },
+  {
+    "file": "src/routes/paymentRoutes.js",
+    "method": "GET",
+    "path": "/payments/stats",
+    "handler": "PaymentController.getPaymentStats);",
+    "line": 62
+  },
+  {
+    "file": "src/routes/paymentRoutes.js",
+    "method": "GET",
+    "path": "/payments/analytics",
+    "handler": "PaymentController.getPaymentAnalytics);",
+    "line": 63
+  },
+  {
+    "file": "src/routes/paymentRoutes.js",
+    "method": "GET",
+    "path": "/billing",
+    "handler": "PaymentController.getBillingInformation);",
+    "line": 66
+  },
+  {
+    "file": "src/routes/paymentRoutes.js",
+    "method": "PUT",
+    "path": "/billing",
+    "handler": "",
+    "line": 67
+  },
+  {
+    "file": "src/routes/paymentRoutes.js",
+    "method": "GET",
+    "path": "/payments/:paymentId/invoice",
+    "handler": "PaymentController.generateInvoice);",
+    "line": 73
+  },
+  {
+    "file": "src/routes/paymentRoutes.js",
+    "method": "GET",
+    "path": "/methods",
+    "handler": "PaymentController.getPaymentMethods);",
+    "line": 76
+  },
+  {
+    "file": "src/routes/paymentRoutes.js",
+    "method": "POST",
+    "path": "/methods",
+    "handler": "",
+    "line": 77
+  },
+  {
+    "file": "src/routes/paymentRoutes.js",
+    "method": "DELETE",
+    "path": "/methods/:methodId",
+    "handler": "PaymentController.removePaymentMethod);",
+    "line": 82
+  },
+  {
+    "file": "src/routes/paymentRoutes.js",
+    "method": "PUT",
+    "path": "/methods/:methodId/default",
+    "handler": "PaymentController.setDefaultPaymentMethod);",
+    "line": 83
+  },
+  {
+    "file": "src/routes/paymentRoutes.js",
+    "method": "GET",
+    "path": "/spending-limit",
+    "handler": "PaymentController.getDailySpendingLimit);",
+    "line": 86
+  },
+  {
+    "file": "src/routes/paymentRoutes.js",
+    "method": "PUT",
+    "path": "/spending-limit",
+    "handler": "",
+    "line": 87
+  },
+  {
+    "file": "src/routes/searchRoutes.js",
+    "method": "GET",
+    "path": "/global",
+    "handler": "",
+    "line": 18
+  },
+  {
+    "file": "src/routes/searchRoutes.js",
+    "method": "GET",
+    "path": "/users",
+    "handler": "",
+    "line": 24
+  },
+  {
+    "file": "src/routes/searchRoutes.js",
+    "method": "GET",
+    "path": "/jobs",
+    "handler": "",
+    "line": 30
+  },
+  {
+    "file": "src/routes/searchRoutes.js",
+    "method": "GET",
+    "path": "/events",
+    "handler": "",
+    "line": 36
+  },
+  {
+    "file": "src/routes/searchRoutes.js",
+    "method": "GET",
+    "path": "/services",
+    "handler": "",
+    "line": 42
+  },
+  {
+    "file": "src/routes/searchRoutes.js",
+    "method": "GET",
+    "path": "/investors",
+    "handler": "",
+    "line": 48
+  },
+  {
+    "file": "src/routes/searchRoutes.js",
+    "method": "GET",
+    "path": "/projects",
+    "handler": "",
+    "line": 54
+  },
+  {
+    "file": "src/routes/searchRoutes.js",
+    "method": "GET",
+    "path": "/suggestions",
+    "handler": "",
+    "line": 61
+  },
+  {
+    "file": "src/routes/searchRoutes.js",
+    "method": "GET",
+    "path": "/filters",
+    "handler": "SearchController.getSearchFilters);",
+    "line": 66
+  },
+  {
+    "file": "src/routes/searchRoutes.js",
+    "method": "GET",
+    "path": "/popular",
+    "handler": "SearchController.getPopularSearches);",
+    "line": 67
+  },
+  {
+    "file": "src/routes/searchRoutes.js",
+    "method": "GET",
+    "path": "/trending",
+    "handler": "SearchController.getTrendingSearches);",
+    "line": 68
+  },
+  {
+    "file": "src/routes/searchRoutes.js",
+    "method": "GET",
+    "path": "/analytics",
+    "handler": "SearchController.getSearchAnalytics);",
+    "line": 74
+  },
+  {
+    "file": "src/routes/searchRoutes.js",
+    "method": "GET",
+    "path": "/insights",
+    "handler": "SearchController.getSearchInsights);",
+    "line": 75
+  },
+  {
+    "file": "src/routes/searchRoutes.js",
+    "method": "GET",
+    "path": "/history",
+    "handler": "SearchController.getSearchHistory);",
+    "line": 78
+  },
+  {
+    "file": "src/routes/searchRoutes.js",
+    "method": "DELETE",
+    "path": "/history",
+    "handler": "SearchController.clearSearchHistory);",
+    "line": 79
+  },
+  {
+    "file": "src/routes/searchRoutes.js",
+    "method": "POST",
+    "path": "/queries",
+    "handler": "",
+    "line": 82
+  },
+  {
+    "file": "src/routes/searchRoutes.js",
+    "method": "GET",
+    "path": "/queries",
+    "handler": "SearchController.getSavedSearchQueries);",
+    "line": 87
+  },
+  {
+    "file": "src/routes/searchRoutes.js",
+    "method": "DELETE",
+    "path": "/queries/:queryId",
+    "handler": "SearchController.deleteSavedSearchQuery);",
+    "line": 88
+  },
+  {
+    "file": "src/routes/searchRoutes.js",
+    "method": "GET",
+    "path": "/recommendations",
+    "handler": "SearchController.getSearchRecommendations);",
+    "line": 91
+  },
+  {
+    "file": "src/routes/searchRoutes.js",
+    "method": "GET",
+    "path": "/performance",
+    "handler": "SearchController.getSearchPerformanceMetrics);",
+    "line": 94
+  },
+  {
+    "file": "src/routes/searchRoutes.js",
+    "method": "GET",
+    "path": "/relevance",
+    "handler": "SearchController.getSearchRelevanceScores);",
+    "line": 95
+  },
+  {
+    "file": "src/routes/searchRoutes.js",
+    "method": "PUT",
+    "path": "/relevance",
+    "handler": "",
+    "line": 96
+  },
+  {
+    "file": "src/routes/searchRoutes.js",
+    "method": "GET",
+    "path": "/autocomplete",
+    "handler": "SearchController.getAutocompleteSuggestions);",
+    "line": 102
+  },
+  {
+    "file": "src/routes/searchRoutes.js",
+    "method": "GET",
+    "path": "/facets",
+    "handler": "SearchController.getSearchFacets);",
+    "line": 103
+  },
+  {
+    "file": "src/routes/searchRoutes.js",
+    "method": "GET",
+    "path": "/export",
+    "handler": "SearchController.exportSearchResults);",
+    "line": 106
+  },
+  {
+    "file": "src/routes/testRoutes.js",
+    "method": "GET",
+    "path": "/health",
+    "handler": "(req",
+    "line": 27
+  },
+  {
+    "file": "src/routes/testRoutes.js",
+    "method": "GET",
+    "path": "/version",
+    "handler": "(req",
+    "line": 37
+  },
+  {
+    "file": "src/routes/testRoutes.js",
+    "method": "USE",
+    "path": "/api/v1/auth",
+    "handler": "require('./authRoutes'));",
+    "line": 46
+  },
+  {
+    "file": "src/routes/testRoutes.js",
+    "method": "USE",
+    "path": "/api/v1/users",
+    "handler": "require('./userRoutes'));",
+    "line": 47
+  },
+  {
+    "file": "src/routes/testRoutes.js",
+    "method": "USE",
+    "path": "/api/v1/jobs",
+    "handler": "require('./jobRoutes'));",
+    "line": 48
+  },
+  {
+    "file": "src/routes/testRoutes.js",
+    "method": "USE",
+    "path": "/api/v1/events",
+    "handler": "require('./eventRoutes'));",
+    "line": 49
+  },
+  {
+    "file": "src/routes/testRoutes.js",
+    "method": "USE",
+    "path": "/api/v1/chat",
+    "handler": "require('./chatRoutes'));",
+    "line": 50
+  },
+  {
+    "file": "src/routes/testRoutes.js",
+    "method": "USE",
+    "path": "/api/v1/admin",
+    "handler": "require('./adminRoutes'));",
+    "line": 51
+  },
+  {
+    "file": "src/routes/testRoutes.js",
+    "method": "USE",
+    "path": "/api/v1/search",
+    "handler": "require('./searchRoutes'));",
+    "line": 52
+  },
+  {
+    "file": "src/routes/testRoutes.js",
+    "method": "USE",
+    "path": "/api/v1/analytics",
+    "handler": "require('./analyticsRoutes'));",
+    "line": 53
+  },
+  {
+    "file": "src/routes/testRoutes.js",
+    "method": "USE",
+    "path": "/api/v1/payments",
+    "handler": "require('./paymentRoutes'));",
+    "line": 54
+  },
+  {
+    "file": "src/routes/testRoutes.js",
+    "method": "USE",
+    "path": "/api/v1/business-cards",
+    "handler": "require('./businessCardRoutes'));",
+    "line": 55
+  },
+  {
+    "file": "src/routes/testRoutes.js",
+    "method": "USE",
+    "path": "/api/v1/unlocks",
+    "handler": "require('./unlockRoutes'));",
+    "line": 56
+  },
+  {
+    "file": "src/routes/testRoutes.js",
+    "method": "USE",
+    "path": "/api/v1/contacts",
+    "handler": "require('./contactRoutes'));",
+    "line": 57
+  },
+  {
+    "file": "src/routes/testRoutes.js",
+    "method": "USE",
+    "path": "/api/v1/master-data",
+    "handler": "require('./masterDataRoutes'));",
+    "line": 58
+  },
+  {
+    "file": "src/routes/testRoutes.js",
+    "method": "USE",
+    "path": "*",
+    "handler": "(req",
+    "line": 61
+  },
+  {
+    "file": "src/routes/unlockRoutes.js",
+    "method": "POST",
+    "path": "/services",
+    "handler": "",
+    "line": 20
+  },
+  {
+    "file": "src/routes/unlockRoutes.js",
+    "method": "GET",
+    "path": "/services/user",
+    "handler": "",
+    "line": 27
+  },
+  {
+    "file": "src/routes/unlockRoutes.js",
+    "method": "GET",
+    "path": "/services/user/history",
+    "handler": "",
+    "line": 33
+  },
+  {
+    "file": "src/routes/unlockRoutes.js",
+    "method": "GET",
+    "path": "/services/:service_id/stats",
+    "handler": "",
+    "line": 39
+  },
+  {
+    "file": "src/routes/unlockRoutes.js",
+    "method": "GET",
+    "path": "/services/:service_id/status",
+    "handler": "",
+    "line": 44
+  },
+  {
+    "file": "src/routes/unlockRoutes.js",
+    "method": "GET",
+    "path": "/services/:service_id/pricing",
+    "handler": "",
+    "line": 50
+  },
+  {
+    "file": "src/routes/unlockRoutes.js",
+    "method": "GET",
+    "path": "/services/recommendations",
+    "handler": "",
+    "line": 55
+  },
+  {
+    "file": "src/routes/unlockRoutes.js",
+    "method": "GET",
+    "path": "/services/admin/all",
+    "handler": "",
+    "line": 62
+  },
+  {
+    "file": "src/routes/unlockRoutes.js",
+    "method": "PUT",
+    "path": "/services/admin/:unlock_id/revoke",
+    "handler": "",
+    "line": 69
+  },
+  {
+    "file": "src/routes/unlockRoutes.js",
+    "method": "GET",
+    "path": "/services/admin/analytics",
+    "handler": "",
+    "line": 77
+  },
+  {
+    "file": "src/routes/unlockRoutes.js",
+    "method": "GET",
+    "path": "/services/admin/export",
+    "handler": "",
+    "line": 84
+  },
+  {
+    "file": "src/routes/unlockRoutes.js",
+    "method": "POST",
+    "path": "/investors",
+    "handler": "",
+    "line": 92
+  },
+  {
+    "file": "src/routes/unlockRoutes.js",
+    "method": "GET",
+    "path": "/investors/user",
+    "handler": "",
+    "line": 99
+  },
+  {
+    "file": "src/routes/unlockRoutes.js",
+    "method": "GET",
+    "path": "/investors/user/history",
+    "handler": "",
+    "line": 105
+  },
+  {
+    "file": "src/routes/unlockRoutes.js",
+    "method": "GET",
+    "path": "/investors/:investor_id/stats",
+    "handler": "",
+    "line": 111
+  },
+  {
+    "file": "src/routes/unlockRoutes.js",
+    "method": "GET",
+    "path": "/investors/:investor_id/status",
+    "handler": "",
+    "line": 116
+  },
+  {
+    "file": "src/routes/unlockRoutes.js",
+    "method": "GET",
+    "path": "/investors/:investor_id/pricing",
+    "handler": "",
+    "line": 122
+  },
+  {
+    "file": "src/routes/unlockRoutes.js",
+    "method": "GET",
+    "path": "/investors/recommendations",
+    "handler": "",
+    "line": 127
+  },
+  {
+    "file": "src/routes/unlockRoutes.js",
+    "method": "GET",
+    "path": "/investors/user/meets",
+    "handler": "",
+    "line": 134
+  },
+  {
+    "file": "src/routes/unlockRoutes.js",
+    "method": "POST",
+    "path": "/investors/meeting-request",
+    "handler": "",
+    "line": 140
+  },
+  {
+    "file": "src/routes/unlockRoutes.js",
+    "method": "GET",
+    "path": "/investors/:investor_id/desk",
+    "handler": "",
+    "line": 147
+  },
+  {
+    "file": "src/routes/unlockRoutes.js",
+    "method": "GET",
+    "path": "/investors/admin/all",
+    "handler": "",
+    "line": 154
+  },
+  {
+    "file": "src/routes/unlockRoutes.js",
+    "method": "PUT",
+    "path": "/investors/admin/:unlock_id/revoke",
+    "handler": "",
+    "line": 161
+  },
+  {
+    "file": "src/routes/unlockRoutes.js",
+    "method": "GET",
+    "path": "/investors/admin/analytics",
+    "handler": "",
+    "line": 169
+  },
+  {
+    "file": "src/routes/unlockRoutes.js",
+    "method": "GET",
+    "path": "/investors/admin/export",
+    "handler": "",
+    "line": 176
+  },
+  {
+    "file": "src/routes/userRoutes.js",
+    "method": "POST",
+    "path": "/register",
+    "handler": "",
+    "line": 18
+  },
+  {
+    "file": "src/routes/userRoutes.js",
+    "method": "POST",
+    "path": "/login",
+    "handler": "",
+    "line": 24
+  },
+  {
+    "file": "src/routes/userRoutes.js",
+    "method": "POST",
+    "path": "/forgot-password",
+    "handler": "",
+    "line": 30
+  },
+  {
+    "file": "src/routes/userRoutes.js",
+    "method": "POST",
+    "path": "/reset-password",
+    "handler": "",
+    "line": 36
+  },
+  {
+    "file": "src/routes/userRoutes.js",
+    "method": "POST",
+    "path": "/verify-email",
+    "handler": "",
+    "line": 42
+  },
+  {
+    "file": "src/routes/userRoutes.js",
+    "method": "POST",
+    "path": "/resend-verification",
+    "handler": "",
+    "line": 48
+  },
+  {
+    "file": "src/routes/userRoutes.js",
+    "method": "POST",
+    "path": "/refresh-token",
+    "handler": "UserController.refreshToken);",
+    "line": 58
+  },
+  {
+    "file": "src/routes/userRoutes.js",
+    "method": "GET",
+    "path": "/profile",
+    "handler": "UserController.getProfile);",
+    "line": 61
+  },
+  {
+    "file": "src/routes/userRoutes.js",
+    "method": "PUT",
+    "path": "/profile",
+    "handler": "",
+    "line": 62
+  },
+  {
+    "file": "src/routes/userRoutes.js",
+    "method": "POST",
+    "path": "/profile/photo",
+    "handler": "",
+    "line": 67
+  },
+  {
+    "file": "src/routes/userRoutes.js",
+    "method": "PUT",
+    "path": "/change-password",
+    "handler": "",
+    "line": 73
+  },
+  {
+    "file": "src/routes/userRoutes.js",
+    "method": "GET",
+    "path": "/settings",
+    "handler": "UserController.getSettings);",
+    "line": 79
+  },
+  {
+    "file": "src/routes/userRoutes.js",
+    "method": "PUT",
+    "path": "/settings",
+    "handler": "",
+    "line": 80
+  },
+  {
+    "file": "src/routes/userRoutes.js",
+    "method": "POST",
+    "path": "/settings/reset",
+    "handler": "UserController.resetSettings);",
+    "line": 84
+  },
+  {
+    "file": "src/routes/userRoutes.js",
+    "method": "GET",
+    "path": "/notifications",
+    "handler": "UserController.getNotifications);",
+    "line": 87
+  },
+  {
+    "file": "src/routes/userRoutes.js",
+    "method": "PUT",
+    "path": "/notifications/:notificationId/read",
+    "handler": "UserController.markNotificationAsRead);",
+    "line": 88
+  },
+  {
+    "file": "src/routes/userRoutes.js",
+    "method": "PUT",
+    "path": "/notifications/read-all",
+    "handler": "UserController.markAllNotificationsAsRead);",
+    "line": 89
+  },
+  {
+    "file": "src/routes/userRoutes.js",
+    "method": "GET",
+    "path": "/connections",
+    "handler": "UserController.getConnections);",
+    "line": 92
+  },
+  {
+    "file": "src/routes/userRoutes.js",
+    "method": "POST",
+    "path": "/connections/:userId/send",
+    "handler": "UserController.sendConnectionRequest);",
+    "line": 93
+  },
+  {
+    "file": "src/routes/userRoutes.js",
+    "method": "PUT",
+    "path": "/connections/:userId/accept",
+    "handler": "UserController.acceptConnectionRequest);",
+    "line": 94
+  },
+  {
+    "file": "src/routes/userRoutes.js",
+    "method": "PUT",
+    "path": "/connections/:userId/reject",
+    "handler": "UserController.rejectConnectionRequest);",
+    "line": 95
+  },
+  {
+    "file": "src/routes/userRoutes.js",
+    "method": "DELETE",
+    "path": "/connections/:userId",
+    "handler": "UserController.removeConnection);",
+    "line": 96
+  },
+  {
+    "file": "src/routes/userRoutes.js",
+    "method": "POST",
+    "path": "/block/:userId",
+    "handler": "",
+    "line": 99
+  },
+  {
+    "file": "src/routes/userRoutes.js",
+    "method": "DELETE",
+    "path": "/block/:userId",
+    "handler": "UserController.unblockUser);",
+    "line": 103
+  },
+  {
+    "file": "src/routes/userRoutes.js",
+    "method": "GET",
+    "path": "/connections/suggestions",
+    "handler": "UserController.getConnectionSuggestions);",
+    "line": 106
+  },
+  {
+    "file": "src/routes/userRoutes.js",
+    "method": "GET",
+    "path": "/search",
+    "handler": "UserController.searchUsers);",
+    "line": 109
+  },
+  {
+    "file": "src/routes/userRoutes.js",
+    "method": "GET",
+    "path": "/recommendations",
+    "handler": "UserController.getUserRecommendations);",
+    "line": 110
+  },
+  {
+    "file": "src/routes/userRoutes.js",
+    "method": "POST",
+    "path": "/deactivate",
+    "handler": "",
+    "line": 113
+  },
+  {
+    "file": "src/routes/userRoutes.js",
+    "method": "POST",
+    "path": "/reactivate",
+    "handler": "UserController.reactivateAccount);",
+    "line": 117
+  },
+  {
+    "file": "src/routes/userRoutes.js",
+    "method": "GET",
+    "path": "/stats",
+    "handler": "UserController.getUserStats);",
+    "line": 120
+  },
+  {
+    "file": "src/routes/userRoutes.js",
+    "method": "GET",
+    "path": "/export",
+    "handler": "UserController.exportUserData);",
+    "line": 123
+  },
+  {
+    "file": "src/routes/v1/api.js",
+    "method": "POST",
+    "path": "/Api-Send-Otp",
+    "handler": "ApiController.sendOtp);",
+    "line": 11
+  },
+  {
+    "file": "src/routes/v1/api.js",
+    "method": "POST",
+    "path": "/Api-Verify-Otp",
+    "handler": "ApiController.verifyOtp);",
+    "line": 12
+  },
+  {
+    "file": "src/routes/v1/api.js",
+    "method": "POST",
+    "path": "/Api-Login",
+    "handler": "ApiController.login); // parity placeholder",
+    "line": 14
+  },
+  {
+    "file": "src/routes/v1/api.js",
+    "method": "POST",
+    "path": "/Api-Logout",
+    "handler": "checkUser",
+    "line": 15
+  },
+  {
+    "file": "src/routes/v1/api.js",
+    "method": "POST",
+    "path": "/Api-Country-List",
+    "handler": "checkUser",
+    "line": 17
+  },
+  {
+    "file": "src/routes/v1/api.js",
+    "method": "POST",
+    "path": "/Api-State-List",
+    "handler": "checkUser",
+    "line": 18
+  },
+  {
+    "file": "src/routes/v1/api.js",
+    "method": "POST",
+    "path": "/Api-City-List",
+    "handler": "checkUser",
+    "line": 19
+  },
+  {
+    "file": "src/routes/v1/api.js",
+    "method": "POST",
+    "path": "/Api-Interests-List",
+    "handler": "checkUser",
+    "line": 20
+  },
+  {
+    "file": "src/routes/v1/api.js",
+    "method": "POST",
+    "path": "/Api-Employment-Type-List",
+    "handler": "checkUser",
+    "line": 21
+  },
+  {
+    "file": "src/routes/v1/api.js",
+    "method": "POST",
+    "path": "/Api-Job-Type-List",
+    "handler": "checkUser",
+    "line": 22
+  },
+  {
+    "file": "src/routes/v1/api.js",
+    "method": "POST",
+    "path": "/Api-Pay-List",
+    "handler": "checkUser",
+    "line": 23
+  },
+  {
+    "file": "src/routes/v1/api.js",
+    "method": "POST",
+    "path": "/Api-Event-Mode-List",
+    "handler": "checkUser",
+    "line": 24
+  },
+  {
+    "file": "src/routes/v1/api.js",
+    "method": "POST",
+    "path": "/Api-Event-Type-List",
+    "handler": "checkUser",
+    "line": 25
+  },
+  {
+    "file": "src/routes/v1/api.js",
+    "method": "POST",
+    "path": "/Api-Fund-Size-List",
+    "handler": "checkUser",
+    "line": 26
+  },
+  {
+    "file": "src/routes/v1/api.js",
+    "method": "POST",
+    "path": "/Api-Update-Profile",
+    "handler": "checkUser",
+    "line": 28
+  },
+  {
+    "file": "src/routes/v1/api.js",
+    "method": "POST",
+    "path": "/Api-View-Profile",
+    "handler": "checkUser",
+    "line": 29
+  },
+  {
+    "file": "src/routes/v1/api.js",
+    "method": "POST",
+    "path": "/Api-View-User-Detail-By-Mobile",
+    "handler": "checkUser",
+    "line": 30
+  },
+  {
+    "file": "src/routes/v1/api.js",
+    "method": "POST",
+    "path": "/Api-View-User-Detail-By-Qrcode",
+    "handler": "checkUser",
+    "line": 31
+  },
+  {
+    "file": "src/routes/v1/api.js",
+    "method": "POST",
+    "path": "/Api-View-Profile-By-Mobile",
+    "handler": "checkUser",
+    "line": 32
+  },
+  {
+    "file": "src/routes/v1/api.js",
+    "method": "POST",
+    "path": "/Api-Dashboard",
+    "handler": "checkUser",
+    "line": 34
+  },
+  {
+    "file": "src/routes/v1/api.js",
+    "method": "POST",
+    "path": "/Api-View-Job-Information",
+    "handler": "checkUser",
+    "line": 36
+  },
+  {
+    "file": "src/routes/v1/api.js",
+    "method": "POST",
+    "path": "/Api-View-Job-Details",
+    "handler": "checkUser",
+    "line": 37
+  },
+  {
+    "file": "src/routes/v1/api.js",
+    "method": "POST",
+    "path": "/Api-Job-Applicants-List",
+    "handler": "checkUser",
+    "line": 38
+  },
+  {
+    "file": "src/routes/v1/api.js",
+    "method": "POST",
+    "path": "/Api-View-Resumes",
+    "handler": "checkUser",
+    "line": 39
+  },
+  {
+    "file": "src/routes/v1/api.js",
+    "method": "POST",
+    "path": "/Api-View-Event-Information",
+    "handler": "checkUser",
+    "line": 41
+  },
+  {
+    "file": "src/routes/v1/api.js",
+    "method": "POST",
+    "path": "/Api-View-Event-Details",
+    "handler": "checkUser",
+    "line": 42
+  },
+  {
+    "file": "src/routes/v1/api.js",
+    "method": "POST",
+    "path": "/Api-Event-Organisers-List",
+    "handler": "checkUser",
+    "line": 43
+  },
+  {
+    "file": "src/routes/v1/api.js",
+    "method": "POST",
+    "path": "/Api-Event-Attendees-List",
+    "handler": "checkUser",
+    "line": 44
+  },
+  {
+    "file": "src/routes/v1/api.js",
+    "method": "POST",
+    "path": "/Api-View-Events-Attended",
+    "handler": "checkUser",
+    "line": 46
+  },
+  {
+    "file": "src/routes/v1/api.js",
+    "method": "POST",
+    "path": "/Api-View-Events-Organised",
+    "handler": "checkUser",
+    "line": 47
+  },
+  {
+    "file": "src/routes/v1/api.js",
+    "method": "POST",
+    "path": "/Api-Folders-List-By-Type",
+    "handler": "checkUser",
+    "line": 49
+  },
+  {
+    "file": "src/routes/v1/api.js",
+    "method": "POST",
+    "path": "/Api-Sub-Folders-List",
+    "handler": "checkUser",
+    "line": 50
+  },
+  {
+    "file": "src/routes/v1/api.js",
+    "method": "POST",
+    "path": "/Api-Contacts-List",
+    "handler": "checkUser",
+    "line": 51
+  },
+  {
+    "file": "src/routes/v1/api.js",
+    "method": "POST",
+    "path": "/Api-View-Contact-Visiting-Card",
+    "handler": "checkUser",
+    "line": 53
+  },
+  {
+    "file": "src/routes/v1/api.js",
+    "method": "POST",
+    "path": "/Api-Activate-Card",
+    "handler": "checkUser",
+    "line": 55
+  },
+  {
+    "file": "src/routes/v1/api.js",
+    "method": "POST",
+    "path": "/Api-View-Business-Card",
+    "handler": "checkUser",
+    "line": 56
+  },
+  {
+    "file": "src/routes/v1/api.js",
+    "method": "POST",
+    "path": "/Api-Promotions-List",
+    "handler": "checkUser",
+    "line": 58
+  },
+  {
+    "file": "src/routes/v1/api.js",
+    "method": "POST",
+    "path": "/Api-Service-Master-List",
+    "handler": "checkUser",
+    "line": 60
+  },
+  {
+    "file": "src/routes/v1/api.js",
+    "method": "POST",
+    "path": "/Api-Services-List",
+    "handler": "checkUser",
+    "line": 61
+  },
+  {
+    "file": "src/routes/v1/api.js",
+    "method": "POST",
+    "path": "/Api-View-Service-Details",
+    "handler": "checkUser",
+    "line": 62
+  },
+  {
+    "file": "src/routes/v1/api.js",
+    "method": "POST",
+    "path": "/Api-All-Services-List",
+    "handler": "checkUser",
+    "line": 64
+  },
+  {
+    "file": "src/routes/v1/api.js",
+    "method": "POST",
+    "path": "/Api-Service-Unlock",
+    "handler": "checkUser",
+    "line": 66
+  },
+  {
+    "file": "src/routes/v1/api.js",
+    "method": "POST",
+    "path": "/Api-All-Service-Unlock-List",
+    "handler": "checkUser",
+    "line": 67
+  },
+  {
+    "file": "src/routes/v1/api.js",
+    "method": "POST",
+    "path": "/Api-All-Investors-List",
+    "handler": "checkUser",
+    "line": 69
+  },
+  {
+    "file": "src/routes/v1/api.js",
+    "method": "POST",
+    "path": "/Api-View-Investor-Details",
+    "handler": "checkUser",
+    "line": 70
+  },
+  {
+    "file": "src/routes/v1/api.js",
+    "method": "POST",
+    "path": "/Api-Investor-Unlock",
+    "handler": "checkUser",
+    "line": 71
+  },
+  {
+    "file": "src/routes/v1/api.js",
+    "method": "POST",
+    "path": "/Api-My-Investor-Profile",
+    "handler": "checkUser",
+    "line": 72
+  },
+  {
+    "file": "src/routes/v1/api.js",
+    "method": "POST",
+    "path": "/Api-My-Investor-Meets",
+    "handler": "checkUser",
+    "line": 73
+  },
+  {
+    "file": "src/routes/v1/api.js",
+    "method": "POST",
+    "path": "/Api-Investor-Desk",
+    "handler": "checkUser",
+    "line": 74
+  },
+  {
+    "file": "src/routes/v1/api.js",
+    "method": "POST",
+    "path": "/Api-Chat-Users-List",
+    "handler": "checkUser",
+    "line": 76
+  },
+  {
+    "file": "src/routes/v1/api.js",
+    "method": "POST",
+    "path": "/Api-View-Chat",
+    "handler": "checkUser",
+    "line": 77
+  },
+  {
+    "file": "src/routes/v1/api.js",
+    "method": "POST",
+    "path": "/Api-Save-Chat",
+    "handler": "checkUser",
+    "line": 78
+  },
+  {
+    "file": "src/routes/v1/api.js",
+    "method": "POST",
+    "path": "/Api-Save-Project-Details",
+    "handler": "checkUser",
+    "line": 81
+  },
+  {
+    "file": "src/routes/v1/api.js",
+    "method": "POST",
+    "path": "/Api-Save-Event-Information",
+    "handler": "checkUser",
+    "line": 82
+  },
+  {
+    "file": "src/routes/v1/api.js",
+    "method": "POST",
+    "path": "/Api-Save-Service-Details",
+    "handler": "checkUser",
+    "line": 83
+  },
+  {
+    "file": "src/routes/v1/api.js",
+    "method": "POST",
+    "path": "/Api-Add-Contact-Visiting-Card",
+    "handler": "checkUser",
+    "line": 84
+  }
+]
