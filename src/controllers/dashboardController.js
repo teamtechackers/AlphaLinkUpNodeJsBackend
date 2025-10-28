@@ -405,6 +405,28 @@ const DashboardController = {
         unreadNotificationCount = 0;
       }
 
+      // Get meeting statistics
+      let totalMeetingsCount = 0;
+      let pendingMeetingRequests = 0;
+      try {
+        const meetingStats = await query(`
+          SELECT 
+            COUNT(*) as total_meetings,
+            SUM(CASE WHEN request_status = 'Pending' THEN 1 ELSE 0 END) as pending_meetings
+          FROM user_investors_unlocked 
+          WHERE user_id = ?
+        `, [decodedUserId]);
+        
+        if (meetingStats && meetingStats.length > 0) {
+          totalMeetingsCount = parseInt(meetingStats[0].total_meetings) || 0;
+          pendingMeetingRequests = parseInt(meetingStats[0].pending_meetings) || 0;
+        }
+      } catch (meetingError) {
+        console.log('Error fetching meeting count:', meetingError.message);
+        totalMeetingsCount = 0;
+        pendingMeetingRequests = 0;
+      }
+
       return res.json({
         status: true,
         rcode: 200,
@@ -413,6 +435,8 @@ const DashboardController = {
         events_list: eventsList,
         jobs_list: jobsList,
         unread_notification_count: unreadNotificationCount,
+        total_meetings_count: totalMeetingsCount,
+        pending_meeting_requests: pendingMeetingRequests,
         pagination: {
           start: paginationStart,
           length: paginationLength,
