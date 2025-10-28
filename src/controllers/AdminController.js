@@ -61,18 +61,31 @@ class AdminController {
       const roleRows = await query('SELECT * FROM roles WHERE id = ? LIMIT 1', [admin.role_id]);
       const role = roleRows.length > 0 ? roleRows[0] : null;
       
-      // Update last login (if there's a last_login field in admin_users)
+      // Generate unique token for admin session
+      const md5 = require('md5');
+      const uniqueToken = md5(admin.id + admin.username + Date.now());
+      
+      // Update admin user with new token and last login
       try {
+        // Check if users table has this admin ID
+        const userRows = await query('SELECT user_id FROM users WHERE user_id = ? LIMIT 1', [admin.id]);
+        if (userRows.length > 0) {
+          // Update token in users table
+          await query('UPDATE users SET unique_token = ?, updated_at = NOW() WHERE user_id = ?', [uniqueToken, admin.id]);
+        }
+        
+        // Update last login in admin_users table
         await query('UPDATE admin_users SET last_login = NOW() WHERE id = ?', [admin.id]);
       } catch (error) {
-        console.log('No last_login field in admin_users table');
+        console.log('Token update warning:', error.message);
       }
       
       // Return response in PHP format (matching exactly)
       return res.json({
         status: true,
         rcode: 200,
-        user_id: admin.id,
+        user_id: idEncode(admin.id),  // Encrypted user_id
+        token: uniqueToken,  // Added unique token
         username: admin.username,
         role_id: admin.role_id,
         role_name: role ? role.role_name : '',
