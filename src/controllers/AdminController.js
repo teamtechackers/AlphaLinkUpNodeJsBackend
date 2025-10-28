@@ -3242,8 +3242,8 @@ class AdminController {
         });
       }
 
-      // If row_id is provided, update existing record
-      if (row_id && row_id !== '') {
+      // If row_id is provided and > 0, update existing record
+      if (row_id && row_id !== '' && parseInt(row_id) > 0) {
         // Use row_id directly as investor_id for update
         const investorId = parseInt(row_id);
         console.log('submitInvestors - row_id:', row_id);
