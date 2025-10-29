@@ -468,8 +468,11 @@ class JobController {
         // Get all users to send notification to
         const allUsers = await query('SELECT user_id FROM users WHERE status = 1');
         
+        let successCount = 0;
+        let failCount = 0;
+        
         for (const user of allUsers) {
-          await NotificationController.saveNotification({
+          const saveResult = await NotificationController.saveNotification({
             user_id: user.user_id,
             notification_type: 'job',
             title: 'New Job Available!',
@@ -482,9 +485,16 @@ class JobController {
             source_id: finalJobId,
             source_type: 'job'
           });
+          
+          if (saveResult && saveResult.success) {
+            successCount++;
+          } else {
+            failCount++;
+            console.error(`Failed to save notification for user ${user.user_id}:`, saveResult?.error || 'Unknown error');
+          }
         }
         
-        console.log(`Job notification saved to database for ${allUsers.length} users`);
+        console.log(`Job notification saved to database: ${successCount} successes, ${failCount} failures out of ${allUsers.length} users`);
       } catch (dbError) {
         console.error('Job notification database save error:', dbError);
       }
@@ -801,18 +811,54 @@ class JobController {
           [insertData.user_id, insertData.job_title, insertData.company_name, insertData.country_id, insertData.state_id, insertData.city_id, insertData.address, insertData.job_lat, insertData.job_lng, insertData.job_type_id, insertData.pay_id, insertData.job_description, insertData.status, insertData.deleted, insertData.created_dts, insertData.created_by]
         );
 
+        // Save notification to database for all users
+        try {
+          const NotificationController = require('./NotificationController');
+          const allUsers = await query('SELECT user_id FROM users WHERE status = 1');
+          
+          let successCount = 0;
+          let failCount = 0;
+          
+          for (const user of allUsers) {
+            const saveResult = await NotificationController.saveNotification({
+              user_id: user.user_id,
+              notification_type: 'job',
+              title: 'New Job Available!',
+              message: `${insertData.job_title} - ${insertData.address || 'Location not specified'}`,
+              data: {
+                type: 'job',
+                jobId: result.insertId.toString(),
+                timestamp: new Date().toISOString()
+              },
+              source_id: result.insertId,
+              source_type: 'job'
+            });
+            
+            if (saveResult && saveResult.success) {
+              successCount++;
+            } else {
+              failCount++;
+              console.error(`Failed to save notification for user ${user.user_id}:`, saveResult?.error || 'Unknown error');
+            }
+          }
+          
+          console.log(`Admin job notification saved to database: ${successCount} successes, ${failCount} failures out of ${allUsers.length} users`);
+        } catch (notificationError) {
+          console.error('Job notification database save error:', notificationError);
+        }
+        
+        // Send Firebase topic notification
         try {
           const NotificationService = require('../notification/NotificationService');
-          const jobData = {
-            job_id: result.insertId,
-            title: insertData.job_title,
-            location: insertData.address,
-            company_name: insertData.company_name
+          const notificationData = {
+            type: 'job',
+            jobId: result.insertId.toString(),
+            timestamp: new Date().toISOString()
           };
-          await NotificationService.sendJobNotification(jobData);
-        } catch (notificationError) {
-          console.error('Job notification error:', notificationError);
-         
+          await NotificationService.sendTopicNotification('job-notifications', 'New Job Available!', `${insertData.job_title} - ${insertData.address || 'Location not specified'}`, notificationData);
+          console.log('✅ Admin job Firebase topic notification sent successfully');
+        } catch (firebaseError) {
+          console.error('❌ Firebase topic notification error:', firebaseError);
         }
 
         return res.json({

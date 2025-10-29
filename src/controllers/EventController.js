@@ -522,8 +522,11 @@ class EventController {
             
             const allUsers = await query('SELECT user_id FROM users WHERE status = 1');
             
+            let successCount = 0;
+            let failCount = 0;
+            
             for (const user of allUsers) {
-              await NotificationController.saveNotification({
+              const saveResult = await NotificationController.saveNotification({
                 user_id: user.user_id,
                 notification_type: 'event',
                 title: 'New Event Available!',
@@ -532,9 +535,16 @@ class EventController {
                 source_id: finalEventId,
                 source_type: 'event'
               });
+              
+              if (saveResult && saveResult.success) {
+                successCount++;
+              } else {
+                failCount++;
+                console.error(`Failed to save notification for user ${user.user_id}:`, saveResult?.error || 'Unknown error');
+              }
             }
             
-            console.log(`Event notification saved to database for ${allUsers.length} users`);
+            console.log(`Event notification saved to database: ${successCount} successes, ${failCount} failures out of ${allUsers.length} users`);
           } catch (dbError) {
             console.error('Error saving event notification to database:', dbError);
           }
