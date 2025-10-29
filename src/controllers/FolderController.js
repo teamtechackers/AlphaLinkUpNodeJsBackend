@@ -1317,6 +1317,108 @@ class FolderController {
       });
     }
   }
+
+  // Check duplicate folder - PHP compatible version
+  static async checkDuplicateFolder(req, res) {
+    try {
+      // Support both query parameters and form data
+      const { user_id, token, name, id } = {
+        ...req.query,
+        ...req.body
+      };
+
+      console.log('checkDuplicateFolder - Parameters:', { user_id, token, name, id });
+
+      // Check if user_id and token are provided
+      if (!user_id || !token) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'user_id and token are required'
+        });
+      }
+
+      // Check if required fields are provided
+      if (!name || name.trim() === '') {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Folder name is required'
+        });
+      }
+
+      // Decode user ID
+      const decodedUserId = idDecode(user_id);
+      if (!decodedUserId) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Invalid user ID'
+        });
+      }
+
+      // Get user details and validate
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      if (!userRows.length) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Not A Valid User'
+        });
+      }
+
+      const user = userRows[0];
+
+      // Validate token
+      if (user.unique_token !== token) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Token Mismatch Exception'
+        });
+      }
+
+      // Check if user is admin (role_id = 1 or 2)
+      const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
+      if (!adminRows.length) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Permission denied'
+        });
+      }
+
+      // Check for duplicate folder name
+      let duplicateCheckQuery = 'SELECT COUNT(*) as count FROM folders WHERE name = ? AND deleted = 0';
+      let duplicateCheckParams = [name.trim()];
+      
+      if (id && id > 0) {
+        duplicateCheckQuery += ' AND id != ?';
+        duplicateCheckParams.push(id);
+      }
+      
+      const duplicateResult = await query(duplicateCheckQuery, duplicateCheckParams);
+      const isDuplicate = duplicateResult[0].count > 0;
+
+      // Return response in PHP format (matching exactly)
+      return res.json({
+        status: true,
+        rcode: 200,
+        user_id: idEncode(decodedUserId),
+        unique_token: token,
+        is_duplicate: isDuplicate,
+        message: isDuplicate ? 'Folder name already exists' : 'Folder name is available'
+      });
+
+    } catch (error) {
+      console.error('checkDuplicateFolder error:', error);
+      return res.json({
+        status: false,
+        rcode: 500,
+        message: 'Failed to check duplicate folder'
+      });
+    }
+  }
 }
 
 module.exports = FolderController;

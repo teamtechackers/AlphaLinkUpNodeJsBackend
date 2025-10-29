@@ -588,6 +588,108 @@ class FundController {
       });
     }
   }
+
+  // Check duplicate fund size - PHP compatible version
+  static async checkDuplicateFundSize(req, res) {
+    try {
+      // Support both query parameters and form data
+      const { user_id, token, name, id } = {
+        ...req.query,
+        ...req.body
+      };
+
+      console.log('checkDuplicateFundSize - Parameters:', { user_id, token, name, id });
+
+      // Check if user_id and token are provided
+      if (!user_id || !token) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'user_id and token are required'
+        });
+      }
+
+      // Check if required fields are provided
+      if (!name || name.trim() === '') {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Investment range is required'
+        });
+      }
+
+      // Decode user ID
+      const decodedUserId = idDecode(user_id);
+      if (!decodedUserId) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Invalid user ID'
+        });
+      }
+
+      // Get user details and validate
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      if (!userRows.length) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Not A Valid User'
+        });
+      }
+
+      const user = userRows[0];
+
+      // Validate token
+      if (user.unique_token !== token) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Token Mismatch Exception'
+        });
+      }
+
+      // Check if user is admin (role_id = 1 or 2)
+      const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
+      if (!adminRows.length) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Permission denied'
+        });
+      }
+
+      // Check for duplicate investment_range
+      let duplicateCheckQuery = 'SELECT COUNT(*) as count FROM fund_size WHERE investment_range = ? AND deleted = 0';
+      let duplicateCheckParams = [name.trim()];
+      
+      if (id && id > 0) {
+        duplicateCheckQuery += ' AND id != ?';
+        duplicateCheckParams.push(id);
+      }
+      
+      const duplicateResult = await query(duplicateCheckQuery, duplicateCheckParams);
+      const isDuplicate = duplicateResult[0].count > 0;
+
+      // Return response in PHP format (matching exactly)
+      return res.json({
+        status: true,
+        rcode: 200,
+        user_id: idEncode(decodedUserId),
+        unique_token: token,
+        is_duplicate: isDuplicate,
+        message: isDuplicate ? 'Investment range already exists' : 'Investment range is available'
+      });
+
+    } catch (error) {
+      console.error('checkDuplicateFundSize error:', error);
+      return res.json({
+        status: false,
+        rcode: 500,
+        message: 'Failed to check duplicate fund size'
+      });
+    }
+  }
 }
 
 module.exports = FundController;

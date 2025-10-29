@@ -61,18 +61,31 @@ class AdminController {
       const roleRows = await query('SELECT * FROM roles WHERE id = ? LIMIT 1', [admin.role_id]);
       const role = roleRows.length > 0 ? roleRows[0] : null;
       
-      // Update last login (if there's a last_login field in admin_users)
+      // Generate unique token for admin session
+      const md5 = require('md5');
+      const uniqueToken = md5(admin.id + admin.username + Date.now());
+      
+      // Update admin user with new token and last login
       try {
+        // Check if users table has this admin ID
+        const userRows = await query('SELECT user_id FROM users WHERE user_id = ? LIMIT 1', [admin.id]);
+        if (userRows.length > 0) {
+          // Update token in users table
+          await query('UPDATE users SET unique_token = ?, updated_at = NOW() WHERE user_id = ?', [uniqueToken, admin.id]);
+        }
+        
+        // Update last login in admin_users table
         await query('UPDATE admin_users SET last_login = NOW() WHERE id = ?', [admin.id]);
       } catch (error) {
-        console.log('No last_login field in admin_users table');
+        console.log('Token update warning:', error.message);
       }
       
       // Return response in PHP format (matching exactly)
       return res.json({
         status: true,
         rcode: 200,
-        user_id: admin.id,
+        user_id: idEncode(admin.id),  // Encrypted user_id
+        token: uniqueToken,  // Added unique token
         username: admin.username,
         role_id: admin.role_id,
         role_name: role ? role.role_name : '',
@@ -3242,8 +3255,8 @@ class AdminController {
         });
       }
 
-      // If row_id is provided, update existing record
-      if (row_id && row_id !== '') {
+      // If row_id is provided and > 0, update existing record
+      if (row_id && row_id !== '' && parseInt(row_id) > 0) {
         // Use row_id directly as investor_id for update
         const investorId = parseInt(row_id);
         console.log('submitInvestors - row_id:', row_id);
@@ -3487,34 +3500,47 @@ class AdminController {
       const dataParams = [...searchParams, startValue, lengthValue];
       const investors = await query(dataQuery, dataParams);
 
-      // Format data as objects
-      const formattedInvestorsList = investors.map((investor, index) => ({
-        row_id: startValue + index + 1,
-        investor_id: String(investor.investor_id),
-        user_id: String(investor.user_id),
-        user_name: investor.user_name || "",
-        name: investor.name || "",
-        reference_no: investor.reference_no || "",
-        country_id: investor.country_id ? String(investor.country_id) : "",
-        country_name: investor.country_name || "",
-        state_id: investor.state_id ? String(investor.state_id) : "",
-        state_name: investor.state_name || "",
-        city_id: investor.city_id ? String(investor.city_id) : "",
-        city_name: investor.city_name || "",
-        fund_size: investor.fund_size || "",
-        linked_url: investor.linkedin_url || "",
-        bio: investor.bio || "",
-        profile_image_url: investor.image || "",
-        availability_status: investor.availability || "",
-        profile: investor.profile || "",
-        investment_stage: investor.investment_stage || "",
-        meeting_city: investor.meeting_city || "",
-        countries_to_invest: investor.countries_to_invest || "",
-        investment_industry: investor.investment_industry || "",
-        language: investor.language || "",
-        approval_status: investor.approval_status == 1 ? "Pending" : investor.approval_status == 2 ? "Approved" : "Rejected",
-        status: investor.status == 1 ? "Active" : "Inactive"
-      }));
+      // Format data as objects with full image URLs
+      const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
+      
+      const formattedInvestorsList = investors.map((investor, index) => {
+        // Format image URL
+        let imageUrl = "";
+        if (investor.image && investor.image !== '') {
+          imageUrl = `${baseUrl}/uploads/investors/${investor.image}`;
+        }
+        
+        return {
+          row_id: startValue + index + 1,
+          investor_id: String(investor.investor_id),
+          user_id: String(investor.user_id),
+          user_name: investor.user_name || "",
+          name: investor.name || "",
+          reference_no: investor.reference_no || "",
+          country_id: investor.country_id ? String(investor.country_id) : "",
+          country_name: investor.country_name || "",
+          state_id: investor.state_id ? String(investor.state_id) : "",
+          state_name: investor.state_name || "",
+          city_id: investor.city_id ? String(investor.city_id) : "",
+          city_name: investor.city_name || "",
+          fund_size: investor.fund_size || "",
+          fund_size_id: investor.fund_size_id ? String(investor.fund_size_id) : "",
+          linked_url: investor.linkedin_url || "",
+          linkedin_url: investor.linkedin_url || "",
+          bio: investor.bio || "",
+          image: imageUrl,
+          profile_image_url: imageUrl,
+          availability_status: investor.availability || "",
+          profile: investor.profile || "",
+          investment_stage: investor.investment_stage || "",
+          meeting_city: investor.meeting_city || "",
+          countries_to_invest: investor.countries_to_invest || "",
+          investment_industry: investor.investment_industry || "",
+          language: investor.language || "",
+          approval_status: investor.approval_status == 1 ? "Pending" : investor.approval_status == 2 ? "Approved" : "Rejected",
+          status: investor.status == 1 ? "Active" : "Inactive"
+        };
+      });
 
       return res.json({
         status: true,
@@ -3625,8 +3651,9 @@ class AdminController {
       }
 
       // Add image URL if exists (matching PHP exactly)
+      const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
       if (details.image) {
-        details.image = `http://localhost:3000/uploads/investors/${details.image}`;
+        details.image = `${baseUrl}/uploads/investors/${details.image}`;
       }
 
       // Add dropdown lists to details
@@ -3802,7 +3829,15 @@ class AdminController {
         });
       }
 
-      return res.json(detailsRows[0]);
+      // Format image URL with full base URL
+      const investorDetails = detailsRows[0];
+      const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
+      
+      if (investorDetails.image && investorDetails.image !== '') {
+        investorDetails.image = `${baseUrl}/uploads/investors/${investorDetails.image}`;
+      }
+
+      return res.json(investorDetails);
 
     } catch (error) {
       console.error('viewInvestorsDetails error:', error);
