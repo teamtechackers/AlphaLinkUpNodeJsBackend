@@ -489,7 +489,7 @@ class JobController {
         console.error('Job notification database save error:', dbError);
       }
 
-      // Try Firebase notification separately (don't let this fail the database notifications)
+      // Send Firebase topic notification
       try {
         console.log('🔥 Attempting to send Firebase topic notification for job:', finalJobId);
         const notificationData = {
@@ -498,10 +498,11 @@ class JobController {
           timestamp: new Date().toISOString()
         };
 
+        // Send topic notification (for users subscribed to job-notifications topic)
         await NotificationService.sendTopicNotification('job-notifications', 'New Job Available!', `${job_title} - ${address || 'Location not specified'}`, notificationData);
         console.log('✅ Job Firebase topic notification sent successfully');
       } catch (firebaseError) {
-        console.error('❌ Job Firebase topic notification error:', firebaseError);
+        console.error('❌ Firebase topic notification error:', firebaseError);
         // Continue execution - Firebase failure should not affect database notifications
       }
       
