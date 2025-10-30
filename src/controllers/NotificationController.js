@@ -63,12 +63,17 @@ class NotificationController {
             // Broadcast dashboard update for notification count change
             try {
                 const websocketService = require('../services/websocketService');
-                websocketService.sendDashboardUpdateToUser(user_id.toString(), 'notification_created', {
+                const sent = websocketService.sendDashboardUpdateToUser(user_id.toString(), 'notification_created', {
                     notification_id: result.insertId,
                     notification_type: notification_type,
                     title: title,
                     message: message
                 });
+                if (sent) {
+                    console.log(`📊 Dashboard update sent to user ${user_id} - notification_created`);
+                } else {
+                    console.log(`⚠️  User ${user_id} not connected to WebSocket - skipping real-time update`);
+                }
             } catch (wsError) {
                 console.log('Dashboard update broadcast error:', wsError.message);
             }
