@@ -6,23 +6,44 @@ if (!admin.apps.length) {
   const hasEnvCreds = !!(
     process.env.FIREBASE_PROJECT_ID &&
     process.env.FIREBASE_CLIENT_EMAIL &&
-    process.env.FIREBASE_PRIVATE_KEY
+    (process.env.FIREBASE_PRIVATE_KEY || process.env.FIREBASE_PRIVATE_KEY_BASE64)
   );
 
   try {
     if (hasEnvCreds) {
       // Use environment variables first
+      let privateKey = process.env.FIREBASE_PRIVATE_KEY || '';
+      
+      // Check if Base64-encoded key is provided (alternative format for Render)
+      if (process.env.FIREBASE_PRIVATE_KEY_BASE64) {
+        console.log('🔑 Using Base64-encoded private key');
+        privateKey = Buffer.from(process.env.FIREBASE_PRIVATE_KEY_BASE64, 'base64').toString('utf8');
+      } else {
+        // Handle different private key formats
+        // 1. If it's JSON-escaped (has \\n), replace with actual newlines
+        if (privateKey.includes('\\n')) {
+          privateKey = privateKey.replace(/\\n/g, '\n');
+        }
+        
+        // 2. Remove any surrounding quotes that might have been added
+        privateKey = privateKey.replace(/^["']|["']$/g, '');
+      }
+      
+      // 3. Ensure it starts and ends with proper BEGIN/END markers
+      if (!privateKey.startsWith('-----BEGIN')) {
+        console.warn('⚠️  Private key does not start with BEGIN marker, this may cause issues');
+      }
+      
       const envCert = {
         projectId: process.env.FIREBASE_PROJECT_ID,
         clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-        // Support escaped newlines in env var
-        privateKey: (process.env.FIREBASE_PRIVATE_KEY || '').replace(/\\n/g, '\n')
+        privateKey: privateKey
       };
 
       admin.initializeApp({
         credential: admin.credential.cert(envCert)
       });
-      console.log('Firebase initialized from environment variables');
+      console.log('✅ Firebase initialized from environment variables');
     } else {
       // Fallback to serviceAccountKey.json
       const serviceAccountPath = path.join(__dirname, '../../serviceAccountKey.json');
@@ -34,7 +55,7 @@ if (!admin.apps.length) {
   } catch (err) {
     // Defer initialization failure until first use to avoid hard crash at boot
     // Consumers will see a meaningful error when attempting to send notifications
-    console.error('Firebase Admin initialization error:', err && err.message ? err.message : err);
+    console.error('❌ Firebase Admin initialization error:', err && err.message ? err.message : err);
   }
 }
 

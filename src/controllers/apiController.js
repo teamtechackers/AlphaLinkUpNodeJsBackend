@@ -4737,6 +4737,13 @@ const ApiController = {
 
       const projectDetails = await query(projectQuery, [decodedRequestorId]);
 
+      // Format profile photo with full URL
+      const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
+      let profilePhotoUrl = '';
+      if (requestor.profile_photo && requestor.profile_photo !== '') {
+        profilePhotoUrl = `${baseUrl}/uploads/profiles/${requestor.profile_photo}`;
+      }
+
       // Format response
       const response = {
         status: true,
@@ -4747,7 +4754,7 @@ const ApiController = {
           full_name: requestor.full_name,
           email: requestor.email,
           mobile: requestor.mobile,
-          profile_photo: requestor.profile_photo,
+          profile_photo: profilePhotoUrl,
           country_name: requestor.country_name,
           state_name: requestor.state_name,
           city_name: requestor.city_name,
@@ -4769,17 +4776,23 @@ const ApiController = {
             end_date: edu.end_date,
             created_dts: edu.created_dts
           })),
-          project_details: projectDetails.map(project => ({
-            project_detail_id: project.project_detail_id,
-            project_name: project.project_name,
-            description: project.description,
-            project_logo: project.project_logo,
-            start_month: project.start_month,
-            start_year: project.start_year,
-            closed_month: project.closed_month,
-            closed_year: project.closed_year,
-            created_dts: project.created_dts
-          }))
+          project_details: projectDetails.map(project => {
+            let projectLogoUrl = '';
+            if (project.project_logo && project.project_logo !== '') {
+              projectLogoUrl = `${baseUrl}/uploads/project_logo/${project.project_logo}`;
+            }
+            return {
+              project_detail_id: project.project_detail_id,
+              project_name: project.project_name,
+              description: project.description,
+              project_logo: projectLogoUrl,
+              start_month: project.start_month,
+              start_year: project.start_year,
+              closed_month: project.closed_month,
+              closed_year: project.closed_year,
+              created_dts: project.created_dts
+            };
+          })
         }
       };
 
