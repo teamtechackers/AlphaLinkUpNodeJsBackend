@@ -189,11 +189,12 @@ class AdminController {
       }
       
       // Get dashboard counts (matching PHP exactly)
-      // Count active users excluding admin users
+      // Count active non-deleted users excluding admin users
       const countUsers = await query(`
         SELECT COUNT(*) as count 
         FROM users 
         WHERE status = 1 
+        AND deleted = 0
         AND user_id NOT IN (SELECT id FROM admin_users)
       `);
       const countJobs = await query('SELECT COUNT(*) as count FROM user_job_details WHERE deleted = 0');
