@@ -3532,6 +3532,7 @@ class AdminController {
           city_id: investor.city_id ? String(investor.city_id) : "",
           city_name: investor.city_name || "",
           fund_size: investor.fund_size || "",
+          fund_size_name: investor.fund_size || "",
           fund_size_id: investor.fund_size_id ? String(investor.fund_size_id) : "",
           linked_url: investor.linkedin_url || "",
           linkedin_url: investor.linkedin_url || "",
