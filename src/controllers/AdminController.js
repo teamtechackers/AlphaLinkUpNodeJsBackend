@@ -195,6 +195,11 @@ class AdminController {
       const countService = await query('SELECT COUNT(*) as count FROM user_service_provider WHERE deleted = 0');
       const countInvestor = await query('SELECT COUNT(*) as count FROM user_investor WHERE deleted = 0');
       
+      // Get meeting counts
+      const countMeetingsTotal = await query('SELECT COUNT(*) as count FROM user_investors_unlocked');
+      const countMeetingsPending = await query("SELECT COUNT(*) as count FROM user_investors_unlocked WHERE request_status = 'Pending'");
+      const countMeetingsApproved = await query("SELECT COUNT(*) as count FROM user_investors_unlocked WHERE request_status = 'Approved'");
+      
       // Get recent jobs with location details (matching PHP exactly)
       const listJobs = await query(`
         SELECT 
@@ -242,6 +247,9 @@ class AdminController {
         count_events: countEvents[0]?.count || 0,
         count_service: countService[0]?.count || 0,
         count_investor: countInvestor[0]?.count || 0,
+        count_meetings_total: countMeetingsTotal[0]?.count || 0,
+        count_meetings_pending: countMeetingsPending[0]?.count || 0,
+        count_meetings_approved: countMeetingsApproved[0]?.count || 0,
         list_jobs: listJobs || [],
         list_investor: listInvestor || [],
         message: 'Dashboard data retrieved successfully'

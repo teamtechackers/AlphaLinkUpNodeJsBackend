@@ -58,3 +58,6 @@ console.log('   Value: <paste the Base64 string above>\n');
 console.log('💡 Then remove the old FIREBASE_PRIVATE_KEY variable\n');
 console.log('🔄 Restart your Render service\n');
 
+
+
+
