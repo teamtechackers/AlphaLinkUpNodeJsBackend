@@ -189,16 +189,24 @@ class AdminController {
       }
       
       // Get dashboard counts (matching PHP exactly)
-      const countUsers = await query('SELECT COUNT(*) as count FROM users');
+      // Count active non-deleted users excluding admin users
+      const countUsers = await query(`
+        SELECT COUNT(*) as count 
+        FROM users 
+        WHERE status = 1 
+        AND deleted = 0
+        AND user_id NOT IN (SELECT id FROM admin_users)
+      `);
       const countJobs = await query('SELECT COUNT(*) as count FROM user_job_details WHERE deleted = 0');
       const countEvents = await query('SELECT COUNT(*) as count FROM user_event_details WHERE deleted = 0');
       const countService = await query('SELECT COUNT(*) as count FROM user_service_provider WHERE deleted = 0');
       const countInvestor = await query('SELECT COUNT(*) as count FROM user_investor WHERE deleted = 0');
       
       // Get meeting counts
-      const countMeetingsTotal = await query('SELECT COUNT(*) as count FROM user_investors_unlocked');
-      const countMeetingsPending = await query("SELECT COUNT(*) as count FROM user_investors_unlocked WHERE request_status = 'Pending'");
-      const countMeetingsApproved = await query("SELECT COUNT(*) as count FROM user_investors_unlocked WHERE request_status = 'Approved'");
+      // Total meetings (all non-deleted meetings)
+      const countMeetingsTotal = await query("SELECT COUNT(*) as count FROM user_investors_unlocked WHERE status = 1");
+      const countMeetingsPending = await query("SELECT COUNT(*) as count FROM user_investors_unlocked WHERE request_status = 'Pending' AND status = 1");
+      const countMeetingsApproved = await query("SELECT COUNT(*) as count FROM user_investors_unlocked WHERE request_status = 'Approved' AND status = 1");
       
       // Get recent jobs with location details (matching PHP exactly)
       const listJobs = await query(`
@@ -3532,6 +3540,7 @@ class AdminController {
           city_id: investor.city_id ? String(investor.city_id) : "",
           city_name: investor.city_name || "",
           fund_size: investor.fund_size || "",
+          fund_size_name: investor.fund_size || "",
           fund_size_id: investor.fund_size_id ? String(investor.fund_size_id) : "",
           linked_url: investor.linkedin_url || "",
           linkedin_url: investor.linkedin_url || "",
