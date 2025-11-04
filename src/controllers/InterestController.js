@@ -56,7 +56,7 @@ class InterestController {
         });
       }
       
-    const rows = await query('SELECT id AS interest_id, name AS interest FROM interests');
+      const rows = await query('SELECT id AS interest_id, name AS interest FROM interests WHERE deleted = 0');
       
       return res.json({
         status: true,

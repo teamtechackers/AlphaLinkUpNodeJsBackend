@@ -28,3 +28,4 @@ serviceAccountKey.json
 #AlphaLinkUpNodeJsBackend/.env
 AlphaLinkUpNodeJsBackend/.env.example
 AlphaLinkUpNodeJsBackend/serviceAccountKey.json
+.env
