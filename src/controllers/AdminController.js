@@ -189,14 +189,21 @@ class AdminController {
       }
       
       // Get dashboard counts (matching PHP exactly)
-      const countUsers = await query('SELECT COUNT(*) as count FROM users');
+      // Count active users excluding admin users
+      const countUsers = await query(`
+        SELECT COUNT(*) as count 
+        FROM users 
+        WHERE status = 1 
+        AND user_id NOT IN (SELECT id FROM admin_users)
+      `);
       const countJobs = await query('SELECT COUNT(*) as count FROM user_job_details WHERE deleted = 0');
       const countEvents = await query('SELECT COUNT(*) as count FROM user_event_details WHERE deleted = 0');
       const countService = await query('SELECT COUNT(*) as count FROM user_service_provider WHERE deleted = 0');
       const countInvestor = await query('SELECT COUNT(*) as count FROM user_investor WHERE deleted = 0');
       
       // Get meeting counts
-      const countMeetingsTotal = await query('SELECT COUNT(*) as count FROM user_investors_unlocked');
+      // Total meetings scheduled (only Scheduled status)
+      const countMeetingsTotal = await query("SELECT COUNT(*) as count FROM user_investors_unlocked WHERE request_status = 'Scheduled'");
       const countMeetingsPending = await query("SELECT COUNT(*) as count FROM user_investors_unlocked WHERE request_status = 'Pending'");
       const countMeetingsApproved = await query("SELECT COUNT(*) as count FROM user_investors_unlocked WHERE request_status = 'Approved'");
       
