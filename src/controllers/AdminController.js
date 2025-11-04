@@ -203,10 +203,10 @@ class AdminController {
       const countInvestor = await query('SELECT COUNT(*) as count FROM user_investor WHERE deleted = 0');
       
       // Get meeting counts
-      // Total meetings scheduled (only Scheduled status)
-      const countMeetingsTotal = await query("SELECT COUNT(*) as count FROM user_investors_unlocked WHERE request_status = 'Scheduled'");
-      const countMeetingsPending = await query("SELECT COUNT(*) as count FROM user_investors_unlocked WHERE request_status = 'Pending'");
-      const countMeetingsApproved = await query("SELECT COUNT(*) as count FROM user_investors_unlocked WHERE request_status = 'Approved'");
+      // Total meetings (all non-deleted meetings)
+      const countMeetingsTotal = await query("SELECT COUNT(*) as count FROM user_investors_unlocked WHERE status = 1");
+      const countMeetingsPending = await query("SELECT COUNT(*) as count FROM user_investors_unlocked WHERE request_status = 'Pending' AND status = 1");
+      const countMeetingsApproved = await query("SELECT COUNT(*) as count FROM user_investors_unlocked WHERE request_status = 'Approved' AND status = 1");
       
       // Get recent jobs with location details (matching PHP exactly)
       const listJobs = await query(`
