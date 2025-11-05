@@ -4261,22 +4261,40 @@ const ApiController = {
 
       if (result.success) {
         // Simplify notification objects - flatten data field
-        const simplifiedNotifications = result.notifications.map(notification => ({
-          id: notification.id,
-          user_id: notification.user_id,
-          notification_type: notification.notification_type,
-          title: notification.title,
-          message: notification.message,
-          sender_name: notification.data?.sender_name || null,
-          message_type: notification.data?.type || null,
-          source_id: notification.source_id,
-          source_type: notification.source_type,
-          is_read: notification.is_read,
-          created_dts: notification.created_dts,
-          read_dts: notification.read_dts,
-          status: notification.status,
-          fcm_message_id: notification.fcm_message_id
-        }));
+        const simplifiedNotifications = result.notifications.map(notification => {
+          // Format timestamps with timezone info (MySQL timestamps are in local timezone)
+          // Convert "YYYY-MM-DD HH:MM:SS" to ISO 8601 format with timezone
+          let created_dts_formatted = notification.created_dts;
+          if (notification.created_dts) {
+            // MySQL timestamp is a string in format "YYYY-MM-DD HH:MM:SS" in server local time (PKT)
+            // We need to explicitly tell the client this is Pakistan time, not UTC
+            const dateStr = notification.created_dts.replace(' ', 'T');
+            created_dts_formatted = dateStr + '+05:00'; // Pakistan Standard Time (UTC+5)
+          }
+          
+          let read_dts_formatted = notification.read_dts;
+          if (notification.read_dts) {
+            const dateStr = notification.read_dts.replace(' ', 'T');
+            read_dts_formatted = dateStr + '+05:00';
+          }
+          
+          return {
+            id: notification.id,
+            user_id: notification.user_id,
+            notification_type: notification.notification_type,
+            title: notification.title,
+            message: notification.message,
+            sender_name: notification.data?.sender_name || null,
+            message_type: notification.data?.type || null,
+            source_id: notification.source_id,
+            source_type: notification.source_type,
+            is_read: notification.is_read,
+            created_dts: created_dts_formatted,
+            read_dts: read_dts_formatted,
+            status: notification.status,
+            fcm_message_id: notification.fcm_message_id
+          };
+        });
 
         return res.json({
           status: true,
