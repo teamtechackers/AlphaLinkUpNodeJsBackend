@@ -63,10 +63,13 @@ const DashboardController = {
            AND user_event_details.event_date >= CURDATE()
            AND (
              (user_event_details.event_lat != 0 AND user_event_details.event_lng != 0 
+              AND user_event_details.event_lat IS NOT NULL AND user_event_details.event_lng IS NOT NULL
               AND (6371 * ACOS(
-                COS(RADIANS(?)) * COS(RADIANS(user_event_details.event_lat)) 
-                * COS(RADIANS(user_event_details.event_lng) - RADIANS(?)) 
-                + SIN(RADIANS(?)) * SIN(RADIANS(user_event_details.event_lat))
+                LEAST(1.0, GREATEST(-1.0,
+                  COS(RADIANS(?)) * COS(RADIANS(user_event_details.event_lat)) 
+                  * COS(RADIANS(user_event_details.event_lng) - RADIANS(?)) 
+                  + SIN(RADIANS(?)) * SIN(RADIANS(user_event_details.event_lat))
+                ))
               )) <= ?)
              OR (user_event_details.event_lat = 0 AND user_event_details.event_lng = 0 AND user_event_details.event_link != '')
            )`,
@@ -86,13 +89,18 @@ const DashboardController = {
                  event_type.name as event_type,
                  IF(user_event_details.event_banner != '', CONCAT('${process.env.BASE_URL || req.protocol + '://' + req.get('host')}/uploads/events/', user_event_details.event_banner), '') AS event_banner,
                  COUNT(DISTINCT event_attendees.event_id) AS total_attendees,
-                 (6371 * ACOS(
-                   COS(RADIANS(?)) 
-                   * COS(RADIANS(user_event_details.event_lat)) 
-                   * COS(RADIANS(user_event_details.event_lng) - RADIANS(?)) 
-                   + SIN(RADIANS(?)) 
-                   * SIN(RADIANS(user_event_details.event_lat))
-                 )) AS distance_in_km
+                 COALESCE(
+                   (6371 * ACOS(
+                     LEAST(1.0, GREATEST(-1.0,
+                       COS(RADIANS(?)) 
+                       * COS(RADIANS(COALESCE(user_event_details.event_lat, 0))) 
+                       * COS(RADIANS(COALESCE(user_event_details.event_lng, 0)) - RADIANS(?)) 
+                       + SIN(RADIANS(?)) 
+                       * SIN(RADIANS(COALESCE(user_event_details.event_lat, 0)))
+                     ))
+                   )),
+                   999999
+                 ) AS distance_in_km
           FROM user_event_details 
           JOIN event_mode ON event_mode.id = user_event_details.event_mode_id
           JOIN event_type ON event_type.id = user_event_details.event_type_id
@@ -232,13 +240,18 @@ const DashboardController = {
                  states.name as state_name, 
                  cities.name as city_name,
                  GROUP_CONCAT(DISTINCT skills.name SEPARATOR ', ') as skill_names,
-                 (6371 * ACOS(
-                   COS(RADIANS(?)) 
-                   * COS(RADIANS(user_job_details.job_lat)) 
-                   * COS(RADIANS(user_job_details.job_lng) - RADIANS(?)) 
-                   + SIN(RADIANS(?)) 
-                   * SIN(RADIANS(user_job_details.job_lat))
-                 )) AS distance_in_km
+                 COALESCE(
+                   (6371 * ACOS(
+                     LEAST(1.0, GREATEST(-1.0,
+                       COS(RADIANS(?)) 
+                       * COS(RADIANS(COALESCE(user_job_details.job_lat, 0))) 
+                       * COS(RADIANS(COALESCE(user_job_details.job_lng, 0)) - RADIANS(?)) 
+                       + SIN(RADIANS(?)) 
+                       * SIN(RADIANS(COALESCE(user_job_details.job_lat, 0)))
+                     ))
+                   )),
+                   999999
+                 ) AS distance_in_km
           FROM user_job_details 
           JOIN job_type ON job_type.id = user_job_details.job_type_id
           JOIN pay ON pay.id = user_job_details.pay_id
@@ -246,7 +259,10 @@ const DashboardController = {
           LEFT JOIN states ON states.id = user_job_details.state_id
           LEFT JOIN cities ON cities.id = user_job_details.city_id
           LEFT JOIN skills ON FIND_IN_SET(skills.id, user_job_details.skill_ids)
-          WHERE user_job_details.user_id != ? AND user_job_details.deleted = 0
+          WHERE user_job_details.user_id != ? 
+            AND user_job_details.deleted = 0
+            AND user_job_details.job_lat IS NOT NULL 
+            AND user_job_details.job_lng IS NOT NULL
         `;
         
         const jobsParams = [lat, long, lat, decodedUserId];
