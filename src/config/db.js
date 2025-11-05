@@ -13,8 +13,9 @@ const pool = mysql.createPool({
   connectionLimit: 10,
   queueLimit: 0,
   dateStrings: true,
-  multipleStatements: false,
-  timezone: '+05:00' // Set Pakistan Standard Time (PKT) for all connections
+  multipleStatements: false
+  // Timestamps stored in server timezone (UTC on Render, local on dev)
+  // API layer handles timezone conversion based on environment
 });
 
 async function query(sql, params) {

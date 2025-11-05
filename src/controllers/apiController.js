@@ -4260,24 +4260,48 @@ const ApiController = {
       const result = await NotificationController.fetchNotifications(decodedUserId, options);
 
       if (result.success) {
+        // Helper function to convert timestamp to PKT
+        // Check if database stores UTC (production/Render) or local time (development)
+        const DB_IS_UTC = process.env.DB_TIMEZONE_UTC === 'true' || process.env.NODE_ENV === 'production';
+        
+        const convertToPKT = (timestamp) => {
+          if (!timestamp) return null;
+          
+          // Parse "YYYY-MM-DD HH:MM:SS" format
+          const [datePart, timePart] = timestamp.split(' ');
+          const [year, month, day] = datePart.split('-');
+          const [hour, minute, second] = timePart.split(':');
+          
+          if (DB_IS_UTC) {
+            // Database stores UTC, convert to PKT (add 5 hours)
+            const utcDate = new Date(Date.UTC(
+              parseInt(year),
+              parseInt(month) - 1,
+              parseInt(day),
+              parseInt(hour),
+              parseInt(minute),
+              parseInt(second)
+            ));
+            
+            const pktDate = new Date(utcDate.getTime() + (5 * 60 * 60 * 1000));
+            
+            const pktYear = pktDate.getUTCFullYear();
+            const pktMonth = String(pktDate.getUTCMonth() + 1).padStart(2, '0');
+            const pktDay = String(pktDate.getUTCDate()).padStart(2, '0');
+            const pktHour = String(pktDate.getUTCHours()).padStart(2, '0');
+            const pktMinute = String(pktDate.getUTCMinutes()).padStart(2, '0');
+            const pktSecond = String(pktDate.getUTCSeconds()).padStart(2, '0');
+            
+            return `${pktYear}-${pktMonth}-${pktDay}T${pktHour}:${pktMinute}:${pktSecond}+05:00`;
+          } else {
+            // Database already stores local time (PKT), just format
+            const timestampStr = timestamp.replace(' ', 'T');
+            return timestampStr + '+05:00';
+          }
+        };
+        
         // Simplify notification objects - flatten data field
         const simplifiedNotifications = result.notifications.map(notification => {
-          // Format timestamps with timezone info (MySQL timestamps are in local timezone)
-          // Convert "YYYY-MM-DD HH:MM:SS" to ISO 8601 format with timezone
-          let created_dts_formatted = notification.created_dts;
-          if (notification.created_dts) {
-            // MySQL timestamp is a string in format "YYYY-MM-DD HH:MM:SS" in server local time (PKT)
-            // We need to explicitly tell the client this is Pakistan time, not UTC
-            const dateStr = notification.created_dts.replace(' ', 'T');
-            created_dts_formatted = dateStr + '+05:00'; // Pakistan Standard Time (UTC+5)
-          }
-          
-          let read_dts_formatted = notification.read_dts;
-          if (notification.read_dts) {
-            const dateStr = notification.read_dts.replace(' ', 'T');
-            read_dts_formatted = dateStr + '+05:00';
-          }
-          
           return {
             id: notification.id,
             user_id: notification.user_id,
@@ -4289,8 +4313,8 @@ const ApiController = {
             source_id: notification.source_id,
             source_type: notification.source_type,
             is_read: notification.is_read,
-            created_dts: created_dts_formatted,
-            read_dts: read_dts_formatted,
+            created_dts: convertToPKT(notification.created_dts),
+            read_dts: convertToPKT(notification.read_dts),
             status: notification.status,
             fcm_message_id: notification.fcm_message_id
           };
