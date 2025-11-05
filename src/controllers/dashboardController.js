@@ -120,7 +120,7 @@ const DashboardController = {
           eventsQuery += ' AND user_event_details.event_date >= CURDATE()';
         }
         
-        eventsQuery += ' GROUP BY user_event_details.event_id HAVING distance_in_km <= ? OR (user_event_details.event_lat = 0 AND user_event_details.event_lng = 0 AND user_event_details.event_link != "") ORDER BY user_event_details.event_date DESC';
+        eventsQuery += ' GROUP BY user_event_details.event_id HAVING distance_in_km <= ? ORDER BY user_event_details.event_date DESC';
         
         eventsQuery += ' LIMIT ? OFFSET ?';
         eventsParams.push(radius, paginationLength, paginationStart);
