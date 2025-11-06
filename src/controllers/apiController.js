@@ -2750,42 +2750,30 @@ const ApiController = {
       const isScheduling = meeting_date && meeting_time;
       let googleMeetLink = meeting_url || existingMeeting.meeting_url; // Keep existing or use provided
 
-      // If admin is scheduling the meeting (date + time), create Google Meet link
+      // If admin is scheduling the meeting (date + time), create Jitsi Meet link
       if (isScheduling && !meeting_url) {
         try {
-          const GoogleCalendarService = require('../services/GoogleCalendarService');
+          const MeetingService = require('../services/MeetingService');
           
-          if (GoogleCalendarService.isReady()) {
-            console.log('🔗 Creating Google Meet link for scheduled meeting...');
-            
-            // Prepare meeting details
-            const meetingDateTime = `${meeting_date} ${meeting_time}`;
-            const meetingTitle = `Investor Meeting: ${existingMeeting.investor_name || 'Investor'} - ${existingMeeting.requester_name || 'User'}`;
-            const meetingDescription = `Meeting between ${existingMeeting.requester_name || 'User'} and investor ${existingMeeting.investor_name || 'Investor'}`;
-            const durationMinutes = existingMeeting.meeting_duration || 60;
-            
-            // Create Google Meet
-            const meetResult = await GoogleCalendarService.createMeetingWithGoogleMeet({
-              summary: meetingTitle,
-              description: meetingDescription,
-              startDateTime: meetingDateTime,
-              durationMinutes: parseInt(durationMinutes),
-              attendeeEmail: existingMeeting.requester_email,
-              attendeeName: existingMeeting.requester_name,
-              timezone: 'Asia/Karachi'
-            });
-            
-            if (meetResult.success && meetResult.meetLink) {
-              googleMeetLink = meetResult.meetLink;
-              console.log('✅ Google Meet link created:', googleMeetLink);
-            } else {
-              console.log('⚠️  Google Meet creation failed, proceeding without link:', meetResult.error);
-            }
+          console.log('🔗 Creating Jitsi Meet link for scheduled meeting...');
+          
+          // Generate Jitsi Meet link (instant, no authentication required)
+          const meetResult = MeetingService.generateMeetingLink({
+            investorName: existingMeeting.investor_name || 'Investor',
+            userName: existingMeeting.requester_name || 'User',
+            meetingDate: meeting_date,
+            meetingTime: meeting_time,
+            meetingId: request_id
+          });
+          
+          if (meetResult.success && meetResult.meetLink) {
+            googleMeetLink = meetResult.meetLink;
+            console.log('✅ Jitsi Meet link created:', googleMeetLink);
           } else {
-            console.log('⚠️  Google Calendar service not initialized, skipping Meet link generation');
+            console.log('⚠️  Meeting link generation failed, proceeding without link:', meetResult.error);
           }
         } catch (meetError) {
-          console.error('Google Meet generation error:', meetError.message);
+          console.error('Meeting link generation error:', meetError.message);
           // Continue without Meet link - meeting can still be scheduled
         }
       }
