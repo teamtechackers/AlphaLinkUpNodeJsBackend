@@ -2721,14 +2721,74 @@ const ApiController = {
       }
 
       // Check if meeting request exists
-      const meetingRequest = await query('SELECT * FROM user_investors_unlocked WHERE iu_id = ? LIMIT 1', [request_id]);
+      const meetingRequest = await query(`
+        SELECT uiul.*, 
+               ui.name as investor_name,
+               u.full_name as requester_name, 
+               u.email as requester_email,
+               mt.name as meeting_type_name,
+               mt.mins as meeting_duration
+        FROM user_investors_unlocked uiul
+        LEFT JOIN user_investor ui ON ui.investor_id = uiul.investor_id
+        LEFT JOIN users u ON uiul.user_id = u.user_id
+        LEFT JOIN meetings_type mt ON mt.id = uiul.meeting_id
+        WHERE uiul.iu_id = ? 
+        LIMIT 1
+      `, [request_id]);
+      
       if (!meetingRequest.length) {
         return fail(res, 404, 'Meeting request not found');
       }
 
+      const existingMeeting = meetingRequest[0];
+      
       // Prepare update fields
       const updateFields = [];
       const updateValues = [];
+      
+      // Track if we're scheduling (date + time being set)
+      const isScheduling = meeting_date && meeting_time;
+      let googleMeetLink = meeting_url || existingMeeting.meeting_url; // Keep existing or use provided
+
+      // If admin is scheduling the meeting (date + time), create Google Meet link
+      if (isScheduling && !meeting_url) {
+        try {
+          const GoogleCalendarService = require('../services/GoogleCalendarService');
+          
+          if (GoogleCalendarService.isReady()) {
+            console.log('🔗 Creating Google Meet link for scheduled meeting...');
+            
+            // Prepare meeting details
+            const meetingDateTime = `${meeting_date} ${meeting_time}`;
+            const meetingTitle = `Investor Meeting: ${existingMeeting.investor_name || 'Investor'} - ${existingMeeting.requester_name || 'User'}`;
+            const meetingDescription = `Meeting between ${existingMeeting.requester_name || 'User'} and investor ${existingMeeting.investor_name || 'Investor'}`;
+            const durationMinutes = existingMeeting.meeting_duration || 60;
+            
+            // Create Google Meet
+            const meetResult = await GoogleCalendarService.createMeetingWithGoogleMeet({
+              summary: meetingTitle,
+              description: meetingDescription,
+              startDateTime: meetingDateTime,
+              durationMinutes: parseInt(durationMinutes),
+              attendeeEmail: existingMeeting.requester_email,
+              attendeeName: existingMeeting.requester_name,
+              timezone: 'Asia/Karachi'
+            });
+            
+            if (meetResult.success && meetResult.meetLink) {
+              googleMeetLink = meetResult.meetLink;
+              console.log('✅ Google Meet link created:', googleMeetLink);
+            } else {
+              console.log('⚠️  Google Meet creation failed, proceeding without link:', meetResult.error);
+            }
+          } else {
+            console.log('⚠️  Google Calendar service not initialized, skipping Meet link generation');
+          }
+        } catch (meetError) {
+          console.error('Google Meet generation error:', meetError.message);
+          // Continue without Meet link - meeting can still be scheduled
+        }
+      }
 
       if (meeting_date) {
         updateFields.push('meeting_date = ?');
@@ -2750,9 +2810,10 @@ const ApiController = {
         updateValues.push(meeting_location);
       }
 
-      if (meeting_url) {
+      // Always update meeting_url if we generated a Google Meet link
+      if (googleMeetLink) {
         updateFields.push('meeting_url = ?');
-        updateValues.push(meeting_url);
+        updateValues.push(googleMeetLink);
       }
 
       if (updateFields.length === 0) {
