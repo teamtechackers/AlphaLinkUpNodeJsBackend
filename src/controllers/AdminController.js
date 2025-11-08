@@ -2712,7 +2712,14 @@ class AdminController {
         city_name: card.city_name || "",
         description: card.description || "",
         card_number: card.card_number || "",
-        card_status: card.card_status == 1 ? "Pending" : card.card_status == 2 ? "Approved" : "Rejected",
+        card_status:
+          card.card_status == 0
+            ? "Inactive"
+            : card.card_status == 1
+              ? "Pending"
+              : card.card_status == 2
+                ? "Rejected"
+                : "Active",
         status: card.status == 1 ? "Active" : "Inactive"
       }));
 
