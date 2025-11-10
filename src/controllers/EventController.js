@@ -1456,6 +1456,8 @@ class EventController {
         });
       }
 
+      const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
+
       let baseQuery = `
         SELECT 
           ued.event_id,
@@ -1546,7 +1548,7 @@ class EventController {
         event_type_id: event.event_type_id ? String(event.event_type_id) : "",
         event_type_name: "",
         event_details: event.event_details || "",
-        event_banner: event.event_banner || "",
+        event_banner: event.event_banner ? `${baseUrl}/uploads/events/${event.event_banner}` : "",
         status: event.status == 1 ? "Active" : "Inactive"
       }));
 
