@@ -1142,6 +1142,8 @@ class AdminController {
         });
       }
 
+      const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
+
       // Get DataTables parameters (matching PHP exactly)
       const drawValue = parseInt(req.body.draw || req.query.draw || 1);
       const startValue = parseInt(req.body.start || req.query.start || 0);
@@ -1205,7 +1207,7 @@ class AdminController {
         user_name: user.full_name || "",
         phone_number: user.mobile || "",
         email_address: user.email || "",
-        profile_photo: user.profile_photo || "",
+        profile_photo: user.profile_photo ? `${baseUrl}/uploads/profiles/${user.profile_photo}` : "",
         address: user.address || "",
         country_id: user.country_id ? String(user.country_id) : "",
         country_name: user.country_name || "",
