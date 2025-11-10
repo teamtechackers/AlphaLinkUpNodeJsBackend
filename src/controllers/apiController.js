@@ -3189,7 +3189,8 @@ const ApiController = {
       `;
       const queryParams = [decodedUserId];
       
-      if (filter_type && filter_type !== '') {
+      // Apply filter only if filter_type is provided and not empty
+      if (filter_type && filter_type !== '' && filter_type !== 'all') {
         if (filter_type === 'pending') {
           queryString += ` AND uiul.request_status = 'Pending'`;
         } else if (filter_type === 'completed') {
@@ -3198,8 +3199,11 @@ const ApiController = {
           queryString += ` AND uiul.request_status = 'Missed'`;
         } else if (filter_type === 'ready') {
           queryString += ` AND uiul.request_status = 'Ready'`;
+        } else if (filter_type === 'schedule' || filter_type === 'scheduled') {
+          queryString += ` AND uiul.request_status = 'Scheduled'`;
         }
       }
+      // If filter_type is empty or 'all', no filter is applied - show all records
       queryString += ` ORDER BY uiul.created_dts DESC`;
       
       const investorMeets = await query(queryString, queryParams);
