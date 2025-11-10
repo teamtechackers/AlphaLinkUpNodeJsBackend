@@ -2712,7 +2712,8 @@ class AdminController {
         city_name: card.city_name || "",
         description: card.description || "",
         card_number: card.card_number || "",
-        card_status:
+        card_status: Number.isFinite(Number(card.card_status)) ? Number(card.card_status) : 0,
+        card_status_label:
           card.card_status == 0
             ? "Inactive"
             : card.card_status == 1
