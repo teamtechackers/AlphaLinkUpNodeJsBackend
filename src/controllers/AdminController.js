@@ -45,11 +45,22 @@ class AdminController {
       
       const admin = adminRows[0];
       
-      // Validate password (using MD5 to match PHP)
-      const crypto = require('crypto');
-      const hashedPassword = crypto.createHash('md5').update(password).digest('hex');
+      // Validate password
+      // Check if password is bcrypt (starts with $2a$ or $2b$) or MD5 (32 chars hex)
+      let passwordValid = false;
       
-      if (hashedPassword !== admin.password) {
+      if (admin.password && (admin.password.startsWith('$2a$') || admin.password.startsWith('$2b$'))) {
+        // Bcrypt password - use bcrypt.compare
+        const bcrypt = require('bcryptjs');
+        passwordValid = await bcrypt.compare(password, admin.password);
+      } else {
+        // MD5 password (legacy) - use MD5 hash
+        const crypto = require('crypto');
+        const hashedPassword = crypto.createHash('md5').update(password).digest('hex');
+        passwordValid = (hashedPassword === admin.password);
+      }
+      
+      if (!passwordValid) {
         return res.json({
           status: false,
           rcode: 500,
@@ -919,7 +930,24 @@ class AdminController {
   static async submitUsers(req, res) {
     try {
       // Support both query parameters and form data
-      const { user_id, token, row_id, full_name, mobile, email, address, country_id, state_id, city_id, status } = {
+      const { 
+        user_id, 
+        token, 
+        row_id, 
+        full_name, 
+        mobile, 
+        email, 
+        address, 
+        country_id, 
+        state_id, 
+        city_id, 
+        status,
+        // NEW: Admin-specific fields
+        user_role,        // 'user', 'subadmin', 'superadmin'
+        username,         // For admin login
+        password,         // For admin login
+        permissions       // Array of permission IDs for subadmin
+      } = {
         ...req.query,
         ...req.body
       };
@@ -927,7 +955,7 @@ class AdminController {
       // Get uploaded profile photo filename
       const profile_photo = req.file ? req.file.filename : '';
 
-      console.log('submitUsers - Parameters:', { user_id, token, row_id, full_name, mobile, email, address, country_id, state_id, city_id, status, profile_photo });
+      console.log('submitUsers - Parameters:', { user_id, token, row_id, full_name, mobile, email, user_role, username });
 
       // Check if user_id and token are provided
       if (!user_id || !token) {
@@ -968,6 +996,86 @@ class AdminController {
         });
       }
 
+      const admin = adminRows[0];
+
+      // ==================== HANDLE DIFFERENT USER TYPES ====================
+      
+      // Determine user role (default: 'user')
+      const actualUserRole = user_role || 'user';
+
+      // ==================== CREATING ADMIN (SubAdmin or SuperAdmin) ====================
+      if (actualUserRole === 'subadmin' || actualUserRole === 'superadmin') {
+        
+        // Only SuperAdmin can create other admins
+        if (admin.is_super_admin !== 1) {
+          return res.json({
+            status: 'Error',
+            info: 'Only SuperAdmin can create admin users'
+          });
+        }
+
+        // Validate admin-specific fields
+        if (!username || !password) {
+          return res.json({
+            status: 'Error',
+            info: 'Username and password are required for admin creation'
+          });
+        }
+
+        // Check if username already exists
+        const existingAdmin = await query(
+          'SELECT id FROM admin_users WHERE username = ?',
+          [username]
+        );
+
+        if (existingAdmin.length > 0) {
+          return res.json({
+            status: 'Error',
+            info: 'Username already exists'
+          });
+        }
+
+        // Hash password
+        const bcrypt = require('bcryptjs');
+        const hashedPassword = await bcrypt.hash(password, 12);
+
+        // Determine if SuperAdmin or SubAdmin
+        const isSuperAdmin = actualUserRole === 'superadmin' ? 1 : 0;
+
+        // Insert into admin_users table
+        const adminResult = await query(
+          `INSERT INTO admin_users (username, password, email, full_name, is_super_admin, created_at)
+           VALUES (?, ?, ?, ?, ?, NOW())`,
+          [username, hashedPassword, email || '', full_name || '', isSuperAdmin]
+        );
+
+        const newAdminId = adminResult.insertId;
+
+        // Assign permissions (only for SubAdmin)
+        if (actualUserRole === 'subadmin' && permissions && Array.isArray(permissions) && permissions.length > 0) {
+          const permissionValues = permissions.map(permId => 
+            [newAdminId, permId, decodedUserId]
+          );
+
+          const placeholders = permissionValues.map(() => '(?, ?, ?)').join(',');
+          const flatValues = permissionValues.flat();
+
+          await query(
+            `INSERT INTO admin_user_permissions (admin_user_id, permission_id, granted_by)
+             VALUES ${placeholders}`,
+            flatValues
+          );
+        }
+
+        return res.json({
+          status: 'Success',
+          info: `${actualUserRole === 'superadmin' ? 'SuperAdmin' : 'SubAdmin'} Created Successfully`,
+          admin_id: String(newAdminId)
+        });
+      }
+
+      // ==================== CREATING NORMAL USER ====================
+      
       // Check if required fields are provided
       if (!full_name || !mobile || !email) {
         return res.json({
@@ -976,9 +1084,6 @@ class AdminController {
           message: 'full_name, mobile, and email are required'
         });
       }
-
-      // Get admin role_id
-      const admin = adminRows[0];
 
       // Check for duplicate mobile and email (matching PHP exactly)
       const mobileCheck = await query('SELECT * FROM users WHERE mobile = ? AND deleted = 0', [mobile]);
@@ -2697,34 +2802,56 @@ class AdminController {
       const cardActivationRequests = await query(dataQuery, dataParams);
 
       // Format data as objects
-      const formattedCardActivationRequestsList = cardActivationRequests.map((card, index) => ({
-        row_id: startValue + index + 1,
-        ubc_id: String(card.ubc_id),
-        sp_user_id: String(card.user_id),
-        user_id: String(card.user_id),
-        user_name: card.user_name || "",
-        card_activation_name: card.card_activation_name || "",
-        business_name: card.business_name || "",
-        business_location: card.business_location || "",
-        country_id: card.country_id ? String(card.country_id) : "",
-        country_name: card.country_name || "",
-        state_id: card.state_id ? String(card.state_id) : "",
-        state_name: card.state_name || "",
-        city_id: card.city_id ? String(card.city_id) : "",
-        city_name: card.city_name || "",
-        description: card.description || "",
-        card_number: card.card_number || "",
-        card_status: Number.isFinite(Number(card.card_status)) ? Number(card.card_status) : 0,
-        card_status_label:
-          card.card_status == 0
-            ? "Inactive"
-            : card.card_status == 1
-              ? "Pending"
-              : card.card_status == 2
-                ? "Rejected"
-                : "Active",
-        status: card.status == 1 ? "Active" : "Inactive"
-      }));
+      const formattedCardActivationRequestsList = cardActivationRequests.map((card, index) => {
+        const numericCardStatus = (() => {
+          if (card.card_status === null || card.card_status === undefined || card.card_status === '') {
+            return 0;
+          }
+
+          const numericValue = Number(card.card_status);
+          if (Number.isFinite(numericValue)) {
+            return numericValue;
+          }
+
+          const statusMap = {
+            inactive: 0,
+            pending: 1,
+            rejected: 2,
+            active: 3
+          };
+          const normalized = String(card.card_status).trim().toLowerCase();
+          return statusMap.hasOwnProperty(normalized) ? statusMap[normalized] : 0;
+        })();
+
+        const cardStatusLabelMap = {
+          0: "Inactive",
+          1: "Pending",
+          2: "Rejected",
+          3: "Active"
+        };
+
+        return {
+          row_id: startValue + index + 1,
+          ubc_id: String(card.ubc_id),
+          sp_user_id: String(card.user_id),
+          user_id: String(card.user_id),
+          user_name: card.user_name || "",
+          card_activation_name: card.card_activation_name || "",
+          business_name: card.business_name || "",
+          business_location: card.business_location || "",
+          country_id: card.country_id ? String(card.country_id) : "",
+          country_name: card.country_name || "",
+          state_id: card.state_id ? String(card.state_id) : "",
+          state_name: card.state_name || "",
+          city_id: card.city_id ? String(card.city_id) : "",
+          city_name: card.city_name || "",
+          description: card.description || "",
+          card_number: card.card_number || "",
+          card_status: numericCardStatus,
+          card_status_label: cardStatusLabelMap[numericCardStatus] || "Inactive",
+          status: card.status == 1 ? "Active" : "Inactive"
+        };
+      });
 
       return res.json({
         status: true,
