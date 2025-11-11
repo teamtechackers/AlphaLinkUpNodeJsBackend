@@ -2297,7 +2297,7 @@ const ApiController = {
           ui.language,
           ui.avg_rating,
           CASE 
-            WHEN ui.image != '' THEN CONCAT('http://13.126.159.246:3000/uploads/investors/thumbs/', ui.image)
+            WHEN ui.image != '' THEN CONCAT('${process.env.BASE_URL || 'http://localhost:3000'}/uploads/investors/thumbs/', ui.image)
             ELSE ''
           END AS image,
           countries.name AS country,
@@ -2490,8 +2490,8 @@ const ApiController = {
           interests: targetUser.interests,
           linkedin_url: targetUser.linkedin_url,
           summary: targetUser.summary,
-          profile_photo: targetUser.profile_photo ? `http://13.126.159.246:3000/uploads/profiles/${targetUser.profile_photo}` : '',
-          qr_image: targetUser.qr_image ? `http://13.126.159.246:3000/uploads/qr_codes/${targetUser.qr_image}` : '',
+          profile_photo: targetUser.profile_photo ? `${process.env.BASE_URL || 'http://localhost:3000'}/uploads/profiles/${targetUser.profile_photo}` : '',
+          qr_image: targetUser.qr_image ? `${process.env.BASE_URL || 'http://localhost:3000'}/uploads/qr_codes/${targetUser.qr_image}` : '',
           profile_updated: targetUser.profile_updated,
           card_requested: targetUser.card_requested,
           is_service_provider: targetUser.is_service_provider,
@@ -2555,7 +2555,7 @@ const ApiController = {
           cities.name AS city,
           fs.investment_range,
           CASE 
-            WHEN ui.image != '' THEN CONCAT('http://13.126.159.246:3000/uploads/investors/thumbs/', ui.image)
+            WHEN ui.image != '' THEN CONCAT('${process.env.BASE_URL || 'http://localhost:3000'}/uploads/investors/thumbs/', ui.image)
             ELSE ''
           END AS image
         FROM user_investor ui
@@ -2936,7 +2936,7 @@ const ApiController = {
           COALESCE(mt.type, '') AS meeting_type,
           COALESCE(mt.mins, '') AS mins,
           CASE 
-            WHEN ui.image != '' THEN CONCAT('http://13.126.159.246:3000/uploads/investors/thumbs/', ui.image)
+            WHEN ui.image != '' THEN CONCAT('${process.env.BASE_URL || 'http://localhost:3000'}/uploads/investors/thumbs/', ui.image)
             ELSE ''
           END AS investor_image
         FROM user_investors_unlocked uiul
@@ -3024,7 +3024,7 @@ const ApiController = {
           ui.profile AS investor_profile,
           ui.avg_rating,
           CASE 
-            WHEN ui.image != '' THEN CONCAT('http://13.126.159.246:3000/uploads/investors/thumbs/', ui.image)
+            WHEN ui.image != '' THEN CONCAT('${process.env.BASE_URL || 'http://localhost:3000'}/uploads/investors/thumbs/', ui.image)
             ELSE ''
           END AS investor_image,
           countries.name AS country,
