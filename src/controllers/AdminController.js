@@ -1051,6 +1051,27 @@ class AdminController {
 
         const newAdminId = adminResult.insertId;
 
+        // IMPORTANT: Also create entry in users table for token management
+        const crypto = require('crypto');
+        const md5 = require('md5');
+        const defaultMobile = `admin${newAdminId}`; // Unique mobile for admin
+        const now = new Date();
+        const timestamp = now.getFullYear().toString() +
+                         (now.getMonth() + 1).toString().padStart(2, '0') +
+                         now.getDate().toString().padStart(2, '0') +
+                         now.getHours().toString().padStart(2, '0') +
+                         now.getMinutes().toString().padStart(2, '0') +
+                         now.getSeconds().toString().padStart(2, '0');
+        const str_token = defaultMobile + timestamp;
+        const unique_token = crypto.createHash('md5').update(str_token).digest('hex');
+
+        // Insert into users table with same ID
+        await query(
+          `INSERT INTO users (user_id, full_name, mobile, email, unique_token, status, created_dts, created_by, deleted)
+           VALUES (?, ?, ?, ?, ?, 1, NOW(), ?, 0)`,
+          [newAdminId, full_name || username, defaultMobile, email || '', unique_token, decodedUserId]
+        );
+
         // Assign permissions (only for SubAdmin)
         if (actualUserRole === 'subadmin' && permissions && Array.isArray(permissions) && permissions.length > 0) {
           const permissionValues = permissions.map(permId => 

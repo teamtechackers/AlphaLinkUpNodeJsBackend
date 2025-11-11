@@ -51,7 +51,7 @@ const CountryController = {
         });
       }
 
-      const rows = await query('SELECT id AS country_id, name AS country_name FROM countries');
+      const rows = await query('SELECT id AS country_id, name AS country_name FROM countries ORDER BY name ASC');
 
       return res.json({
         status: true,
