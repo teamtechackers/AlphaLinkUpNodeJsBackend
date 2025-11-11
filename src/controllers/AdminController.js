@@ -1360,6 +1360,7 @@ class AdminController {
           a.full_name,
           a.email,
           a.username,
+          a.password,
           a.is_super_admin,
           u.mobile,
           u.profile_photo,
@@ -1388,6 +1389,8 @@ class AdminController {
       const adminIds = admins.filter(a => a.is_super_admin !== 1).map(a => a.user_id);
       let adminPermissions = {};
       
+      console.log(`SubAdmin IDs to fetch permissions for: [${adminIds.join(', ')}]`);
+      
       if (adminIds.length > 0) {
         const permissionsQuery = `
           SELECT 
@@ -1401,6 +1404,8 @@ class AdminController {
         `;
         const permissionsResult = await query(permissionsQuery);
         
+        console.log(`Fetched ${permissionsResult.length} permission records for ${adminIds.length} SubAdmins`);
+        
         // Group permissions by admin_user_id
         permissionsResult.forEach(perm => {
           if (!adminPermissions[perm.admin_user_id]) {
@@ -1412,6 +1417,8 @@ class AdminController {
             permission_key: perm.permission_key
           });
         });
+        
+        console.log(`Permissions grouped:`, Object.keys(adminPermissions).map(id => `${id}:${adminPermissions[id].length}`).join(', '));
       }
 
       // Combine and sort all users (admins first by type, then by ID descending)
@@ -1458,17 +1465,23 @@ class AdminController {
         // Add admin-specific fields
         if (user.user_type === 'superadmin' || user.user_type === 'subadmin') {
           userData.username = user.username || "";
+          userData.password = user.password || ""; // Show actual hashed password
           userData.is_super_admin = user.is_super_admin === 1;
           
           // Add permissions for SubAdmin
           if (user.user_type === 'subadmin') {
-            userData.permissions = adminPermissions[user.user_id] || [];
-            userData.permission_count = userData.permissions.length;
+            const userPermissions = adminPermissions[user.user_id] || [];
+            console.log(`SubAdmin ${user.user_id} permissions:`, userPermissions.length);
+            userData.permissions = userPermissions;
+            userData.permission_count = userPermissions.length;
           } else {
             userData.permissions = [];
             userData.permission_count = 0;
             userData.all_permissions = true; // SuperAdmin has all permissions
           }
+        } else {
+          // Normal user - no password shown
+          userData.password = null;
         }
 
         return userData;
