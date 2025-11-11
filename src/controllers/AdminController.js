@@ -2802,56 +2802,34 @@ class AdminController {
       const cardActivationRequests = await query(dataQuery, dataParams);
 
       // Format data as objects
-      const formattedCardActivationRequestsList = cardActivationRequests.map((card, index) => {
-        const numericCardStatus = (() => {
-          if (card.card_status === null || card.card_status === undefined || card.card_status === '') {
-            return 0;
-          }
-
-          const numericValue = Number(card.card_status);
-          if (Number.isFinite(numericValue)) {
-            return numericValue;
-          }
-
-          const statusMap = {
-            inactive: 0,
-            pending: 1,
-            rejected: 2,
-            active: 3
-          };
-          const normalized = String(card.card_status).trim().toLowerCase();
-          return statusMap.hasOwnProperty(normalized) ? statusMap[normalized] : 0;
-        })();
-
-        const cardStatusLabelMap = {
-          0: "Inactive",
-          1: "Pending",
-          2: "Rejected",
-          3: "Active"
-        };
-
-        return {
-          row_id: startValue + index + 1,
-          ubc_id: String(card.ubc_id),
-          sp_user_id: String(card.user_id),
-          user_id: String(card.user_id),
-          user_name: card.user_name || "",
-          card_activation_name: card.card_activation_name || "",
-          business_name: card.business_name || "",
-          business_location: card.business_location || "",
-          country_id: card.country_id ? String(card.country_id) : "",
-          country_name: card.country_name || "",
-          state_id: card.state_id ? String(card.state_id) : "",
-          state_name: card.state_name || "",
-          city_id: card.city_id ? String(card.city_id) : "",
-          city_name: card.city_name || "",
-          description: card.description || "",
-          card_number: card.card_number || "",
-          card_status: numericCardStatus,
-          card_status_label: cardStatusLabelMap[numericCardStatus] || "Inactive",
-          status: card.status == 1 ? "Active" : "Inactive"
-        };
-      });
+      const formattedCardActivationRequestsList = cardActivationRequests.map((card, index) => ({
+        row_id: startValue + index + 1,
+        ubc_id: String(card.ubc_id),
+        sp_user_id: String(card.user_id),
+        user_id: String(card.user_id),
+        user_name: card.user_name || "",
+        card_activation_name: card.card_activation_name || "",
+        business_name: card.business_name || "",
+        business_location: card.business_location || "",
+        country_id: card.country_id ? String(card.country_id) : "",
+        country_name: card.country_name || "",
+        state_id: card.state_id ? String(card.state_id) : "",
+        state_name: card.state_name || "",
+        city_id: card.city_id ? String(card.city_id) : "",
+        city_name: card.city_name || "",
+        description: card.description || "",
+        card_number: card.card_number || "",
+        card_status: Number.isFinite(Number(card.card_status)) ? Number(card.card_status) : 0,
+        card_status_label:
+          card.card_status == 0
+            ? "Inactive"
+            : card.card_status == 1
+              ? "Pending"
+              : card.card_status == 2
+                ? "Rejected"
+                : "Active",
+        status: card.status == 1 ? "Active" : "Inactive"
+      }));
 
       return res.json({
         status: true,
