@@ -1082,19 +1082,36 @@ class AdminController {
         );
 
         // Assign permissions (only for SubAdmin)
-        if (actualUserRole === 'subadmin' && permissions && Array.isArray(permissions) && permissions.length > 0) {
-          const permissionValues = permissions.map(permId => 
-            [newAdminId, permId, decodedUserId]
-          );
+        if (actualUserRole === 'subadmin' && permissions) {
+          // Parse permissions if it's a string (from FormData)
+          let permissionsArray = permissions;
+          if (typeof permissions === 'string') {
+            try {
+              permissionsArray = JSON.parse(permissions);
+            } catch (e) {
+              console.error('Failed to parse permissions:', permissions);
+              permissionsArray = [];
+            }
+          }
 
-          const placeholders = permissionValues.map(() => '(?, ?, ?)').join(',');
-          const flatValues = permissionValues.flat();
+          console.log('Permissions to assign:', permissionsArray, 'Type:', typeof permissionsArray);
 
-          await query(
-            `INSERT INTO admin_user_permissions (admin_user_id, permission_id, granted_by)
-             VALUES ${placeholders}`,
-            flatValues
-          );
+          if (Array.isArray(permissionsArray) && permissionsArray.length > 0) {
+            const permissionValues = permissionsArray.map(permId => 
+              [newAdminId, permId, decodedUserId]
+            );
+
+            const placeholders = permissionValues.map(() => '(?, ?, ?)').join(',');
+            const flatValues = permissionValues.flat();
+
+            await query(
+              `INSERT INTO admin_user_permissions (admin_user_id, permission_id, granted_by)
+               VALUES ${placeholders}`,
+              flatValues
+            );
+            
+            console.log(`✅ Assigned ${permissionsArray.length} permissions to SubAdmin ${newAdminId}`);
+          }
         }
 
         return res.json({
