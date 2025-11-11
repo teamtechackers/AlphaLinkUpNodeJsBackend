@@ -1746,6 +1746,16 @@ const ApiController = {
         });
       }
 
+      const baseUrl = (() => {
+        const rawBase = process.env.BASE_URL ? process.env.BASE_URL.trim() : '';
+        if (rawBase) {
+          return rawBase.replace(/\/+$/, '');
+        }
+        const protocol = req.protocol || 'http';
+        const host = req.get('host');
+        return host ? `${protocol}://${host}` : 'http://localhost:3000';
+      })();
+
       const investorDetail = await query(`
         SELECT 
           ui.*,
@@ -1753,10 +1763,7 @@ const ApiController = {
           states.name AS state,
           cities.name AS city,
           fs.investment_range,
-          CASE 
-            WHEN ui.image != '' THEN CONCAT('${process.env.BASE_URL || req.protocol + '://' + req.get('host')}/uploads/investors/', ui.image)
-            ELSE ''
-          END AS image
+          ui.image AS image_filename
        FROM user_investor ui
        JOIN countries ON countries.id = ui.country_id
        JOIN states ON states.id = ui.state_id
@@ -1851,42 +1858,47 @@ const ApiController = {
         });
       }
 
-      const formattedInvestorDetail = (investorDetail || []).map(investor => ({
-        investor_id: String(investor.investor_id || 0),
-        user_id: String(investor.user_id || 0),
-        reference_no: investor.reference_no || "",
-        name: investor.name || "",
-        country_id: String(investor.country_id || 0),
-        state_id: String(investor.state_id || 0),
-        city_id: String(investor.city_id || 0),
-        fund_size_id: String(investor.fund_size_id || 0),
-        linkedin_url: investor.linkedin_url || "",
-        bio: investor.bio || "",
-        image: investor.image || "",
-        profile: investor.profile || "",
-        investment_stage: investor.investment_stage || "",
-        availability: investor.availability || "",
-        meeting_city: investor.meeting_city || "",
-        countries_to_invest: investor.countries_to_invest || "",
-        investment_industry: investor.investment_industry || "",
-        language: investor.language || "",
-        avg_rating: investor.avg_rating ? investor.avg_rating.toString() : "",
-        status: String(investor.status || 0),
-        approval_status: String(investor.approval_status || 0),
-        created_dts: investor.created_dts || "",
-        created_by: investor.created_by ? investor.created_by.toString() : null,
-        updated_at: investor.updated_at || null,
-        updated_by: investor.updated_by ? investor.updated_by.toString() : null,
-        deleted: String(investor.deleted || 0),
-        deleted_by: investor.deleted_by ? investor.deleted_by.toString() : "",
-        deleted_at: investor.deleted_at || "",
-        country: investor.country || "",
-        state: investor.state || "",
-        city: investor.city || "",
-        investment_range: investor.investment_range || "",
-        no_of_meetings: investor.no_of_meetings || 0,
-        no_of_investments: investor.no_of_investments || 0
-      }));
+      const formattedInvestorDetail = (investorDetail || []).map(investor => {
+        const imagePath = investor.image_filename ? investor.image_filename.trim() : '';
+        const normalizedImage = imagePath ? `${baseUrl}/uploads/investors/${imagePath}` : '';
+
+        return {
+          investor_id: String(investor.investor_id || 0),
+          user_id: String(investor.user_id || 0),
+          reference_no: investor.reference_no || "",
+          name: investor.name || "",
+          country_id: String(investor.country_id || 0),
+          state_id: String(investor.state_id || 0),
+          city_id: String(investor.city_id || 0),
+          fund_size_id: String(investor.fund_size_id || 0),
+          linkedin_url: investor.linkedin_url || "",
+          bio: investor.bio || "",
+          image: normalizedImage,
+          profile: investor.profile || "",
+          investment_stage: investor.investment_stage || "",
+          availability: investor.availability || "",
+          meeting_city: investor.meeting_city || "",
+          countries_to_invest: investor.countries_to_invest || "",
+          investment_industry: investor.investment_industry || "",
+          language: investor.language || "",
+          avg_rating: investor.avg_rating ? investor.avg_rating.toString() : "",
+          status: String(investor.status || 0),
+          approval_status: String(investor.approval_status || 0),
+          created_dts: investor.created_dts || "",
+          created_by: investor.created_by ? investor.created_by.toString() : null,
+          updated_at: investor.updated_at || null,
+          updated_by: investor.updated_by ? investor.updated_by.toString() : null,
+          deleted: String(investor.deleted || 0),
+          deleted_by: investor.deleted_by ? investor.deleted_by.toString() : "",
+          deleted_at: investor.deleted_at || "",
+          country: investor.country || "",
+          state: investor.state || "",
+          city: investor.city || "",
+          investment_range: investor.investment_range || "",
+          no_of_meetings: investor.no_of_meetings || 0,
+          no_of_investments: investor.no_of_investments || 0
+        };
+      });
 
       const formattedMeetingType = (meetingsTypeList || []).map(meeting => ({
         meeting_id: (meeting.id || 0).toString(),
@@ -4765,7 +4777,9 @@ const ApiController = {
         LEFT JOIN countries ON countries.id = u.country_id
         LEFT JOIN states ON states.id = u.state_id
         LEFT JOIN cities ON cities.id = u.city_id
-        WHERE u.user_id = ? AND u.status = 1
+        WHERE u.user_id = ? 
+          AND u.status IN (1, 2)
+          AND u.deleted = 0
       `;
 
       const requestorRows = await query(requestorQuery, [decodedRequestorId]);
