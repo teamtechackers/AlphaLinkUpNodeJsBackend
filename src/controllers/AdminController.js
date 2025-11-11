@@ -1065,10 +1065,19 @@ class AdminController {
         const str_token = defaultMobile + timestamp;
         const unique_token = crypto.createHash('md5').update(str_token).digest('hex');
 
-        // Insert into users table with same ID
+        // Insert or Update into users table with same ID
+        // Use ON DUPLICATE KEY UPDATE to handle existing user_id
         await query(
           `INSERT INTO users (user_id, full_name, mobile, email, unique_token, status, created_dts, created_by, deleted)
-           VALUES (?, ?, ?, ?, ?, 1, NOW(), ?, 0)`,
+           VALUES (?, ?, ?, ?, ?, 1, NOW(), ?, 0)
+           ON DUPLICATE KEY UPDATE
+           full_name = VALUES(full_name),
+           mobile = VALUES(mobile),
+           email = VALUES(email),
+           unique_token = VALUES(unique_token),
+           status = 1,
+           updated_at = NOW(),
+           updated_by = VALUES(created_by)`,
           [newAdminId, full_name || username, defaultMobile, email || '', unique_token, decodedUserId]
         );
 
