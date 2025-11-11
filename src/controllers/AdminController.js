@@ -3966,7 +3966,14 @@ class AdminController {
       const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
       
       if (investorDetails.image && investorDetails.image !== '') {
-        investorDetails.image = `${baseUrl}/uploads/investors/${investorDetails.image}`;
+        // Check if image path already contains 'thumbs/' or full path
+        if (investorDetails.image.includes('/')) {
+          // Already has path, just add base URL
+          investorDetails.image = `${baseUrl}/uploads/investors/${investorDetails.image}`;
+        } else {
+          // Just filename, add thumbs folder
+          investorDetails.image = `${baseUrl}/uploads/investors/thumbs/${investorDetails.image}`;
+        }
       }
 
       return res.json(investorDetails);
