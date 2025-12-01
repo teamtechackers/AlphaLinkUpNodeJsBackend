@@ -66,9 +66,9 @@ const DashboardController = {
               AND user_event_details.event_lat IS NOT NULL AND user_event_details.event_lng IS NOT NULL
               AND (6371 * ACOS(
                 LEAST(1.0, GREATEST(-1.0,
-                  COS(RADIANS(?)) * COS(RADIANS(user_event_details.event_lat)) 
-                  * COS(RADIANS(user_event_details.event_lng) - RADIANS(?)) 
-                  + SIN(RADIANS(?)) * SIN(RADIANS(user_event_details.event_lat))
+                COS(RADIANS(?)) * COS(RADIANS(user_event_details.event_lat)) 
+                * COS(RADIANS(user_event_details.event_lng) - RADIANS(?)) 
+                + SIN(RADIANS(?)) * SIN(RADIANS(user_event_details.event_lat))
                 ))
               )) <= ?)
              OR (user_event_details.event_lat = 0 AND user_event_details.event_lng = 0 AND user_event_details.event_link != '')
@@ -90,12 +90,12 @@ const DashboardController = {
                  IF(user_event_details.event_banner != '', CONCAT('${process.env.BASE_URL || req.protocol + '://' + req.get('host')}/uploads/events/', user_event_details.event_banner), '') AS event_banner,
                  COUNT(DISTINCT event_attendees.event_id) AS total_attendees,
                  COALESCE(
-                   (6371 * ACOS(
+                 (6371 * ACOS(
                      LEAST(1.0, GREATEST(-1.0,
-                       COS(RADIANS(?)) 
+                   COS(RADIANS(?)) 
                        * COS(RADIANS(COALESCE(user_event_details.event_lat, 0))) 
                        * COS(RADIANS(COALESCE(user_event_details.event_lng, 0)) - RADIANS(?)) 
-                       + SIN(RADIANS(?)) 
+                   + SIN(RADIANS(?)) 
                        * SIN(RADIANS(COALESCE(user_event_details.event_lat, 0)))
                      ))
                    )),
@@ -241,12 +241,12 @@ const DashboardController = {
                  cities.name as city_name,
                  GROUP_CONCAT(DISTINCT skills.name SEPARATOR ', ') as skill_names,
                  COALESCE(
-                   (6371 * ACOS(
+                 (6371 * ACOS(
                      LEAST(1.0, GREATEST(-1.0,
-                       COS(RADIANS(?)) 
+                   COS(RADIANS(?)) 
                        * COS(RADIANS(COALESCE(user_job_details.job_lat, 0))) 
                        * COS(RADIANS(COALESCE(user_job_details.job_lng, 0)) - RADIANS(?)) 
-                       + SIN(RADIANS(?)) 
+                   + SIN(RADIANS(?)) 
                        * SIN(RADIANS(COALESCE(user_job_details.job_lat, 0)))
                      ))
                    )),
