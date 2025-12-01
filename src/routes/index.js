@@ -8,6 +8,7 @@ const router = express.Router();
 const AuthController = require('../controllers/AuthController');
 const ApiController = require('../controllers/apiController');
 const AdminController = require('../controllers/AdminController');
+const AdminPermissionController = require('../controllers/AdminPermissionController');
 const CountryController = require('../controllers/countryController');
 const StateController = require('../controllers/stateController');
 const CityController = require('../controllers/cityController');
@@ -30,6 +31,7 @@ const authenticate = require('../middlewares/authenticate');
 const adminAuth = require('../middlewares/adminAuth');
 const validate = require('../middlewares/validation');
 const rateLimiter = require('../middlewares/rateLimiter');
+const { checkPermission, requireSuperAdmin } = require('../middlewares/checkPermission');
 
 const { checkUser } = require('../middlewares/checkUser');
 const { uploadProfilePhoto, uploadFormData, uploadEvents, uploadResume, uploadInvestor, uploadVisitingCards, uploadServices, uploadProjectLogo } = require('../middlewares/upload');
@@ -324,18 +326,19 @@ router.get('/check-duplicate-folders', FolderController.checkDuplicateFolder);
 router.post('/check-duplicate-folders', uploadFormData.none(), FolderController.checkDuplicateFolder);
 router.get('/delete-folders', FolderController.deleteFolders);
 router.post('/delete-folders', uploadFormData.none(), FolderController.deleteFolders);
-router.get('/list-users', AdminController.viewUsers);
-router.post('/list-users', uploadFormData.none(), AdminController.viewUsers);
+router.get('/list-users', checkPermission('users.view'), AdminController.viewUsers);
+router.post('/list-users', checkPermission('users.view'), uploadFormData.none(), AdminController.viewUsers);
 router.get('/submit-users', AdminController.submitUsers);
+// Multer first, then manual permission check inside controller
 router.post('/submit-users', uploadProfilePhoto.single('profile_photo'), AdminController.submitUsers);
-router.get('/list-users-ajax', AdminController.listUsersAjax);
-router.post('/list-users-ajax', uploadFormData.none(), AdminController.listUsersAjax);
-router.get('/edit-users', AdminController.editUsers);
-router.post('/edit-users', uploadFormData.none(), AdminController.editUsers);
+router.get('/list-users-ajax', checkPermission('users.view'), AdminController.listUsersAjax);
+router.post('/list-users-ajax', checkPermission('users.view'), uploadFormData.none(), AdminController.listUsersAjax);
+router.get('/edit-users', checkPermission('users.edit'), AdminController.editUsers);
+router.post('/edit-users', checkPermission('users.edit'), uploadFormData.none(), AdminController.editUsers);
 router.get('/check-duplicate-users', AdminController.checkDuplicateUsers);
 router.post('/check-duplicate-users', uploadFormData.none(), AdminController.checkDuplicateUsers);
-router.get('/delete-users', AdminController.deleteUsers);
-router.post('/delete-users', uploadFormData.none(), AdminController.deleteUsers);
+router.get('/delete-users', checkPermission('users.delete'), AdminController.deleteUsers);
+router.post('/delete-users', checkPermission('users.delete'), uploadFormData.none(), AdminController.deleteUsers);
 router.get('/get-state-list', StateController.getAdminStateList);
 router.post('/get-state-list', uploadFormData.none(), StateController.getAdminStateList);
 
@@ -506,6 +509,16 @@ router.post('/Api-Notification-Mark-Read', uploadFormData.none(), ApiController.
 router.post('/Api-Notifications-Mark-All-Read', uploadFormData.none(), ApiController.markAllNotificationsAsRead);
 router.post('/Api-Notification-Delete', uploadFormData.none(), ApiController.deleteNotification);
 console.log('🔔 Notification routes registered successfully');
+
+// ==================== ADMIN PERMISSION MANAGEMENT ROUTES (SuperAdmin Only) ====================
+router.get('/admin-permissions-list', requireSuperAdmin, AdminPermissionController.getAllPermissions);
+router.post('/admin-permissions-list', requireSuperAdmin, uploadFormData.none(), AdminPermissionController.getAllPermissions);
+router.post('/admin-create-subadmin', requireSuperAdmin, uploadFormData.none(), AdminPermissionController.createSubAdmin);
+router.post('/admin-create-superadmin', uploadFormData.none(), AdminPermissionController.createSuperAdmin);
+router.get('/admin-subadmin-list', requireSuperAdmin, AdminPermissionController.getSubAdminList);
+router.post('/admin-subadmin-list', requireSuperAdmin, uploadFormData.none(), AdminPermissionController.getSubAdminList);
+router.post('/admin-update-subadmin-permissions', requireSuperAdmin, uploadFormData.none(), AdminPermissionController.updateSubAdminPermissions);
+router.post('/admin-delete-subadmin', requireSuperAdmin, uploadFormData.none(), AdminPermissionController.deleteSubAdmin);
 
 // 404 handler for undefined routes (MUST be at the end)
 router.use('*', (req, res) => {
