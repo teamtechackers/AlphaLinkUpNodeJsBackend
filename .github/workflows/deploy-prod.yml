@@ -3,7 +3,7 @@ name: Deploy Backend to EC2 (Production)
 on:
   push:
     branches:
-      - main
+      - latest
 
 jobs:
   deploy:
@@ -43,14 +43,19 @@ jobs:
             # Go to project directory
             cd "$EC2_PROJECT_PATH"
 
-            echo "📥 Pulling latest code from main..."
+            echo "📥 Pulling latest code from latest branch..."
             git fetch --all
-            git checkout main
-            git pull origin main
+            git checkout latest || git checkout -b latest origin/latest
+            git pull origin latest
 
-            echo "📦 Running deploy script..."
-            chmod +x deploy-ec2.sh
-            ./deploy-ec2.sh
+            echo "📦 Installing dependencies..."
+            npm install --production
+
+            echo "🔄 Restarting PM2..."
+            pm2 restart alphalinkup-backend || pm2 start src/server.js --name alphalinkup-backend
+            pm2 save
+
+            echo "✅ Deployment finished."
 
             echo "✅ Deployment finished."
           EOF
