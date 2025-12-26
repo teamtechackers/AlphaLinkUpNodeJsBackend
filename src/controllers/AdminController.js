@@ -1248,12 +1248,12 @@ class AdminController {
   static async listUsersAjax(req, res) {
     try {
       // Support both query parameters and form data
-      const { user_id, token } = {
+      const { user_id, token, only_admin, only_user } = {
         ...req.query,
         ...req.body
       };
 
-      console.log('listUsersAjax - Parameters:', { user_id, token });
+      console.log('listUsersAjax - Parameters:', { user_id, token, only_admin, only_user });
 
       // Check if user_id and token are provided
       if (!user_id || !token) {
@@ -1301,11 +1301,26 @@ class AdminController {
       const startValue = parseInt(req.body.start || req.query.start || 0);
       const lengthValue = parseInt(req.body.length || req.query.length || 10);
       const searchValue = req.body.search?.value || req.query.search || '';
+      
+      // Determine what to fetch based on flags
+      // Convert string 'true'/'false' to boolean if needed
+      const fetchAdmins = only_user !== 'true' && only_user !== true;
+      const fetchUsers = only_admin !== 'true' && only_admin !== true;
+      
+      console.log(`Fetch Config: Admins=${fetchAdmins}, Users=${fetchUsers}`);
 
-      // Get total count (including admins)
-      const totalNormalUsers = await query('SELECT COUNT(*) as count FROM users WHERE deleted = 0');
-      const totalAdmins = await query('SELECT COUNT(*) as count FROM admin_users');
-      const totalCount = (totalNormalUsers[0]?.count || 0) + (totalAdmins[0]?.count || 0);
+      // Get total count
+      let totalCount = 0;
+      
+      if (fetchUsers) {
+        const totalNormalUsers = await query('SELECT COUNT(*) as count FROM users WHERE deleted = 0');
+        totalCount += (totalNormalUsers[0]?.count || 0);
+      }
+      
+      if (fetchAdmins) {
+        const totalAdmins = await query('SELECT COUNT(*) as count FROM admin_users');
+        totalCount += (totalAdmins[0]?.count || 0);
+      }
 
       // Build search query for normal users
       let userSearchQuery = '';
@@ -1325,117 +1340,132 @@ class AdminController {
         adminSearchParams.push(`%${searchValue}%`, `%${searchValue}%`, `%${searchValue}%`);
       }
 
-      // Get filtered count for normal users
-      let filteredNormalUsersQuery = `
-        SELECT COUNT(*) as count
-        FROM users u
-        ${userSearchQuery}
-      `;
-      const filteredNormalUsers = await query(filteredNormalUsersQuery, userSearchParams);
+      // Get filtered counts and data
+      let filteredCount = 0;
+      let normalUsers = [];
+      let admins = [];
 
-      // Get filtered count for admins
-      let filteredAdminsQuery = `
-        SELECT COUNT(*) as count
-        FROM admin_users a
-        ${adminSearchQuery}
-      `;
-      const filteredAdmins = await query(filteredAdminsQuery, adminSearchParams);
-      
-      const filteredCount = (filteredNormalUsers[0]?.count || 0) + (filteredAdmins[0]?.count || 0);
-
-      // Get paginated normal users data
-      let normalUsersQuery = `
-        SELECT
-          u.user_id,
-          u.full_name,
-          u.mobile,
-          u.email,
-          u.profile_photo,
-          u.address,
-          u.country_id,
-          u.state_id,
-          u.city_id,
-          u.status,
-          c.name as country_name,
-          s.name as state_name,
-          ci.name as city_name,
-          'user' as user_type,
-          NULL as is_super_admin,
-          NULL as username
-        FROM users u
-        LEFT JOIN countries c ON u.country_id = c.id
-        LEFT JOIN states s ON u.state_id = s.id
-        LEFT JOIN cities ci ON u.city_id = ci.id
-        ${userSearchQuery}
-      `;
-      const normalUsers = await query(normalUsersQuery, userSearchParams);
-
-      // Get paginated admins data with permissions
-      let adminsQuery = `
-        SELECT
-          a.id as user_id,
-          a.full_name,
-          a.email,
-          a.username,
-          a.password,
-          a.is_super_admin,
-          u.mobile,
-          u.profile_photo,
-          u.address,
-          u.country_id,
-          u.state_id,
-          u.city_id,
-          u.status,
-          c.name as country_name,
-          s.name as state_name,
-          ci.name as city_name,
-          CASE 
-            WHEN a.is_super_admin = 1 THEN 'superadmin'
-            ELSE 'subadmin'
-          END as user_type
-        FROM admin_users a
-        LEFT JOIN users u ON a.id = u.user_id
-        LEFT JOIN countries c ON u.country_id = c.id
-        LEFT JOIN states s ON u.state_id = s.id
-        LEFT JOIN cities ci ON u.city_id = ci.id
-        ${adminSearchQuery}
-      `;
-      const admins = await query(adminsQuery, adminSearchParams);
-
-      // Get permissions for all SubAdmins
-      const adminIds = admins.filter(a => a.is_super_admin !== 1).map(a => a.user_id);
-      let adminPermissions = {};
-      
-      console.log(`SubAdmin IDs to fetch permissions for: [${adminIds.join(', ')}]`);
-      
-      if (adminIds.length > 0) {
-        const permissionsQuery = `
-          SELECT 
-            aup.admin_user_id,
-            ap.permission_id,
-            ap.permission_name,
-            ap.permission_key
-          FROM admin_user_permissions aup
-          JOIN admin_permissions ap ON aup.permission_id = ap.permission_id
-          WHERE aup.admin_user_id IN (${adminIds.join(',')})
+      // 1. Fetch Normal Users if required
+      if (fetchUsers) {
+        // Get filtered count for normal users
+        let filteredNormalUsersQuery = `
+          SELECT COUNT(*) as count
+          FROM users u
+          ${userSearchQuery}
         `;
-        const permissionsResult = await query(permissionsQuery);
+        const filteredNormalUsers = await query(filteredNormalUsersQuery, userSearchParams);
+        filteredCount += (filteredNormalUsers[0]?.count || 0);
         
-        console.log(`Fetched ${permissionsResult.length} permission records for ${adminIds.length} SubAdmins`);
+        // Get paginated normal users data
+        // Note: We fetch ALL matching users to sort and combine with admins in memory
+        // This is inefficient but maintaining exact PHP logic compatibility for now
+        let normalUsersQuery = `
+          SELECT
+            u.user_id,
+            u.full_name,
+            u.mobile,
+            u.email,
+            u.profile_photo,
+            u.address,
+            u.country_id,
+            u.state_id,
+            u.city_id,
+            u.status,
+            c.name as country_name,
+            s.name as state_name,
+            ci.name as city_name,
+            'user' as user_type,
+            NULL as is_super_admin,
+            NULL as username
+          FROM users u
+          LEFT JOIN countries c ON u.country_id = c.id
+          LEFT JOIN states s ON u.state_id = s.id
+          LEFT JOIN cities ci ON u.city_id = ci.id
+          ${userSearchQuery}
+        `;
+        normalUsers = await query(normalUsersQuery, userSearchParams);
+      }
+
+      // 2. Fetch Admins if required
+      if (fetchAdmins) {
+        // Get filtered count for admins
+        let filteredAdminsQuery = `
+          SELECT COUNT(*) as count
+          FROM admin_users a
+          ${adminSearchQuery}
+        `;
+        const filteredAdmins = await query(filteredAdminsQuery, adminSearchParams);
+        filteredCount += (filteredAdmins[0]?.count || 0);
         
-        // Group permissions by admin_user_id
-        permissionsResult.forEach(perm => {
-          if (!adminPermissions[perm.admin_user_id]) {
-            adminPermissions[perm.admin_user_id] = [];
-          }
-          adminPermissions[perm.admin_user_id].push({
-            permission_id: perm.permission_id,
-            permission_name: perm.permission_name,
-            permission_key: perm.permission_key
+        // Get paginated admins data with permissions
+        let adminsQuery = `
+          SELECT
+            a.id as user_id,
+            a.full_name,
+            a.email,
+            a.username,
+            a.password,
+            a.is_super_admin,
+            u.mobile,
+            u.profile_photo,
+            u.address,
+            u.country_id,
+            u.state_id,
+            u.city_id,
+            u.status,
+            c.name as country_name,
+            s.name as state_name,
+            ci.name as city_name,
+            CASE 
+              WHEN a.is_super_admin = 1 THEN 'superadmin'
+              ELSE 'subadmin'
+            END as user_type
+          FROM admin_users a
+          LEFT JOIN users u ON a.id = u.user_id
+          LEFT JOIN countries c ON u.country_id = c.id
+          LEFT JOIN states s ON u.state_id = s.id
+          LEFT JOIN cities ci ON u.city_id = ci.id
+          ${adminSearchQuery}
+        `;
+        admins = await query(adminsQuery, adminSearchParams);
+      }
+
+      // Get permissions for all SubAdmins (only if we fetched admins)
+      let adminPermissions = {};
+      if (admins.length > 0) {
+        const adminIds = admins.filter(a => a.is_super_admin !== 1).map(a => a.user_id);
+        
+        console.log(`SubAdmin IDs to fetch permissions for: [${adminIds.join(', ')}]`);
+        
+        if (adminIds.length > 0) {
+          const permissionsQuery = `
+            SELECT 
+              aup.admin_user_id,
+              ap.permission_id,
+              ap.permission_name,
+              ap.permission_key
+            FROM admin_user_permissions aup
+            JOIN admin_permissions ap ON aup.permission_id = ap.permission_id
+            WHERE aup.admin_user_id IN (${adminIds.join(',')})
+          `;
+          const permissionsResult = await query(permissionsQuery);
+          
+          console.log(`Fetched ${permissionsResult.length} permission records for ${adminIds.length} SubAdmins`);
+          
+          // Group permissions by admin_user_id
+          permissionsResult.forEach(perm => {
+            if (!adminPermissions[perm.admin_user_id]) {
+              adminPermissions[perm.admin_user_id] = [];
+            }
+            adminPermissions[perm.admin_user_id].push({
+              permission_id: perm.permission_id,
+              permission_name: perm.permission_name,
+              permission_key: perm.permission_key
+            });
           });
-        });
-        
-        console.log(`Permissions grouped:`, Object.keys(adminPermissions).map(id => `${id}:${adminPermissions[id].length}`).join(', '));
+          
+          console.log(`Permissions grouped:`, Object.keys(adminPermissions).map(id => `${id}:${adminPermissions[id].length}`).join(', '));
+        }
       }
 
       // Combine and sort all users (admins first by type, then by ID descending)
@@ -1447,6 +1477,7 @@ class AdminController {
           if (b.user_type === 'superadmin') return 1;
           if (a.user_type === 'subadmin') return -1;
           if (b.user_type === 'subadmin') return 1;
+          // If filtering normal users, user_type will be 'user' for all, so this loop is skipped
         }
         // Second priority: sort by ID descending within same type
         return b.user_id - a.user_id;
