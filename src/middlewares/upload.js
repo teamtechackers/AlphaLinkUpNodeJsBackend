@@ -13,12 +13,15 @@ function storageFor(subdir) {
   ensureDirSync(base);
   return multer.diskStorage({
     destination: function (req, file, cb) {
+      console.log('Multer - Destination for:', file.fieldname, 'Target:', base);
       cb(null, base);
     },
     filename: function (req, file, cb) {
       const ext = path.extname(file.originalname) || '';
       const name = path.basename(file.originalname, ext).replace(/\s+/g, '_').slice(0, 40);
-      cb(null, `${name}_${Date.now()}${ext}`);
+      const newName = `${name}_${Date.now()}${ext}`;
+      console.log('Multer - Filename for:', file.originalname, '->', newName);
+      cb(null, newName);
     }
   });
 }

@@ -21,9 +21,9 @@ class AdminController {
         ...req.query,
         ...req.body
       };
-      
+
       console.log('adminLogin - Parameters:', { username, password });
-      
+
       // Check if username and password are provided
       if (!username || !password) {
         return res.json({
@@ -32,7 +32,7 @@ class AdminController {
           message: 'Username and password are required'
         });
       }
-      
+
       // Get admin user details and validate
       const adminRows = await query('SELECT * FROM admin_users WHERE username = ? LIMIT 1', [username]);
       if (!adminRows.length) {
@@ -42,13 +42,13 @@ class AdminController {
           message: 'Invalid login credentials'
         });
       }
-      
+
       const admin = adminRows[0];
-      
+
       // Validate password
       // Check if password is bcrypt (starts with $2a$ or $2b$) or MD5 (32 chars hex)
       let passwordValid = false;
-      
+
       if (admin.password && (admin.password.startsWith('$2a$') || admin.password.startsWith('$2b$'))) {
         // Bcrypt password - use bcrypt.compare
         const bcrypt = require('bcryptjs');
@@ -59,7 +59,7 @@ class AdminController {
         const hashedPassword = crypto.createHash('md5').update(password).digest('hex');
         passwordValid = (hashedPassword === admin.password);
       }
-      
+
       if (!passwordValid) {
         return res.json({
           status: false,
@@ -67,15 +67,15 @@ class AdminController {
           message: 'Invalid login credentials'
         });
       }
-      
+
       // Get role details
       const roleRows = await query('SELECT * FROM roles WHERE id = ? LIMIT 1', [admin.role_id]);
       const role = roleRows.length > 0 ? roleRows[0] : null;
-      
+
       // Generate unique token for admin session
       const md5 = require('md5');
       const uniqueToken = md5(admin.id + admin.username + Date.now());
-      
+
       // Update admin user with new token and last login
       try {
         // Check if users table has this admin ID
@@ -84,13 +84,13 @@ class AdminController {
           // Update token in users table
           await query('UPDATE users SET unique_token = ?, updated_at = NOW() WHERE user_id = ?', [uniqueToken, admin.id]);
         }
-        
+
         // Update last login in admin_users table
         await query('UPDATE admin_users SET last_login = NOW() WHERE id = ?', [admin.id]);
       } catch (error) {
         console.log('Token update warning:', error.message);
       }
-      
+
       // Return response in PHP format (matching exactly)
       return res.json({
         status: true,
@@ -102,7 +102,7 @@ class AdminController {
         role_name: role ? role.role_name : '',
         message: 'Admin login successful'
       });
-      
+
     } catch (error) {
       console.error('adminLogin error:', error);
       return res.json({
@@ -123,7 +123,7 @@ class AdminController {
         message: 'Permission denied',
         error: 'Access forbidden'
       });
-      
+
     } catch (error) {
       console.error('permissionDenied error:', error);
       return res.json({
@@ -137,8 +137,8 @@ class AdminController {
 
 
 
-  
-    // Get admin dashboard data - PHP compatible version
+
+  // Get admin dashboard data - PHP compatible version
   static async getDashboard(req, res) {
     try {
       // Support both query parameters and form data
@@ -146,9 +146,9 @@ class AdminController {
         ...req.query,
         ...req.body
       };
-      
+
       console.log('getDashboard - Parameters:', { user_id, token });
-      
+
       // Check if user_id and token are provided
       if (!user_id || !token) {
         return res.json({
@@ -157,7 +157,7 @@ class AdminController {
           message: 'user_id and token are required'
         });
       }
-      
+
       // Decode user ID
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
@@ -167,7 +167,7 @@ class AdminController {
           message: 'Invalid user ID'
         });
       }
-      
+
       // Get user details and validate
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
@@ -177,9 +177,9 @@ class AdminController {
           message: 'Not A Valid User'
         });
       }
-      
+
       const user = userRows[0];
-      
+
       // Validate token
       if (user.unique_token !== token) {
         return res.json({
@@ -188,7 +188,7 @@ class AdminController {
           message: 'Token Mismatch Exception'
         });
       }
-      
+
       // Check if user is admin (role_id = 1 or 2)
       const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
       if (!adminRows.length) {
@@ -198,7 +198,7 @@ class AdminController {
           message: 'Permission denied'
         });
       }
-      
+
       // Get dashboard counts (matching PHP exactly)
       // Count active non-deleted users excluding admin users
       const countUsers = await query(`
@@ -212,13 +212,13 @@ class AdminController {
       const countEvents = await query('SELECT COUNT(*) as count FROM user_event_details WHERE deleted = 0');
       const countService = await query('SELECT COUNT(*) as count FROM user_service_provider WHERE deleted = 0');
       const countInvestor = await query('SELECT COUNT(*) as count FROM user_investor WHERE deleted = 0');
-      
+
       // Get meeting counts
       // Total meetings (all non-deleted meetings)
       const countMeetingsTotal = await query("SELECT COUNT(*) as count FROM user_investors_unlocked WHERE status = 1");
       const countMeetingsPending = await query("SELECT COUNT(*) as count FROM user_investors_unlocked WHERE request_status = 'Pending' AND status = 1");
       const countMeetingsApproved = await query("SELECT COUNT(*) as count FROM user_investors_unlocked WHERE request_status = 'Approved' AND status = 1");
-      
+
       // Get recent jobs with location details (matching PHP exactly)
       const listJobs = await query(`
         SELECT 
@@ -236,7 +236,7 @@ class AdminController {
         ORDER BY user_job_details.job_id DESC
         LIMIT 5
       `);
-      
+
       // Get recent investors with location details (matching PHP exactly)
       const listInvestor = await query(`
         SELECT 
@@ -254,7 +254,7 @@ class AdminController {
         ORDER BY user_investor.investor_id DESC
         LIMIT 5
       `);
-      
+
       // Return response in PHP format (matching exactly)
       return res.json({
         status: true,
@@ -273,7 +273,7 @@ class AdminController {
         list_investor: listInvestor || [],
         message: 'Dashboard data retrieved successfully'
       });
-      
+
     } catch (error) {
       console.error('getDashboard error:', error);
       return res.json({
@@ -815,7 +815,7 @@ class AdminController {
 
       // Check if industry type is used in user_event_details (matching PHP exactly)
       const eventDetails = await query('SELECT * FROM user_event_details WHERE industry_type = ? AND deleted = 0', [keys]);
-      
+
       if (eventDetails.length > 0) {
         return res.json({
           status: 'Error',
@@ -850,7 +850,7 @@ class AdminController {
     }
   }
 
-  
+
 
   // View folders - PHP compatible version
 
@@ -930,30 +930,33 @@ class AdminController {
   static async submitUsers(req, res) {
     try {
       // Support both query parameters and form data
-      const { 
-        user_id, 
-        token, 
-        row_id, 
-        full_name, 
-        mobile, 
-        email, 
-        address, 
-        country_id, 
-        state_id, 
-        city_id, 
+      const {
+        user_id,
+        token,
+        row_id,
+        full_name,
+        mobile,
+        email,
+        address,
+        country_id,
+        state_id,
+        city_id,
         status,
-        // NEW: Admin-specific fields
-        user_role,        // 'user', 'subadmin', 'superadmin'
-        username,         // For admin login
-        password,         // For admin login
-        permissions       // Array of permission IDs for subadmin
+        user_role,
+        username,
+        password,
+        permissions
       } = {
         ...req.query,
         ...req.body
       };
 
       // Get uploaded profile photo filename
+      console.log('submitUsers - req.file:', req.file);
       const profile_photo = req.file ? req.file.filename : '';
+      if (profile_photo) {
+        console.log('submitUsers - New profile photo set:', profile_photo);
+      }
 
       console.log('submitUsers - Parameters:', { user_id, token, row_id, full_name, mobile, email, user_role, username });
 
@@ -999,13 +1002,13 @@ class AdminController {
       const admin = adminRows[0];
 
       // ==================== HANDLE DIFFERENT USER TYPES ====================
-      
+
       // Determine user role (default: 'user')
       const actualUserRole = user_role || 'user';
 
       // ==================== CREATING ADMIN (SubAdmin or SuperAdmin) ====================
       if (actualUserRole === 'subadmin' || actualUserRole === 'superadmin') {
-        
+
         // Only SuperAdmin can create other admins
         if (admin.is_super_admin !== 1) {
           return res.json({
@@ -1057,11 +1060,11 @@ class AdminController {
         const defaultMobile = `admin${newAdminId}`; // Unique mobile for admin
         const now = new Date();
         const timestamp = now.getFullYear().toString() +
-                         (now.getMonth() + 1).toString().padStart(2, '0') +
-                         now.getDate().toString().padStart(2, '0') +
-                         now.getHours().toString().padStart(2, '0') +
-                         now.getMinutes().toString().padStart(2, '0') +
-                         now.getSeconds().toString().padStart(2, '0');
+          (now.getMonth() + 1).toString().padStart(2, '0') +
+          now.getDate().toString().padStart(2, '0') +
+          now.getHours().toString().padStart(2, '0') +
+          now.getMinutes().toString().padStart(2, '0') +
+          now.getSeconds().toString().padStart(2, '0');
         const str_token = defaultMobile + timestamp;
         const unique_token = crypto.createHash('md5').update(str_token).digest('hex');
 
@@ -1097,7 +1100,7 @@ class AdminController {
           console.log('Permissions to assign:', permissionsArray, 'Type:', typeof permissionsArray);
 
           if (Array.isArray(permissionsArray) && permissionsArray.length > 0) {
-            const permissionValues = permissionsArray.map(permId => 
+            const permissionValues = permissionsArray.map(permId =>
               [newAdminId, permId, decodedUserId]
             );
 
@@ -1109,7 +1112,7 @@ class AdminController {
                VALUES ${placeholders}`,
               flatValues
             );
-            
+
             console.log(`✅ Assigned ${permissionsArray.length} permissions to SubAdmin ${newAdminId}`);
           }
         }
@@ -1122,7 +1125,7 @@ class AdminController {
       }
 
       // ==================== CREATING NORMAL USER ====================
-      
+
       // Check if required fields are provided
       if (!full_name || !mobile || !email) {
         return res.json({
@@ -1144,7 +1147,7 @@ class AdminController {
             info: 'Mobile No Already Added'
           });
         }
-        
+
         if (emailCheck.length > 0) {
           return res.json({
             status: 'Error',
@@ -1155,12 +1158,12 @@ class AdminController {
         // Generate unique token (matching PHP format: md5($mobile.date('YmdHis')))
         const now = new Date();
         const timestamp = now.getFullYear().toString() +
-                         (now.getMonth() + 1).toString().padStart(2, '0') +
-                         now.getDate().toString().padStart(2, '0') +
-                         now.getHours().toString().padStart(2, '0') +
-                         now.getMinutes().toString().padStart(2, '0') +
-                         now.getSeconds().toString().padStart(2, '0');
-        
+          (now.getMonth() + 1).toString().padStart(2, '0') +
+          now.getDate().toString().padStart(2, '0') +
+          now.getHours().toString().padStart(2, '0') +
+          now.getMinutes().toString().padStart(2, '0') +
+          now.getSeconds().toString().padStart(2, '0');
+
         const str_token = mobile + timestamp;
         const crypto = require('crypto');
         const unique_token = crypto.createHash('md5').update(str_token).digest('hex');
@@ -1226,7 +1229,7 @@ class AdminController {
           updateQuery = 'UPDATE users SET full_name = ?, email = ?, address = ?, country_id = ?, state_id = ?, city_id = ?, status = ?, updated_at = ?, updated_by = ? WHERE user_id = ?';
           updateParams = [full_name.trim(), email.trim(), address ? address.trim() : '', country_id ? parseInt(country_id) : null, state_id ? parseInt(state_id) : null, city_id ? parseInt(city_id) : null, status !== undefined ? parseInt(status) : 1, new Date().toISOString().slice(0, 19).replace('T', ' '), admin.role_id, row_id];
         }
-        
+
         await query(updateQuery, updateParams);
 
         return res.json({
@@ -1301,22 +1304,22 @@ class AdminController {
       const startValue = parseInt(req.body.start || req.query.start || 0);
       const lengthValue = parseInt(req.body.length || req.query.length || 10);
       const searchValue = req.body.search?.value || req.query.search || '';
-      
+
       // Determine what to fetch based on flags
       // Convert string 'true'/'false' to boolean if needed
       const fetchAdmins = only_user !== 'true' && only_user !== true;
       const fetchUsers = only_admin !== 'true' && only_admin !== true;
-      
+
       console.log(`Fetch Config: Admins=${fetchAdmins}, Users=${fetchUsers}`);
 
       // Get total count
       let totalCount = 0;
-      
+
       if (fetchUsers) {
         const totalNormalUsers = await query('SELECT COUNT(*) as count FROM users WHERE deleted = 0');
         totalCount += (totalNormalUsers[0]?.count || 0);
       }
-      
+
       if (fetchAdmins) {
         const totalAdmins = await query('SELECT COUNT(*) as count FROM admin_users');
         totalCount += (totalAdmins[0]?.count || 0);
@@ -1355,7 +1358,7 @@ class AdminController {
         `;
         const filteredNormalUsers = await query(filteredNormalUsersQuery, userSearchParams);
         filteredCount += (filteredNormalUsers[0]?.count || 0);
-        
+
         // Get paginated normal users data
         // Note: We fetch ALL matching users to sort and combine with admins in memory
         // This is inefficient but maintaining exact PHP logic compatibility for now
@@ -1396,7 +1399,7 @@ class AdminController {
         `;
         const filteredAdmins = await query(filteredAdminsQuery, adminSearchParams);
         filteredCount += (filteredAdmins[0]?.count || 0);
-        
+
         // Get paginated admins data with permissions
         let adminsQuery = `
           SELECT
@@ -1434,9 +1437,9 @@ class AdminController {
       let adminPermissions = {};
       if (admins.length > 0) {
         const adminIds = admins.filter(a => a.is_super_admin !== 1).map(a => a.user_id);
-        
+
         console.log(`SubAdmin IDs to fetch permissions for: [${adminIds.join(', ')}]`);
-        
+
         if (adminIds.length > 0) {
           const permissionsQuery = `
             SELECT 
@@ -1449,9 +1452,9 @@ class AdminController {
             WHERE aup.admin_user_id IN (${adminIds.join(',')})
           `;
           const permissionsResult = await query(permissionsQuery);
-          
+
           console.log(`Fetched ${permissionsResult.length} permission records for ${adminIds.length} SubAdmins`);
-          
+
           // Group permissions by admin_user_id
           permissionsResult.forEach(perm => {
             if (!adminPermissions[perm.admin_user_id]) {
@@ -1463,7 +1466,7 @@ class AdminController {
               permission_key: perm.permission_key
             });
           });
-          
+
           console.log(`Permissions grouped:`, Object.keys(adminPermissions).map(id => `${id}:${adminPermissions[id].length}`).join(', '));
         }
       }
@@ -1506,8 +1509,8 @@ class AdminController {
           city_name: user.city_name || "",
           status: user.status == 1 ? "Active" : "Inactive",
           user_type: user.user_type || "user",
-          role: user.user_type === 'superadmin' ? 'SuperAdmin' : 
-                user.user_type === 'subadmin' ? 'SubAdmin' : 'Normal User'
+          role: user.user_type === 'superadmin' ? 'SuperAdmin' :
+            user.user_type === 'subadmin' ? 'SubAdmin' : 'Normal User'
         };
 
         // Add admin-specific fields
@@ -1515,7 +1518,7 @@ class AdminController {
           userData.username = user.username || "";
           userData.password = user.password || ""; // Show actual hashed password
           userData.is_super_admin = user.is_super_admin === 1;
-          
+
           // Add permissions for SubAdmin
           if (user.user_type === 'subadmin') {
             const userPermissions = adminPermissions[user.user_id] || [];
@@ -1617,7 +1620,7 @@ class AdminController {
 
       // Get user details (matching PHP exactly)
       const userDetails = await query('SELECT * FROM users WHERE user_id = ?', [keys]);
-      
+
       if (userDetails.length === 0) {
         return res.json({
           status: false,
@@ -2439,7 +2442,7 @@ class AdminController {
 
       // Get service provider details (matching PHP exactly)
       const serviceProviderDetails = await query('SELECT * FROM user_service_provider WHERE sp_id = ?', [keys]);
-      
+
       if (serviceProviderDetails.length === 0) {
         return res.json({
           status: false,
@@ -2661,9 +2664,9 @@ class AdminController {
         LEFT JOIN users ON users.user_id = user_service_provider.user_id
         WHERE user_service_provider.sp_id = ?
       `;
-      
+
       const details = await query(detailsQuery, [keys]);
-      
+
       if (details.length === 0) {
         return res.json({
           status: false,
@@ -2770,9 +2773,9 @@ class AdminController {
         ...req.query,
         ...req.body
       };
-      
+
       // sp_user_id is now extracted from destructuring above
-      
+
       // Ensure admin user_id comes from query parameters
       const adminUserId = req.query.user_id;
 
@@ -3125,7 +3128,7 @@ class AdminController {
 
       // Get card activation request details (matching PHP exactly)
       const cardActivationRequestDetails = await query('SELECT * FROM user_business_cards WHERE ubc_id = ?', [keys]);
-      
+
       if (cardActivationRequestDetails.length === 0) {
         return res.json({
           status: false,
@@ -3334,9 +3337,9 @@ class AdminController {
 
       // Get business card images (matching PHP exactly)
       const images = await query('SELECT * FROM user_business_card_files WHERE ubc_id = ? AND status = 1', [keys]);
-      
+
       let lists = '';
-      
+
       if (images.length > 0) {
         lists += '<div class="row">';
         for (const row of images) {
@@ -3361,7 +3364,7 @@ class AdminController {
     }
   }
 
- 
+
 
   // Delete cities - PHP compatible version
   static async deleteCities(req, res) {
@@ -3547,16 +3550,16 @@ class AdminController {
     try {
       // Get parameters from body
       const { user_id, token, row_id, name, country_id, state_id, city_id, fund_size_id, linkedin_url, bio, availability, profile, investment_stage, meeting_city, countries_to_invest, investment_industry, language, approval_status, status, user_for_investor } = req.body;
-      
+
       // Get uploaded image filename
       const image = req.file ? req.file.filename : '';
-      
+
       console.log('submitInvestors - req.body:', req.body);
       console.log('submitInvestors - user_id (admin):', user_id);
       console.log('submitInvestors - user_for_investor:', user_for_investor);
       console.log('submitInvestors - row_id (investor_id):', row_id);
       console.log('submitInvestors - image:', image);
-      
+
       console.log('submitInvestors - Parameters:', { user_id, token, row_id, user_for_investor, name, country_id, state_id, city_id, fund_size_id, linkedin_url, bio, availability, profile, investment_stage, meeting_city, countries_to_invest, investment_industry, language, approval_status, status, image });
 
       // Check if user_id and token are provided
@@ -3683,11 +3686,11 @@ class AdminController {
 
         // Use user_for_investor if provided (as simple number), otherwise use admin user_id
         const investorUserId = user_for_investor ? parseInt(user_for_investor, 10) : decodedUserId;
-        
+
         console.log('submitInvestors - user_for_investor:', user_for_investor, 'type:', typeof user_for_investor);
         console.log('submitInvestors - investorUserId:', investorUserId, 'type:', typeof investorUserId);
         console.log('submitInvestors - decodedUserId (admin):', decodedUserId, 'type:', typeof decodedUserId);
-        
+
         const result = await query(insertQuery, [
           investorUserId, // Investor user_id
           name,
@@ -3845,14 +3848,14 @@ class AdminController {
 
       // Format data as objects with full image URLs
       const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
-      
+
       const formattedInvestorsList = investors.map((investor, index) => {
         // Format image URL
         let imageUrl = "";
         if (investor.image && investor.image !== '') {
           imageUrl = `${baseUrl}/uploads/investors/${investor.image}`;
         }
-        
+
         return {
           row_id: startValue + index + 1,
           investor_id: String(investor.investor_id),
@@ -4176,7 +4179,7 @@ class AdminController {
       // Format image URL with full base URL
       const investorDetails = detailsRows[0];
       const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
-      
+
       if (investorDetails.image && investorDetails.image !== '') {
         // Check if image path already contains 'thumbs/' or full path
         if (investorDetails.image.includes('/')) {
