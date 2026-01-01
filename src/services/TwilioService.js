@@ -13,7 +13,13 @@ class TwilioService {
       '+923007654321': '123456',  // Test Number 2
       '+923009876543': '123456',  // Test Number 3
       '+923111234567': '123456',  // Test Number 4
-      '+923451234567': '123456'   // Test Number 5
+      '+923451234567': '123456',
+      '+923451234568': '123456',
+      '+923451234569': '123456',
+      '+923451234510': '123456',
+      '+923451234511': '123456',
+      '+923451234512': '123456',
+      '+923451234513': '123456',    // Test Number 5
     };
     this.initializeTwilio();
   }
@@ -48,7 +54,7 @@ class TwilioService {
     try {
       this.client = twilio(requiredEnvVars.TWILIO_ACCOUNT_SID, requiredEnvVars.TWILIO_AUTH_TOKEN);
       this.verifyServiceSid = requiredEnvVars.TWILIO_VERIFY_SERVICE_SID;
-      
+
       logger.info('Twilio client initialized successfully');
       logger.info(`Using verification service: ${this.verifyServiceSid}`);
     } catch (error) {
@@ -69,7 +75,7 @@ class TwilioService {
     try {
       // Format mobile number first
       const formattedMobile = this.formatMobileNumber(mobile);
-      
+
       // Check if this is a test number
       if (this.testNumbers[formattedMobile]) {
         logger.info(`Test number detected: ${formattedMobile}. Bypassing Twilio. Use OTP: ${this.testNumbers[formattedMobile]}`);
@@ -88,9 +94,9 @@ class TwilioService {
       if (!this.client || !this.verifyServiceSid) {
         throw new Error('Twilio client not properly initialized');
       }
-      
+
       logger.info(`Sending OTP via Twilio to ${formattedMobile}`);
-      
+
       // Send verification code via Twilio Verify
       const verification = await this.client.verify.v2
         .services(this.verifyServiceSid)
@@ -101,7 +107,7 @@ class TwilioService {
         });
 
       logger.info(`OTP sent successfully via Twilio to ${mobile}. Verification SID: ${verification.sid}`);
-      
+
       return {
         success: true,
         verificationSid: verification.sid,
@@ -111,7 +117,7 @@ class TwilioService {
       };
     } catch (error) {
       logger.error('Twilio OTP send error:', error);
-      
+
       // Handle specific Twilio error codes with user-friendly messages
       if (error.code === 60410) {
         return {
@@ -121,7 +127,7 @@ class TwilioService {
           code: 60410
         };
       }
-      
+
       if (error.code === 60202) {
         return {
           success: false,
@@ -129,7 +135,7 @@ class TwilioService {
           code: 60202
         };
       }
-      
+
       if (error.code === 60200) {
         return {
           success: false,
@@ -137,7 +143,7 @@ class TwilioService {
           code: 60200
         };
       }
-      
+
       // Generic error for other cases
       return {
         success: false,
@@ -163,12 +169,12 @@ class TwilioService {
 
       // Format mobile number
       const formattedMobile = this.formatMobileNumber(mobile);
-      
+
       // Check if this is a test number
       if (this.testNumbers[formattedMobile]) {
         logger.info(`Test number detected: ${formattedMobile}. Verifying test OTP.`);
         const isValid = otp === this.testNumbers[formattedMobile];
-        
+
         if (isValid) {
           logger.info(`Test OTP verification successful for ${formattedMobile}`);
           return {
@@ -193,9 +199,9 @@ class TwilioService {
       if (!this.client || !this.verifyServiceSid) {
         throw new Error('Twilio client not properly initialized');
       }
-      
+
       logger.info(`Verifying OTP for ${formattedMobile} with code: ${otp}`);
-      
+
       // Verify the code with Twilio Verify using configured serviceId.
       // Some SDKs accept either VE... verificationSid or only serviceId+to+code.
       // We standardize on serviceId + to + code to avoid 20404 for old VE IDs.
@@ -214,13 +220,13 @@ class TwilioService {
         .create(payload);
 
       const isSuccess = verificationCheck.status === 'approved';
-      
+
       if (isSuccess) {
         logger.info(`OTP verification successful for ${mobile}`);
       } else {
         logger.warn(`OTP verification failed for ${mobile}. Status: ${verificationCheck.status}`);
       }
-      
+
       return {
         success: isSuccess,
         status: verificationCheck.status,
@@ -229,7 +235,7 @@ class TwilioService {
       };
     } catch (error) {
       logger.error('Twilio OTP verification error:', error);
-      
+
       // Handle specific Twilio error codes
       if (error.code === 20404) {
         return {
@@ -238,7 +244,7 @@ class TwilioService {
           code: 20404
         };
       }
-      
+
       if (error.code === 60202) {
         return {
           success: false,
@@ -246,7 +252,7 @@ class TwilioService {
           code: 60202
         };
       }
-      
+
       if (error.code === 60200) {
         return {
           success: false,
@@ -254,7 +260,7 @@ class TwilioService {
           code: 60200
         };
       }
-      
+
       // Generic error for other cases
       return {
         success: false,
@@ -281,7 +287,7 @@ class TwilioService {
       }
 
       const formattedMobile = this.formatMobileNumber(to);
-      
+
       const sms = await this.client.messages.create({
         body: message,
         from: process.env.TWILIO_PHONE_NUMBER,
@@ -289,7 +295,7 @@ class TwilioService {
       });
 
       logger.info(`SMS sent successfully via Twilio to ${to}. Message SID: ${sms.sid}`);
-      
+
       return {
         success: true,
         messageSid: sms.sid,
@@ -318,7 +324,7 @@ class TwilioService {
 
     // Remove any non-digit characters except +
     let formatted = mobile.replace(/[^\d+]/g, '').trim();
-    
+
     // Ensure it starts with +
     if (!formatted.startsWith('+')) {
       // For Pakistani numbers starting with 92, add +92
@@ -330,12 +336,12 @@ class TwilioService {
         formatted = `+${countryCode}${formatted}`;
       }
     }
-    
+
     // Validate the format
     if (!/^\+\d{10,15}$/.test(formatted)) {
       throw new Error('Invalid mobile number format. Please provide a valid international phone number.');
     }
-    
+
     return formatted;
   }
 
@@ -365,7 +371,7 @@ class TwilioService {
 
       // Try to fetch account information to test connectivity
       const account = await this.client.api.accounts(process.env.TWILIO_ACCOUNT_SID).fetch();
-      
+
       return {
         success: true,
         message: 'Twilio connectivity test successful',
