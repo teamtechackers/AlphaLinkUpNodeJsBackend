@@ -1,0 +1,33 @@
+  static async submitUsers(req, res) {
+    try {
+      // Support both query parameters and form data
+      const { 
+        user_id, 
+        token, 
+        row_id, 
+        full_name, 
+        mobile, 
+        email, 
+        address, 
+        country_id, 
+        state_id, 
+        city_id, 
+        status,
+        // NEW: Admin-specific fields
+        user_role,        // 'user', 'subadmin', 'superadmin'
+        username,         // For admin login
+        password,         // For admin login
+        permissions       // Array of permission IDs for subadmin
+      } = {
+        ...req.query,
+        ...req.body
+      };
+
+      // Get uploaded profile photo filename
+      console.log('submitUsers - req.file:', req.file);
+      const profile_photo = req.file ? req.file.filename : '';
+      if (profile_photo) {
+        console.log('submitUsers - New profile photo set:', profile_photo);
+      }
+
+      console.log('submitUsers - Parameters:', { user_id, token, row_id, full_name, mobile, email, user_role, username });
