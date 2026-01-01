@@ -34,7 +34,7 @@ const rateLimiter = require('../middlewares/rateLimiter');
 const { checkPermission, requireSuperAdmin } = require('../middlewares/checkPermission');
 
 const { checkUser } = require('../middlewares/checkUser');
-const { uploadProfilePhoto, uploadFormData, uploadEvents, uploadResume, uploadInvestor, uploadVisitingCards, uploadServices, uploadProjectLogo } = require('../middlewares/upload');
+const { uploadProfilePhoto, uploadFormData, uploadEvents, uploadResume, uploadInvestor, uploadVisitingCards, uploadServices, uploadProjectLogo, uploadBusinessDocs, uploadBusinessCards } = require('../middlewares/upload');
 // Serve static files (images, uploads)
 router.use('/uploads', express.static(path.join(__dirname, '../../uploads')));
 // Health check endpoint
@@ -176,7 +176,7 @@ router.post('/Api-Add-Contact-Visiting-Card', uploadVisitingCards.fields([
 router.get('/Api-View-Contact-Visiting-Card', FolderController.getContactVisitingCardInformation);
 // Business Card Routes
 router.get('/Api-Activate-Card', ApiController.activateCard);
-router.post('/Api-Activate-Card', uploadFormData.array('business_documents_file', 10), ApiController.activateCard);
+router.post('/Api-Activate-Card', uploadBusinessDocs.array('business_documents_file', 10), ApiController.activateCard);
 // Promotions Routes
 router.get('/Api-Promotions-List', ApiController.getPromotionsList);
 // Services Master Routes
@@ -312,7 +312,7 @@ router.post('/submit-fund-size', FundController.submitFundSize);
 router.get('/list-fund-size-ajax', FundController.listFundSizeAjax);
 router.post('/list-fund-size-ajax', uploadFormData.none(), FundController.listFundSizeAjax);
 router.get('/check-duplicate-fund-size', FundController.checkDuplicateFundSize);
-router.post('/check-duplicate-fund-size', uploadFormData.none(), FundController.checkDuplicateFundSize); 
+router.post('/check-duplicate-fund-size', uploadFormData.none(), FundController.checkDuplicateFundSize);
 router.get('/delete-fund-size', FundController.deleteFundSize);
 router.post('/delete-fund-size', uploadFormData.none(), FundController.deleteFundSize);
 

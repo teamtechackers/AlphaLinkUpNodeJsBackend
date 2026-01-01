@@ -34,31 +34,31 @@ const ApiController = {
         ...req.query,
         ...req.body
       };
-      
+
       if (user_id && typeof user_id === 'string') {
         user_id = decodeURIComponent(user_id);
       }
-      
+
       console.log('logout - Parameters:', { user_id, token });
       console.log('logout - Raw body:', req.body);
       console.log('logout - Raw query:', req.query);
-      
+
       if (!user_id || !token || user_id === 'null' || token === 'null') {
         return fail(res, 500, 'user_id and token are required');
       }
-      
+
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
         return fail(res, 500, 'Invalid user ID');
       }
-      
+
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return fail(res, 500, 'Not A Valid User');
       }
-      
+
       const user = userRows[0];
-      
+
       if (user.unique_token !== token) {
         return fail(res, 500, 'Token Mismatch Exception');
       }
@@ -75,7 +75,7 @@ const ApiController = {
         unique_token: "",
         message: 'User logged out successfully'
       });
-      
+
     } catch (error) {
       console.error('logout error:', error);
       return fail(res, 500, 'Failed to logout');
@@ -85,29 +85,29 @@ const ApiController = {
   async getPromotionsList(req, res) {
     try {
       const { user_id, token } = req.query;
-      
+
       if (!user_id || !token) {
         return fail(res, 500, 'user_id and token are required');
       }
-      
+
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
         return fail(res, 500, 'Invalid user ID');
       }
-      
+
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return fail(res, 500, 'Not A Valid User');
       }
-      
+
       const user = userRows[0];
-      
+
       if (user.unique_token !== token) {
         return fail(res, 500, 'Token Mismatch Exception');
       }
-      
+
       const promotionsList = await query('SELECT * FROM promotions WHERE status = 1');
-      
+
       return res.json({
         status: true,
         rcode: 200,
@@ -115,7 +115,7 @@ const ApiController = {
         unique_token: token,
         promotions_list: promotionsList || []
       });
-      
+
     } catch (error) {
       console.error('getPromotionsList error:', error);
       return fail(res, 500, 'Failed to get promotions list');
@@ -128,7 +128,7 @@ const ApiController = {
         ...req.query,
         ...req.body
       };
-      
+
       if (!user_id || !token) {
         return res.json({
           status: false,
@@ -136,7 +136,7 @@ const ApiController = {
           message: 'user_id and token are required'
         });
       }
-      
+
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
         return res.json({
@@ -145,28 +145,28 @@ const ApiController = {
           message: 'Invalid user ID'
         });
       }
-      
+
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
-      return res.json({
+        return res.json({
           status: false,
           rcode: 500,
           message: 'Not A Valid User'
         });
       }
-      
+
       const user = userRows[0];
-      
+
       if (user.unique_token !== token) {
-      return res.json({
+        return res.json({
           status: false,
           rcode: 500,
           message: 'Token Mismatch Exception'
         });
       }
-      
+
       const servicesMasterList = await query('SELECT * FROM folders WHERE status = 1');
-      
+
       const formattedServicesList = (servicesMasterList || []).map(service => ({
         id: (service.id || 0).toString(),
         name: service.name || "",
@@ -180,7 +180,7 @@ const ApiController = {
         deleted_by: (service.deleted_by || 0).toString(),
         deleted_at: service.deleted_at || ""
       }));
-      
+
       return res.json({
         status: true,
         rcode: 200,
@@ -188,7 +188,7 @@ const ApiController = {
         unique_token: token,
         services_master_list: formattedServicesList
       });
-      
+
     } catch (error) {
       console.error('getServicesMasterList error:', error);
       return res.json({
@@ -202,43 +202,43 @@ const ApiController = {
   async getServicesList(req, res) {
     try {
       const { user_id, token } = req.query;
-      
+
       if (!user_id || !token) {
-      return res.json({
+        return res.json({
           status: false,
           rcode: 500,
           message: 'user_id and token are required'
         });
       }
-      
+
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
-      return res.json({
+        return res.json({
           status: false,
           rcode: 500,
           message: 'Invalid user ID'
         });
       }
-      
+
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
-      return res.json({
+        return res.json({
           status: false,
           rcode: 500,
           message: 'Not A Valid User'
         });
       }
-      
+
       const user = userRows[0];
-      
+
       if (user.unique_token !== token) {
-      return res.json({
+        return res.json({
           status: false,
           rcode: 500,
           message: 'Token Mismatch Exception'
         });
       }
-      
+
       const serviceProviderRows = await query(
         `SELECT usp.*, 
                 u.full_name,
@@ -256,19 +256,19 @@ const ApiController = {
          ORDER BY usp.created_dts DESC
          LIMIT 1`
       );
-      
+
       if (serviceProviderRows.length === 0) {
-      return res.json({
-        status: true,
-        rcode: 200,
+        return res.json({
+          status: true,
+          rcode: 200,
           user_id: user_id,
-        unique_token: token,
+          unique_token: token,
           service_provider_list: {}
         });
       }
-      
+
       const provider = serviceProviderRows[0];
-      
+
       const servicesRows = await query(
         `SELECT usps.*, 
                 f.name as service_name
@@ -278,7 +278,7 @@ const ApiController = {
          ORDER BY usps.created_dts DESC`,
         [provider.sp_id]
       );
-      
+
       const services = servicesRows.map(service => ({
         usps_id: String(service.usps_id),
         service_id: String(service.service_id),
@@ -290,7 +290,7 @@ const ApiController = {
         avg_service_rating: service.avg_service_rating ? String(service.avg_service_rating) : '',
         service_image: service.service_image ? getImageUrl(req, `uploads/services/${service.service_image}`) : ''
       }));
-      
+
       const serviceProviderList = {
         sp_id: String(provider.sp_id),
         country: provider.country_name || '',
@@ -301,7 +301,7 @@ const ApiController = {
         approval_status: String(provider.approval_status),
         services: services
       };
-      
+
       return res.json({
         status: true,
         rcode: 200,
@@ -309,7 +309,7 @@ const ApiController = {
         unique_token: token,
         service_provider_list: serviceProviderList
       });
-      
+
     } catch (error) {
       console.error('getServicesList error:', error);
       return res.json({
@@ -326,58 +326,58 @@ const ApiController = {
         ...req.query,
         ...req.body
       };
-      
+
       console.log('saveServiceProvider - Parameters:', { user_id, token, country_id, state_id, city_id, service_ids, description });
-      
+
       if (!user_id || !token) {
         return fail(res, 500, 'user_id and token are required');
       }
-      
+
       if (!country_id || country_id <= 0 || !state_id || state_id <= 0 || !city_id || city_id <= 0 || !service_ids || service_ids === "") {
         return fail(res, 500, 'Please enter mandatory fields');
       }
-      
+
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
         return fail(res, 500, 'Invalid user ID');
       }
-      
+
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return fail(res, 500, 'Not A Valid User');
       }
-      
+
       const user = userRows[0];
-      
+
       if (user.unique_token !== token) {
         return fail(res, 500, 'Token Mismatch Exception');
       }
-      
+
       const serviceProviderResult = await query(
         `INSERT INTO user_service_provider (user_id, country_id, state_id, city_id, description, status, deleted, created_dts) 
          VALUES (?, ?, ?, ?, ?, 1, 0, NOW())`,
         [decodedUserId, country_id, state_id, city_id, description || '']
       );
-      
+
       const sp_id = serviceProviderResult.insertId;
-      
+
       if (sp_id > 0) {
         const serviceIdsArray = service_ids.split(',');
-        
+
         if (serviceIdsArray.length > 0) {
           const placeholders = serviceIdsArray.map(() => '?').join(',');
           const foldersList = await query(
             `SELECT id, name FROM folders WHERE id IN (${placeholders})`,
             serviceIdsArray
           );
-          
+
           const servicesMap = {};
           if (foldersList && foldersList.length > 0) {
             foldersList.forEach(row => {
               servicesMap[row.id] = row.name;
             });
           }
-          
+
           for (const serviceId of serviceIdsArray) {
             await query(
               `INSERT INTO user_service_provider_services (sp_id, service_id, service_name, company_name, tag_line, title, service_description, status, created_dts) 
@@ -386,12 +386,12 @@ const ApiController = {
             );
           }
         }
-        
+
         await query(
           'UPDATE users SET is_service_provider = 1 WHERE user_id = ?',
           [decodedUserId]
         );
-        
+
         return res.json({
           status: true,
           rcode: 200,
@@ -403,7 +403,7 @@ const ApiController = {
       } else {
         return fail(res, 500, 'Failed to create service provider');
       }
-      
+
     } catch (error) {
       console.error('saveServiceProvider error:', error);
       return fail(res, 500, 'Failed to save service provider');
@@ -416,72 +416,72 @@ const ApiController = {
         ...req.query,
         ...req.body
       };
-      
+
       console.log('saveReviewRating - Parameters:', { user_id, token, sp_id, service_id, rating, review });
-      
+
       if (!user_id || !token) {
         return fail(res, 500, 'user_id and token are required');
       }
-      
+
       if (!sp_id || sp_id <= 0 || !service_id || service_id <= 0 || (rating <= 0 && (!review || review === ""))) {
         return fail(res, 500, 'Please enter mandatory fields');
       }
-      
+
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
         return fail(res, 500, 'Invalid user ID');
       }
-      
+
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return fail(res, 500, 'Not A Valid User');
       }
-      
+
       const user = userRows[0];
-      
+
       if (user.unique_token !== token) {
         return fail(res, 500, 'Token Mismatch Exception');
       }
-      
+
       await query(
         `UPDATE user_services_unlocked 
          SET rating = ?, review = ?, review_dts = NOW() 
          WHERE user_id = ? AND sp_id = ? AND service_id = ?`,
         [rating || 0, review || '', decodedUserId, sp_id, service_id]
       );
-      
+
       const avgServiceRatingResult = await query(
         `SELECT AVG(rating) as avg_rating 
          FROM user_services_unlocked 
          WHERE sp_id = ? AND service_id = ? AND rating > 0`,
         [sp_id, service_id]
       );
-      
+
       const avgServiceRating = avgServiceRatingResult[0]?.avg_rating || 0;
-      
+
       await query(
         `UPDATE user_service_provider_services 
          SET avg_service_rating = ? 
          WHERE sp_id = ? AND service_id = ?`,
         [avgServiceRating, sp_id, service_id]
       );
-      
+
       const avgSpRatingResult = await query(
         `SELECT AVG(rating) as avg_rating 
          FROM user_services_unlocked 
          WHERE sp_id = ? AND rating > 0`,
         [sp_id]
       );
-      
+
       const avgSpRating = avgSpRatingResult[0]?.avg_rating || 0;
-      
+
       await query(
         `UPDATE user_service_provider 
          SET avg_sp_rating = ? 
          WHERE sp_id = ?`,
         [avgSpRating, sp_id]
       );
-      
+
       return res.json({
         status: true,
         rcode: 200,
@@ -489,7 +489,7 @@ const ApiController = {
         unique_token: token,
         message: 'Review and Rating saved successfully'
       });
-      
+
     } catch (error) {
       console.error('saveReviewRating error:', error);
       return fail(res, 500, 'Failed to save review and rating');
@@ -502,34 +502,34 @@ const ApiController = {
         ...req.query,
         ...req.body
       };
-      
+
       console.log('saveServiceDetails - Parameters:', { user_id, token, usps_id, company_name, tag_line, title, service_description });
       console.log('saveServiceDetails - Files:', req.files);
-      
+
       if (!user_id || !token) {
         return fail(res, 500, 'user_id and token are required');
       }
-      
+
       if (!usps_id || usps_id <= 0 || !company_name || company_name === "" || !service_description || service_description === "" || !tag_line || tag_line === "" || !title || title === "") {
         return fail(res, 500, 'Please enter mandatory fields');
       }
-      
+
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
         return fail(res, 500, 'Invalid user ID');
       }
-      
+
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return fail(res, 500, 'Not A Valid User');
       }
-      
+
       const user = userRows[0];
-      
+
       if (user.unique_token !== token) {
         return fail(res, 500, 'Token Mismatch Exception');
       }
-      
+
       const updateData = {
         company_name: company_name,
         tag_line: tag_line,
@@ -537,20 +537,20 @@ const ApiController = {
         service_description: service_description,
         status: 1
       };
-      
+
       if (req.files && req.files.service_image && req.files.service_image.length > 0) {
         const file = req.files.service_image[0];
         updateData.service_image = file.filename;
       }
-      
+
       const updateFields = Object.keys(updateData).map(key => `${key} = ?`).join(', ');
       const updateValues = Object.values(updateData);
-      
+
       await query(
         `UPDATE user_service_provider_services SET ${updateFields} WHERE usps_id = ?`,
         [...updateValues, usps_id]
       );
-      
+
       return res.json({
         status: true,
         rcode: 200,
@@ -559,7 +559,7 @@ const ApiController = {
         usps_id: usps_id,
         message: 'Service details saved successfully'
       });
-      
+
     } catch (error) {
       console.error('saveServiceDetails error:', error);
       return fail(res, 500, 'Failed to save service details');
@@ -569,9 +569,9 @@ const ApiController = {
   async getBusinessCardInformation(req, res) {
     try {
       const { user_id, token } = req.query;
-      
+
       console.log('getBusinessCardInformation - Parameters:', { user_id, token });
-      
+
       if (!user_id || !token) {
         return res.json({
           status: false,
@@ -579,16 +579,16 @@ const ApiController = {
           message: 'user_id and token are required'
         });
       }
-      
+
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
-      return res.json({
-        status: false,
+        return res.json({
+          status: false,
           rcode: 500,
           message: 'Invalid user ID'
         });
       }
-      
+
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return res.json({
@@ -597,9 +597,9 @@ const ApiController = {
           message: 'Not A Valid User'
         });
       }
-      
+
       const user = userRows[0];
-      
+
       if (user.unique_token !== token) {
         return res.json({
           status: false,
@@ -607,7 +607,7 @@ const ApiController = {
           message: 'Token Mismatch Exception'
         });
       }
-      
+
       const businessCardRows = await query(
         `SELECT ubc.*, 
                 countries.name as country_name,
@@ -621,7 +621,7 @@ const ApiController = {
          ORDER BY ubc.created_dts DESC`,
         [decodedUserId]
       );
-      
+
       const businessCardInfo = businessCardRows.map(card => ({
         ubc_id: String(card.ubc_id),
         business_name: card.business_name || '',
@@ -638,9 +638,9 @@ const ApiController = {
         status: String(card.status || 0),
         created_dts: card.created_dts || ''
       }));
-      
+
       const promotionsList = [];
-      
+
       return res.json({
         status: true,
         rcode: 200,
@@ -650,7 +650,7 @@ const ApiController = {
         business_card_info: businessCardInfo,
         promotions_list: promotionsList
       });
-      
+
     } catch (error) {
       console.error('getBusinessCardInformation error:', error);
       return res.json({
@@ -669,29 +669,29 @@ const ApiController = {
         ...req.query,
         ...req.body
       };
-      
+
       console.log('saveContact - Parameters:', { user_id, token, contact_user_id, user_folder_id, user_sub_folder_id });
-      
+
       if (!user_id || !token) {
         return fail(res, 500, 'user_id and token are required');
       }
-      
+
       if (!user_folder_id || user_folder_id <= 0 || !contact_user_id || contact_user_id <= 0) {
         return fail(res, 500, 'Please enter mandatory fields');
       }
-      
+
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
         return fail(res, 500, 'Invalid user ID');
       }
-      
+
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return fail(res, 500, 'Not A Valid User');
       }
-      
+
       const user = userRows[0];
-      
+
       if (user.unique_token !== token) {
         return fail(res, 500, 'Token Mismatch Exception');
       }
@@ -721,7 +721,7 @@ const ApiController = {
         uc_id: uc_id,
         message: 'Contact saved successfully'
       });
-      
+
     } catch (error) {
       console.error('saveContact error:', error);
       return fail(res, 500, 'Failed to save contact');
@@ -733,10 +733,10 @@ const ApiController = {
         ...req.query,
         ...req.body
       };
-      
+
       console.log('saveContactVisitingCard - Parameters:', { user_id, token, user_folder_id, user_sub_folder_id });
       console.log('saveContactVisitingCard - Files:', req.files);
-      
+
       if (!user_id || !token) {
         return res.json({
           status: false,
@@ -744,7 +744,7 @@ const ApiController = {
           message: 'Token Mismatch Exception'
         });
       }
-      
+
       if (!user_folder_id || user_folder_id <= 0 || !user_sub_folder_id || user_sub_folder_id <= 0) {
         return res.json({
           status: false,
@@ -752,7 +752,7 @@ const ApiController = {
           message: 'Please enter mandatory fields'
         });
       }
-      
+
       if (!req.files || !req.files.visiting_card_front || !req.files.visiting_card_back) {
         return res.json({
           status: false,
@@ -760,7 +760,7 @@ const ApiController = {
           message: 'Please enter mandatory fields'
         });
       }
-      
+
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
         return res.json({
@@ -769,7 +769,7 @@ const ApiController = {
           message: 'Invalid user ID'
         });
       }
-      
+
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return res.json({
@@ -778,9 +778,9 @@ const ApiController = {
           message: 'Not A Valid User'
         });
       }
-      
+
       const user = userRows[0];
-      
+
       if (user.unique_token !== token) {
         return res.json({
           status: false,
@@ -810,7 +810,7 @@ const ApiController = {
         ucvc_id: ucvc_id.toString(),
         message: 'Visiting Card saved successfully'
       });
-      
+
     } catch (error) {
       console.error('saveContactVisitingCard error:', error);
       return res.json({
@@ -826,10 +826,10 @@ const ApiController = {
         ...req.query,
         ...req.body
       };
-      
+
       console.log('activateCard - Parameters:', { user_id, token, business_name, name, business_location, country_id, state_id, city_id, description });
       console.log('activateCard - Files:', req.files);
-      
+
       if (!user_id || !token) {
         return res.json({
           status: false,
@@ -837,7 +837,7 @@ const ApiController = {
           message: 'user_id and token are required'
         });
       }
-      
+
       if (!business_name || !name || !business_location || !country_id || country_id <= 0 || !state_id || state_id <= 0 || !city_id || city_id <= 0) {
         return res.json({
           status: false,
@@ -845,10 +845,10 @@ const ApiController = {
           message: 'Please enter mandatory fields'
         });
       }
-      
+
       if (!req.files || !Array.isArray(req.files) || req.files.length === 0) {
-        console.log('activateCard - File validation failed:', { 
-          hasFiles: !!req.files, 
+        console.log('activateCard - File validation failed:', {
+          hasFiles: !!req.files,
           fileCount: req.files?.length,
           filesType: typeof req.files,
           isArray: Array.isArray(req.files)
@@ -859,7 +859,7 @@ const ApiController = {
           message: 'Please upload business documents'
         });
       }
-      
+
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
         return res.json({
@@ -868,7 +868,7 @@ const ApiController = {
           message: 'Invalid user ID'
         });
       }
-      
+
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return res.json({
@@ -877,9 +877,9 @@ const ApiController = {
           message: 'Not A Valid User'
         });
       }
-      
+
       const user = userRows[0];
-      
+
       if (user.unique_token !== token) {
         return res.json({
           status: false,
@@ -898,9 +898,8 @@ const ApiController = {
 
       if (ubc_id > 0 && req.files && req.files.length > 0) {
         for (const file of req.files) {
-          const timestamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\..+/, '');
-          const fileName = `business-doc-${timestamp}.${file.originalname ? file.originalname.split('.').pop() : 'pdf'}`;
-          
+          const fileName = file.filename;
+
           await query(
             `INSERT INTO user_business_card_files (ubc_id, business_documents_file, status, created_dts) 
              VALUES (?, ?, 1, NOW())`,
@@ -922,7 +921,7 @@ const ApiController = {
         ubc_id: String(ubc_id),
         message: 'Card request sent for activation successfully'
       });
-      
+
     } catch (error) {
       console.error('activateCard error:', error);
       return res.json({
@@ -936,23 +935,23 @@ const ApiController = {
   async saveProjectDetails(req, res) {
     try {
       const { user_id, token, project_detail_id, project_name, description, project_url, start_month, start_year, closed_month, closed_year } = req.body;
-      
+
       if (!user_id || !token) {
         return fail(res, 500, 'user_id and token are required');
       }
-      
+
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
         return fail(res, 500, 'Invalid user ID');
       }
-      
+
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return fail(res, 500, 'Not A Valid User');
       }
-      
+
       const user = userRows[0];
-      
+
       if (user.unique_token !== token) {
         return fail(res, 500, 'Token Mismatch Exception');
       }
@@ -975,25 +974,25 @@ const ApiController = {
           [decodedUserId, project_name, description, project_url || '', start_month, start_year, closed_month, closed_year, projectLogo]
         );
         finalProjectDetailId = result.insertId;
-    } else {
+      } else {
         const updateFields = ['project_name = ?', 'description = ?', 'project_url = ?', 'start_month = ?', 'start_year = ?', 'closed_month = ?', 'closed_year = ?'];
         const updateValues = [project_name, description, project_url || '', start_month, start_year, closed_month, closed_year];
-        
+
         if (projectLogo) {
           updateFields.push('project_logo = ?');
           updateValues.push(projectLogo);
         }
-        
+
         updateValues.push(finalProjectDetailId, decodedUserId);
-        
-      await query(
+
+        await query(
           `UPDATE user_project_details 
            SET ${updateFields.join(', ')}
            WHERE project_detail_id = ? AND user_id = ?`,
           updateValues
         );
       }
-      
+
       return res.json({
         status: true,
         rcode: 200,
@@ -1002,7 +1001,7 @@ const ApiController = {
         project_detail_id: finalProjectDetailId,
         message: 'Project Details saved successfully'
       });
-      
+
     } catch (error) {
       console.error('saveProjectDetails error:', error);
       return fail(res, 500, 'Failed to save project details');
@@ -1015,9 +1014,9 @@ const ApiController = {
         ...req.query,
         ...req.body
       };
-      
+
       console.log('getServiceDetail - Parameters:', { user_id, token, usps_id });
-      
+
       if (!user_id || !token) {
         return res.json({
           status: false,
@@ -1025,7 +1024,7 @@ const ApiController = {
           message: 'user_id and token are required'
         });
       }
-      
+
       if (!usps_id) {
         return res.json({
           status: false,
@@ -1033,7 +1032,7 @@ const ApiController = {
           message: 'usps_id is required'
         });
       }
-      
+
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
         return res.json({
@@ -1042,7 +1041,7 @@ const ApiController = {
           message: 'Invalid user ID'
         });
       }
-      
+
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return res.json({
@@ -1051,9 +1050,9 @@ const ApiController = {
           message: 'Not A Valid User'
         });
       }
-      
+
       const user = userRows[0];
-      
+
       if (user.unique_token !== token) {
         return res.json({
           status: false,
@@ -1162,7 +1161,7 @@ const ApiController = {
         GROUP BY sp_id, service_id
       `, [sp_id, service_id]);
 
-      const totalProfileViews = profileViewsData && profileViewsData.length > 0 ? 
+      const totalProfileViews = profileViewsData && profileViewsData.length > 0 ?
         parseInt(profileViewsData[0].total_profile_views) : 0;
 
       // Convert service detail with mixed string and integer values as per example
@@ -1199,7 +1198,7 @@ const ApiController = {
         ratings: [ratings],
         reviews: reviews
       });
-      
+
     } catch (error) {
       console.error('getServiceDetail error:', error);
       return res.json({
@@ -1216,9 +1215,9 @@ const ApiController = {
         ...req.query,
         ...req.body
       };
-      
+
       console.log('getAllServicesList - Parameters:', { user_id, token, service_id });
-      
+
       if (!user_id || !token) {
         return res.json({
           status: false,
@@ -1226,7 +1225,7 @@ const ApiController = {
           message: 'user_id and token are required'
         });
       }
-      
+
       if (!service_id) {
         return res.json({
           status: false,
@@ -1234,7 +1233,7 @@ const ApiController = {
           message: 'service_id is required'
         });
       }
-      
+
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
         return res.json({
@@ -1243,7 +1242,7 @@ const ApiController = {
           message: 'Invalid user ID'
         });
       }
-      
+
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return res.json({
@@ -1252,9 +1251,9 @@ const ApiController = {
           message: 'Not A Valid User'
         });
       }
-      
+
       const user = userRows[0];
-      
+
       if (user.unique_token !== token) {
         return res.json({
           status: false,
@@ -1308,7 +1307,7 @@ const ApiController = {
         unique_token: token,
         services_list: formattedServicesList
       });
-      
+
     } catch (error) {
       console.error('getAllServicesList error:', error);
       return res.json({
@@ -1324,29 +1323,29 @@ const ApiController = {
         ...req.query,
         ...req.body
       };
-      
+
       console.log('serviceUnlock - Parameters:', { user_id, token, sp_id, service_id });
-      
+
       if (!user_id || !token) {
         return fail(res, 500, 'user_id and token are required');
       }
-      
+
       if (!sp_id || sp_id <= 0 || !service_id || service_id <= 0) {
         return fail(res, 500, 'Please enter mandatory fields');
       }
-      
+
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
         return fail(res, 500, 'Invalid user ID');
       }
-      
+
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return fail(res, 500, 'Not A Valid User');
       }
-      
+
       const user = userRows[0];
-      
+
       if (user.unique_token !== token) {
         return fail(res, 500, 'Token Mismatch Exception');
       }
@@ -1382,7 +1381,7 @@ const ApiController = {
       } else {
         return fail(res, 500, 'Please try again');
       }
-      
+
     } catch (error) {
       console.error('serviceUnlock error:', error);
       return fail(res, 500, 'Failed to unlock service');
@@ -1394,25 +1393,25 @@ const ApiController = {
         ...req.query,
         ...req.body
       };
-      
+
       console.log('getAllServiceUnlockList - Parameters:', { user_id, token, filter_date });
-      
+
       if (!user_id || !token) {
         return fail(res, 500, 'user_id and token are required');
       }
-      
+
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
         return fail(res, 500, 'Invalid user ID');
       }
-      
+
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return fail(res, 500, 'Not A Valid User');
       }
-      
+
       const user = userRows[0];
-      
+
       if (user.unique_token !== token) {
         return fail(res, 500, 'Token Mismatch Exception');
       }
@@ -1438,16 +1437,16 @@ const ApiController = {
         JOIN cities ON cities.id = usp.city_id
         WHERE usul.user_id = ?
       `;
-      
+
       const queryParams = [decodedUserId];
-      
+
       if (filter_date && filter_date !== '') {
         queryString += ` AND DATE(usp.created_dts) = ?`;
         queryParams.push(filter_date);
       }
-      
+
       queryString += ` GROUP BY usul.sp_id`;
-      
+
       const serviceUnlockedDetails = await query(queryString, queryParams);
 
       const formattedServiceUnlockedDetails = (serviceUnlockedDetails || []).map(service => ({
@@ -1483,7 +1482,7 @@ const ApiController = {
         unique_token: token,
         service_unlocked_detail: formattedServiceUnlockedDetails
       });
-      
+
     } catch (error) {
       console.error('getAllServiceUnlockList error:', error);
       return fail(res, 500, 'Failed to get service unlock list');
@@ -1496,29 +1495,29 @@ const ApiController = {
         ...req.query,
         ...req.body
       };
-      
+
       console.log('saveInvestor - Parameters:', { user_id, token, name, country_id, state_id, city_id, fund_size_id, bio, linkedin_url });
-      
+
       if (!user_id || !token) {
         return fail(res, 500, 'user_id and token are required');
       }
-      
+
       if (name === "" || country_id <= 0 || state_id <= 0 || city_id <= 0 || fund_size_id <= 0 || bio === "") {
         return fail(res, 500, 'Please enter mandatory fields');
       }
-      
+
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
         return fail(res, 500, 'Invalid user ID');
       }
-      
+
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return fail(res, 500, 'Not A Valid User');
       }
-      
+
       const user = userRows[0];
-      
+
       if (user.unique_token !== token) {
         return fail(res, 500, 'Token Mismatch Exception');
       }
@@ -1569,7 +1568,7 @@ const ApiController = {
       } else {
         return fail(res, 500, 'Failed to save investor');
       }
-      
+
     } catch (error) {
       console.error('saveInvestor error:', error);
       return fail(res, 500, 'Failed to save investor');
@@ -1582,9 +1581,9 @@ const ApiController = {
         ...req.query,
         ...req.body
       };
-      
+
       console.log('getAllInvestorsList - Parameters:', { user_id, token });
-      
+
       if (!user_id || !token) {
         return res.json({
           status: false,
@@ -1592,7 +1591,7 @@ const ApiController = {
           message: 'user_id and token are required'
         });
       }
-      
+
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
         return res.json({
@@ -1601,7 +1600,7 @@ const ApiController = {
           message: 'Invalid user ID'
         });
       }
-      
+
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return res.json({
@@ -1610,9 +1609,9 @@ const ApiController = {
           message: 'Not A Valid User'
         });
       }
-      
+
       const user = userRows[0];
-      
+
       if (user.unique_token !== token) {
         return res.json({
           status: false,
@@ -1682,7 +1681,7 @@ const ApiController = {
         unique_token: token,
         investors_list: formattedInvestorsList
       });
-      
+
     } catch (error) {
       console.error('getAllInvestorsList error:', error);
       return res.json({
@@ -1698,9 +1697,9 @@ const ApiController = {
         ...req.query,
         ...req.body
       };
-      
+
       console.log('getInvestorDetail - Parameters:', { user_id, token, investor_id });
-      
+
       if (!user_id || !token) {
         return res.json({
           status: false,
@@ -1708,7 +1707,7 @@ const ApiController = {
           message: 'user_id and token are required'
         });
       }
-      
+
       if (!investor_id || investor_id <= 0) {
         return res.json({
           status: false,
@@ -1716,7 +1715,7 @@ const ApiController = {
           message: 'investor_id is required'
         });
       }
-      
+
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
         return res.json({
@@ -1725,7 +1724,7 @@ const ApiController = {
           message: 'Invalid user ID'
         });
       }
-      
+
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return res.json({
@@ -1734,9 +1733,9 @@ const ApiController = {
           message: 'Not A Valid User'
         });
       }
-      
+
       const user = userRows[0];
-      
+
       // Validate token
       if (user.unique_token !== token) {
         return res.json({
@@ -1800,13 +1799,13 @@ const ApiController = {
         const meeting = investorUnlocked[0];
         const meetingDate = meeting.meeting_date;
         const meetingTime = meeting.meeting_time;
-        
+
         if (meetingDate && meetingTime) {
           const meetingDtsRaw = `${meetingDate} ${meetingTime}`;
           const meetingDts = new Date(meetingDtsRaw);
           const currentTime = new Date();
           const futureTime = new Date(currentTime.getTime() + (24 * 60 * 60 * 1000)); // +1 day
-          
+
           if (meetingDts >= currentTime && meetingDts <= futureTime) {
             investorUnlocked[0].request_status = 'Ready';
           }
@@ -1938,7 +1937,7 @@ const ApiController = {
         ratings: [ratings],
         reviews: reviews
       });
-      
+
     } catch (error) {
       console.error('getInvestorDetail error:', error);
       return res.json({
@@ -1954,34 +1953,34 @@ const ApiController = {
         ...req.query,
         ...req.body
       };
-      
+
       console.log('investorUnlock - Parameters:', { user_id, token, investor_id, meeting_id, meeting_date, meeting_time });
-      
+
       if (!user_id || !token) {
         return fail(res, 500, 'user_id and token are required');
       }
-      
+
       if (!investor_id || investor_id === "" || !meeting_date || meeting_date === "" || !meeting_time || meeting_time === "") {
         return fail(res, 500, 'Please enter mandatory fields');
       }
-      
+
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
         return fail(res, 500, 'Invalid user ID');
       }
-      
+
       const investorId = parseInt(investor_id);
       if (isNaN(investorId) || investorId <= 0) {
         return fail(res, 500, 'Invalid investor_id');
       }
-      
+
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return fail(res, 500, 'Not A Valid User');
       }
-      
+
       const user = userRows[0];
-      
+
       if (user.unique_token !== token) {
         return fail(res, 500, 'Token Mismatch Exception');
       }
@@ -1989,7 +1988,7 @@ const ApiController = {
       const formattedMeetingDate = new Date(meeting_date).toISOString().split('T')[0];
 
       let insertQuery, insertParams;
-      
+
       if (meeting_id && meeting_id !== "") {
         insertQuery = `INSERT INTO user_investors_unlocked (user_id, investor_id, meeting_id, meeting_date, meeting_time, meeting_location, meeting_url, created_dts) 
                       VALUES (?, ?, ?, ?, ?, ?, ?, NOW())`;
@@ -1999,7 +1998,7 @@ const ApiController = {
                       VALUES (?, ?, ?, ?, ?, ?, ?, NOW())`;
         insertParams = [decodedUserId, investorId, 0, formattedMeetingDate, meeting_time, '', ''];
       }
-      
+
       const unlockResult = await query(insertQuery, insertParams);
 
       const iu_id = unlockResult.insertId;
@@ -2015,7 +2014,7 @@ const ApiController = {
       } else {
         return fail(res, 500, 'Please try again');
       }
-      
+
     } catch (error) {
       console.error('investorUnlock error:', error);
       return fail(res, 500, 'Failed to unlock investor');
@@ -2068,7 +2067,7 @@ const ApiController = {
            WHERE investor_id = ? AND rating > 0`,
           [investorId]
         );
-        const avgRating = avgRatingResult && avgRatingResult.length > 0 ? 
+        const avgRating = avgRatingResult && avgRatingResult.length > 0 ?
           parseFloat(avgRatingResult[0].avg_rating) : 0;
         if (avgRating > 0) {
           await query(
@@ -2143,7 +2142,7 @@ const ApiController = {
         'SELECT * FROM user_investors_unlocked WHERE investor_id = ? AND user_id = ?',
         [investor_id, decodedUserId]
       );
-      
+
       const ratingsStats = {
         '1_star': 0,
         '2_star': 0,
@@ -2153,14 +2152,14 @@ const ApiController = {
         'total_ratings': 0,
         'total_reviews': 0
       };
-      
+
       const ratingsData = await query(`
         SELECT rating, COUNT(*) as count
         FROM user_investors_unlocked
         WHERE investor_id = ? AND rating > 0
         GROUP BY rating
       `, [investor_id]);
-      
+
       if (ratingsData && ratingsData.length > 0) {
         ratingsData.forEach(row => {
           const rating = row.rating;
@@ -2171,7 +2170,7 @@ const ApiController = {
           }
         });
       }
-      
+
       const reviewsData = await query(`
         SELECT 
           COALESCE(u.full_name, '') as name,
@@ -2182,7 +2181,7 @@ const ApiController = {
         JOIN users u ON uiul.user_id = u.user_id
         WHERE uiul.investor_id = ? AND uiul.review IS NOT NULL
       `, [investor_id]);
-      
+
       const reviews = [];
       if (reviewsData && reviewsData.length > 0) {
         ratingsStats.total_reviews = reviewsData.length;
@@ -2197,7 +2196,7 @@ const ApiController = {
       } else {
         ratingsStats.total_reviews = 0;
       }
-      
+
       const formattedInvestorDetail = (investorProfileData || []).map(investor => ({
         investor_id: String(investor.investor_id || 0),
         user_id: String(investor.user_id || 0),
@@ -2234,9 +2233,9 @@ const ApiController = {
         no_of_meetings: investor.no_of_meetings || 0,
         no_of_investments: investor.no_of_investments || 0
       }));
-      
+
       const ratingsArray = [ratingsStats];
-      
+
       return res.json({
         status: true,
         rcode: 200,
@@ -2361,7 +2360,7 @@ const ApiController = {
       // Get total count
       let countQuery = `SELECT COUNT(*) as total_count FROM user_investors_unlocked WHERE 1=1`;
       const countParams = [];
-      
+
       if (status_filter && status_filter !== 'all') {
         countQuery += ` AND request_status = ?`;
         countParams.push(status_filter);
@@ -2747,17 +2746,17 @@ const ApiController = {
         WHERE uiul.iu_id = ? 
         LIMIT 1
       `, [request_id]);
-      
+
       if (!meetingRequest.length) {
         return fail(res, 404, 'Meeting request not found');
       }
 
       const existingMeeting = meetingRequest[0];
-      
+
       // Prepare update fields
       const updateFields = [];
       const updateValues = [];
-      
+
       // Track if we're scheduling (date + time being set)
       const isScheduling = meeting_date && meeting_time;
       let googleMeetLink = meeting_url || existingMeeting.meeting_url; // Keep existing or use provided
@@ -2766,9 +2765,9 @@ const ApiController = {
       if (isScheduling && !meeting_url) {
         try {
           const MeetingService = require('../services/MeetingService');
-          
+
           console.log('🔗 Creating Jitsi Meet link for scheduled meeting...');
-          
+
           // Generate Jitsi Meet link (instant, no authentication required)
           const meetResult = MeetingService.generateMeetingLink({
             investorName: existingMeeting.investor_name || 'Investor',
@@ -2777,7 +2776,7 @@ const ApiController = {
             meetingTime: meeting_time,
             meetingId: request_id
           });
-          
+
           if (meetResult.success && meetResult.meetLink) {
             googleMeetLink = meetResult.meetLink;
             console.log('✅ Jitsi Meet link created:', googleMeetLink);
@@ -2999,7 +2998,7 @@ const ApiController = {
       // Get total count
       let countQuery = `SELECT COUNT(*) as total_count FROM user_investors_unlocked WHERE investor_id = ?`;
       const countParams = [investor_id];
-      
+
       if (status_filter && status_filter !== 'all') {
         countQuery += ` AND request_status = ?`;
         countParams.push(status_filter);
@@ -3112,7 +3111,7 @@ const ApiController = {
       }
       baseQuery += ' ORDER BY uiu.created_dts DESC';
       const userLists = await query(baseQuery, queryParams);
-      
+
       const formattedUserLists = userLists.map(user => ({
         user_id: user.user_id.toString(),
         investor_id: user.investor_id.toString(),
@@ -3129,7 +3128,7 @@ const ApiController = {
         mins: user.mins || "",
         profile_photo: user.profile_photo || ""
       }));
-      
+
       return res.json({
         status: true,
         rcode: 200,
@@ -3149,26 +3148,26 @@ const ApiController = {
         ...req.query,
         ...req.body
       };
-      
+
       if (!user_id || !token) {
         return fail(res, 500, 'user_id and token are required');
       }
-      
+
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
         return fail(res, 500, 'Invalid user ID');
       }
-      
+
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return fail(res, 500, 'Not A Valid User');
       }
-      
+
       const user = userRows[0];
       if (user.unique_token !== token) {
         return fail(res, 500, 'Token Mismatch Exception');
       }
-      
+
       let queryString = `
         SELECT 
           uiul.*,
@@ -3200,7 +3199,7 @@ const ApiController = {
         WHERE uiul.user_id = ?
       `;
       const queryParams = [decodedUserId];
-      
+
       // Apply filter only if filter_type is provided and not empty
       if (filter_type && filter_type !== '' && filter_type !== 'all') {
         if (filter_type === 'pending') {
@@ -3217,9 +3216,9 @@ const ApiController = {
       }
       // If filter_type is empty or 'all', no filter is applied - show all records
       queryString += ` ORDER BY uiul.created_dts DESC`;
-      
+
       const investorMeets = await query(queryString, queryParams);
-      
+
       const formattedInvestorMeets = (investorMeets || []).map(meet => {
         let formattedDate = "";
         if (meet.meeting_date) {
@@ -3229,7 +3228,7 @@ const ApiController = {
           const year = date.getFullYear();
           formattedDate = `${day}-${month}-${year}`;
         }
-        
+
         return {
           iu_id: String(meet.iu_id || 0),
           user_id: String(meet.user_id || 0),
@@ -3249,7 +3248,7 @@ const ApiController = {
           review_status: meet.review ? "1" : "0"
         };
       });
-      
+
       return res.json({
         status: true,
         rcode: 200,
@@ -3257,7 +3256,7 @@ const ApiController = {
         unique_token: token,
         investor_lists: formattedInvestorMeets
       });
-      
+
     } catch (error) {
       console.error('getInvestorMeets error:', error);
       return fail(res, 500, 'Failed to get investor meets');
@@ -3271,37 +3270,37 @@ const ApiController = {
         ...req.query,
         ...req.body
       };
-      
+
       console.log('getOnlineUsersStatus - Parameters:', { user_id, token });
-      
+
       if (!user_id || !token) {
         return fail(res, 500, 'user_id and token are required');
       }
-      
+
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
         return fail(res, 500, 'Invalid user ID');
       }
-      
+
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return fail(res, 500, 'Not A Valid User');
       }
-      
+
       const user = userRows[0];
-      
+
       if (user.unique_token !== token) {
         return fail(res, 500, 'Token Mismatch Exception');
       }
 
       // Get WebSocket service instance
       const websocketService = require('../services/websocketService');
-      
+
       // Get connected users
       const connectedUsers = Array.from(websocketService.connectedUsers.keys());
       const activeChatSessions = Array.from(websocketService.activeChatSessions.entries());
       const userLastActivity = Array.from(websocketService.userLastActivity.entries());
-      
+
       // Get user names for connected users
       const userNames = {};
       for (const userId of connectedUsers) {
@@ -3310,7 +3309,7 @@ const ApiController = {
           userNames[userId] = userData[0].full_name || userData[0].mobile || `User_${userId}`;
         }
       }
-      
+
       return res.json({
         status: true,
         rcode: 200,
@@ -3334,7 +3333,7 @@ const ApiController = {
           total_active_sessions: activeChatSessions.length
         }
       });
-      
+
     } catch (error) {
       console.error('getOnlineUsersStatus error:', error);
       return fail(res, 500, 'Failed to get online users status');
@@ -3347,25 +3346,25 @@ const ApiController = {
         ...req.query,
         ...req.body
       };
-      
+
       console.log('getChatUsersList - Parameters:', { user_id, token });
-      
+
       if (!user_id || !token) {
         return fail(res, 500, 'user_id and token are required');
       }
-      
+
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
         return fail(res, 500, 'Invalid user ID');
       }
-      
+
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return fail(res, 500, 'Not A Valid User');
       }
-      
+
       const user = userRows[0];
-      
+
       if (user.unique_token !== token) {
         return fail(res, 500, 'Token Mismatch Exception');
       }
@@ -3405,7 +3404,7 @@ const ApiController = {
 
       const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
       const profilePath = `${baseUrl}/uploads/profiles/`;
-      
+
       const chatUsersData = await query(`
         SELECT 
           user_id,
@@ -3435,7 +3434,7 @@ const ApiController = {
         unique_token: token,
         chat_users_list: chatUsersData || []
       });
-      
+
     } catch (error) {
       console.error('getChatUsersList error:', error);
       return fail(res, 500, 'Failed to get chat users list');
@@ -3447,9 +3446,9 @@ const ApiController = {
         ...req.query,
         ...req.body
       };
-      
+
       console.log('getChat - Parameters:', { user_id, token, current_user_id });
-      
+
       if (!user_id || !token) {
         return res.json({
           status: false,
@@ -3457,7 +3456,7 @@ const ApiController = {
           message: 'user_id and token are required'
         });
       }
-      
+
       if (!current_user_id || current_user_id === "") {
         return res.json({
           status: false,
@@ -3465,7 +3464,7 @@ const ApiController = {
           message: 'current_user_id is required'
         });
       }
-      
+
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
         return res.json({
@@ -3474,8 +3473,8 @@ const ApiController = {
           message: 'Invalid user ID'
         });
       }
-      
- 
+
+
       const currentUserId = parseInt(current_user_id);
       if (isNaN(currentUserId) || currentUserId <= 0) {
         return res.json({
@@ -3484,7 +3483,7 @@ const ApiController = {
           message: 'Invalid current_user_id'
         });
       }
-      
+
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return res.json({
@@ -3493,9 +3492,9 @@ const ApiController = {
           message: 'Not A Valid User'
         });
       }
-      
+
       const user = userRows[0];
-      
+
       if (user.unique_token !== token) {
         return res.json({
           status: false,
@@ -3506,7 +3505,7 @@ const ApiController = {
 
       const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
       const profilePath = `${baseUrl}/uploads/profiles/`;
-      
+
       const chatDetails = await query(`
         SELECT 
           user_chats.*,
@@ -3546,7 +3545,7 @@ const ApiController = {
         unique_token: token,
         chat_detail: formattedChatDetails
       });
-      
+
     } catch (error) {
       console.error('getChat error:', error);
       return res.json({
@@ -3563,7 +3562,7 @@ const ApiController = {
         ...req.query,
         ...req.body
       };
-      
+
       console.log('💬 saveChat - Parameters:', { user_id, token, sender_id, receiver_id, message });
       console.log('💬 saveChat - Request body:', req.body);
       console.log('💬 saveChat - Request query:', req.query);
@@ -3573,34 +3572,34 @@ const ApiController = {
       console.log('💬 saveChat - IP Address:', req.ip);
       console.log('💬 saveChat - Request Method:', req.method);
       console.log('💬 saveChat - Request URL:', req.url);
-      
+
       if (!user_id || !token) {
         return fail(res, 500, 'user_id and token are required');
       }
-      
+
       if (!sender_id || sender_id <= 0 || !receiver_id || receiver_id <= 0 || !message || message === "") {
         return fail(res, 500, 'Please enter mandatory fields');
       }
-      
+
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
         return fail(res, 500, 'Invalid user ID');
       }
-      
+
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return fail(res, 500, 'Not A Valid User');
       }
-      
+
       const user = userRows[0];
-      
+
       if (user.unique_token !== token) {
         return fail(res, 500, 'Token Mismatch Exception');
       }
 
       const senderId = parseInt(sender_id);
       const receiverId = parseInt(receiver_id);
-      
+
       if (isNaN(senderId) || senderId <= 0 || isNaN(receiverId) || receiverId <= 0) {
         return fail(res, 500, 'Invalid sender_id or receiver_id');
       }
@@ -3635,33 +3634,33 @@ const ApiController = {
         console.log(`🔌 WebSocket service loaded:`, websocketService);
         console.log(`🔌 Connected users map:`, websocketService.connectedUsers);
         console.log(`🔌 WebSocket service methods:`, Object.getOwnPropertyNames(Object.getPrototypeOf(websocketService)));
-        
+
         console.log(`🔌 Total Connected Users: ${websocketService.connectedUsers.size}`);
         console.log(`🔌 Connected Users List:`, Array.from(websocketService.connectedUsers.keys()));
         console.log(`🔌 User Sockets List:`, Array.from(websocketService.userSockets.keys()));
         console.log(`🔌 Total Socket Connections: ${websocketService.io.sockets.sockets.size}`);
-        
+
         // Check if receiver is connected via WebSocket
         const isReceiverConnected = websocketService.connectedUsers.has(String(receiverId));
         console.log(`🔌 Receiver ${receiverId} WebSocket connection status: ${isReceiverConnected ? 'CONNECTED' : 'DISCONNECTED'}`);
-        
+
         // Check if receiver is in active chat session with sender
         const isInActiveChat = websocketService.isInActiveChatSession(receiverId, senderId);
         console.log(`💬 Active chat session between ${senderId} and ${receiverId}: ${isInActiveChat}`);
-        
+
         // Check if receiver is in any active chat session (not just with sender)
         const receiverActiveChats = websocketService.getUserActiveChatSessions(receiverId);
         const isReceiverInAnyActiveChat = receiverActiveChats.length > 0;
-        
+
         // Check if receiver is in active chat with someone OTHER than the sender
-        const isReceiverInOtherChat = receiverActiveChats.some(chat => 
+        const isReceiverInOtherChat = receiverActiveChats.some(chat =>
           chat.otherUser !== String(senderId)
         );
-        
+
         console.log(`💬 Receiver ${receiverId} active chat sessions:`, receiverActiveChats);
         console.log(`💬 Receiver ${receiverId} in any active chat: ${isReceiverInAnyActiveChat}`);
         console.log(`💬 Receiver ${receiverId} in other chat (not with sender ${senderId}): ${isReceiverInOtherChat}`);
-        
+
         let messageSent = false;
         if (isReceiverConnected) {
           try {
@@ -3699,19 +3698,19 @@ const ApiController = {
             messageSent = false;
           }
         }
-        
+
         // Send FCM notification if receiver is not connected or not in active chat with sender
         // Always send FCM notification for better reliability, even if WebSocket is connected
         const shouldSendFCM = !isReceiverConnected || (!isInActiveChat && isReceiverInOtherChat) || (!isInActiveChat && !isReceiverInOtherChat);
         console.log(`📱 Should send FCM notification: ${shouldSendFCM} (receiver connected: ${isReceiverConnected}, in active chat with sender: ${isInActiveChat}, in other chat: ${isReceiverInOtherChat})`);
-        
+
         if (shouldSendFCM) {
           try {
             const NotificationService = require('../notification/NotificationService');
-            
+
             const receiverRows = await query('SELECT fcm_token, full_name FROM users WHERE user_id = ?', [receiverId]);
             const receiver = receiverRows[0] || {};
-            
+
             if (receiver.fcm_token) {
               const notificationData = {
                 title: `New message from ${sender.full_name || 'Someone'}`,
@@ -3725,7 +3724,7 @@ const ApiController = {
                   message: message
                 }
               };
-              
+
               await NotificationService.sendNotification(receiverId, notificationData.title, notificationData.body, notificationData.data);
               console.log(`📱 FCM notification sent to receiver ${receiverId} (${!isReceiverConnected ? 'not connected via WebSocket' : 'in other chat'})`);
             } else {
@@ -3750,7 +3749,7 @@ const ApiController = {
         console.log(`❌ Chat insert failed - insertId: ${chatResult.insertId}`);
         return fail(res, 500, 'Failed to save chat message');
       }
-      
+
     } catch (error) {
       console.error('saveChat error:', error);
       return fail(res, 500, 'Failed to save chat message');
@@ -3760,26 +3759,26 @@ const ApiController = {
   async deleteResume(req, res) {
     try {
       const { user_id, token, resume_id } = req.body;
-      
+
       // Check if user_id and token are provided
       if (!user_id || !token) {
         return fail(res, 500, 'user_id and token are required');
       }
-      
+
       // Decode user ID
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
         return fail(res, 500, 'Invalid user ID');
       }
-      
+
       // Get user details and validate
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return fail(res, 500, 'Not A Valid User');
       }
-      
+
       const user = userRows[0];
-      
+
       if (user.unique_token !== token) {
         return fail(res, 500, 'Token Mismatch Exception');
       }
@@ -3800,7 +3799,7 @@ const ApiController = {
         unique_token: token,
         message: 'Resume deleted successfully'
       });
-      
+
     } catch (error) {
       console.error('deleteResume error:', error);
       return fail(res, 500, 'Failed to delete resume');
@@ -3813,32 +3812,32 @@ const ApiController = {
         ...req.query,
         ...req.body
       };
-      
+
       console.log('viewResumes - Parameters:', { user_id, token });
-      
+
       if (!user_id || !token) {
         return fail(res, 500, 'user_id and token are required');
       }
-      
+
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
         return fail(res, 500, 'Invalid user ID');
       }
-      
+
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return fail(res, 500, 'Not A Valid User');
       }
-      
+
       const user = userRows[0];
-      
+
       if (user.unique_token !== token) {
         return fail(res, 500, 'Token Mismatch Exception');
       }
-      
+
       const baseUrl = `${req.protocol}://${req.get('host')}`;
       const resumePath = `${baseUrl}/uploads/resumes/`;
-      
+
       const resumeRows = await query(
         `SELECT *, 
                 IF(resume_file != '', CONCAT(?, resume_file), '') AS resume_file, 
@@ -3848,7 +3847,7 @@ const ApiController = {
          ORDER BY created_dts DESC`,
         [resumePath, decodedUserId]
       );
-      
+
       const formattedResumes = resumeRows.map(resume => ({
         resume_id: resume.resume_id.toString(),
         user_id: resume.user_id.toString(),
@@ -3858,7 +3857,7 @@ const ApiController = {
         created_dts: resume.created_dts || "",
         resume_file_extension: resume.resume_file_extension || ""
       }));
-      
+
       return res.json({
         status: true,
         rcode: 200,
@@ -3866,7 +3865,7 @@ const ApiController = {
         unique_token: token,
         resumes_list: formattedResumes
       });
-      
+
     } catch (error) {
       console.error('viewResumes error:', error);
       return fail(res, 500, 'Failed to retrieve resumes');
@@ -3876,26 +3875,26 @@ const ApiController = {
   async legalTerms(req, res) {
     try {
       const { user_id, token } = req.query;
-      
+
       // Check if user_id and token are provided
       if (!user_id || !token) {
         return fail(res, 500, 'user_id and token are required');
       }
-      
+
       // Decode user ID
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
         return fail(res, 500, 'Invalid user ID');
       }
-      
+
       // Get user details and validate
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return fail(res, 500, 'Not A Valid User');
       }
-      
+
       const user = userRows[0];
-      
+
       // Validate token
       if (user.unique_token !== token) {
         return fail(res, 500, 'Token Mismatch Exception');
@@ -3911,7 +3910,7 @@ const ApiController = {
         unique_token: token,
         legal_terms_link: legalTermsLink
       });
-      
+
     } catch (error) {
       console.error('legalTerms error:', error);
       return fail(res, 500, 'Failed to get legal terms');
@@ -3926,7 +3925,7 @@ const ApiController = {
         ...req.query,
         ...req.body
       };
-      
+
       // Check if user_id and token are provided
       if (!user_id || !token) {
         return res.json({
@@ -3935,7 +3934,7 @@ const ApiController = {
           message: 'Token Mismatch Exception'
         });
       }
-      
+
       // Decode user ID
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
@@ -3945,7 +3944,7 @@ const ApiController = {
           message: 'Invalid user ID'
         });
       }
-      
+
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return res.json({
@@ -3954,9 +3953,9 @@ const ApiController = {
           message: 'Not A Valid User'
         });
       }
-      
+
       const user = userRows[0];
-      
+
       // Validate token
       if (user.unique_token !== token) {
         return res.json({
@@ -3968,7 +3967,7 @@ const ApiController = {
 
       const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
       const projectLogoPath = `${baseUrl}/uploads/project_logo/`;
-      
+
       const projectDetailsRows = await query(
         `SELECT user_project_details.*, 
                 IF(project_logo != '', CONCAT(?, project_logo), '') AS project_logo
@@ -4006,7 +4005,7 @@ const ApiController = {
         unique_token: token,
         project_details: projectDetails
       });
-      
+
     } catch (error) {
       console.error('getProjectDetails error:', error);
       return res.json({
@@ -4020,23 +4019,23 @@ const ApiController = {
   async deleteProjectDetail(req, res) {
     try {
       const { user_id, token, project_detail_id } = req.body;
-      
+
       if (!user_id || !token) {
         return fail(res, 500, 'user_id and token are required');
       }
-      
+
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
         return fail(res, 500, 'Invalid user ID');
       }
-      
+
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return fail(res, 500, 'Not A Valid User');
       }
-      
+
       const user = userRows[0];
-      
+
       if (user.unique_token !== token) {
         return fail(res, 500, 'Token Mismatch Exception');
       }
@@ -4061,7 +4060,7 @@ const ApiController = {
         unique_token: token,
         message: 'Project Detail deleted successfully'
       });
-      
+
     } catch (error) {
       console.error('deleteProjectDetail error:', error);
       return fail(res, 500, 'Failed to delete project detail');
@@ -4120,7 +4119,7 @@ const ApiController = {
   investorUnlock: async (req, res) => {
     try {
       const { user_id, token, investor_id, meeting_id, meeting_date, meeting_time } = { ...req.query, ...req.body };
-      
+
       if (!user_id || !token) {
         return res.json({
           status: false,
@@ -4128,15 +4127,15 @@ const ApiController = {
           message: 'user_id and token are required'
         });
       }
-      
+
       if (!investor_id || !meeting_id || !meeting_date || !meeting_time) {
-      return res.json({
+        return res.json({
           status: false,
           rcode: 500,
           message: 'Please enter mandatory fields'
         });
       }
-      
+
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
         return res.json({
@@ -4145,7 +4144,7 @@ const ApiController = {
           message: 'Invalid user ID'
         });
       }
-      
+
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return res.json({
@@ -4154,9 +4153,9 @@ const ApiController = {
           message: 'Not A Valid User'
         });
       }
-      
+
       const user = userRows[0];
-      
+
       if (user.unique_token !== token) {
         return res.json({
           status: false,
@@ -4176,17 +4175,17 @@ const ApiController = {
 
       const meetingId = parseInt(meeting_id);
       if (isNaN(meetingId) || meetingId <= 0) {
-      return res.json({
+        return res.json({
           status: false,
           rcode: 500,
           message: 'Invalid meeting ID'
         });
       }
 
-              let formattedMeetingDate;
-        try {
-          let dateObj;
-        
+      let formattedMeetingDate;
+      try {
+        let dateObj;
+
         if (meeting_date.includes('-')) {
           const parts = meeting_date.split('-');
           if (parts.length === 3) {
@@ -4215,7 +4214,7 @@ const ApiController = {
         } else {
           dateObj = new Date(meeting_date);
         }
-        
+
         if (isNaN(dateObj.getTime())) {
           return res.json({
             status: false,
@@ -4231,7 +4230,7 @@ const ApiController = {
           message: 'Invalid meeting date format. Please use DD-MM-YYYY, YYYY-MM-DD, or DD/MM/YYYY format'
         });
       }
-      
+
       const insertResult = await query(`
         INSERT INTO user_investors_unlocked 
         (user_id, investor_id, meeting_id, meeting_date, meeting_time, request_status, meeting_location, meeting_url, status, created_dts) 
@@ -4239,11 +4238,11 @@ const ApiController = {
       `, [decodedUserId, investorId, meetingId, formattedMeetingDate, meeting_time]);
 
       if (insertResult.insertId && insertResult.insertId > 0) {
-      return res.json({
-        status: true,
-        rcode: 200,
+        return res.json({
+          status: true,
+          rcode: 200,
           user_id: user_id,
-        unique_token: token,
+          unique_token: token,
           message: 'Request sent successfully'
         });
       } else {
@@ -4253,7 +4252,7 @@ const ApiController = {
           message: 'Please try again'
         });
       }
-      
+
     } catch (error) {
       console.error('investorUnlock error:', error);
       return res.json({
@@ -4314,7 +4313,7 @@ const ApiController = {
       }
 
       const NotificationController = require('./NotificationController');
-      
+
       const options = {
         limit: parseInt(limit),
         offset: parseInt(offset),
@@ -4328,15 +4327,15 @@ const ApiController = {
         // Helper function to convert timestamp to PKT
         // Check if database stores UTC (production/Render) or local time (development)
         const DB_IS_UTC = process.env.DB_TIMEZONE_UTC === 'true' || process.env.NODE_ENV === 'production';
-        
+
         const convertToPKT = (timestamp) => {
           if (!timestamp) return null;
-          
+
           // Parse "YYYY-MM-DD HH:MM:SS" format
           const [datePart, timePart] = timestamp.split(' ');
           const [year, month, day] = datePart.split('-');
           const [hour, minute, second] = timePart.split(':');
-          
+
           if (DB_IS_UTC) {
             // Database stores UTC, convert to PKT (add 5 hours)
             const utcDate = new Date(Date.UTC(
@@ -4347,16 +4346,16 @@ const ApiController = {
               parseInt(minute),
               parseInt(second)
             ));
-            
+
             const pktDate = new Date(utcDate.getTime() + (5 * 60 * 60 * 1000));
-            
+
             const pktYear = pktDate.getUTCFullYear();
             const pktMonth = String(pktDate.getUTCMonth() + 1).padStart(2, '0');
             const pktDay = String(pktDate.getUTCDate()).padStart(2, '0');
             const pktHour = String(pktDate.getUTCHours()).padStart(2, '0');
             const pktMinute = String(pktDate.getUTCMinutes()).padStart(2, '0');
             const pktSecond = String(pktDate.getUTCSeconds()).padStart(2, '0');
-            
+
             return `${pktYear}-${pktMonth}-${pktDay}T${pktHour}:${pktMinute}:${pktSecond}+05:00`;
           } else {
             // Database already stores local time (PKT), just format
@@ -4364,7 +4363,7 @@ const ApiController = {
             return timestampStr + '+05:00';
           }
         };
-        
+
         // Simplify notification objects - flatten data field
         const simplifiedNotifications = result.notifications.map(notification => {
           return {
