@@ -201,13 +201,14 @@ class AdminController {
 
       // Get dashboard counts (matching PHP exactly)
       // Count active non-deleted users excluding admin users
+      // Count total users including admins (active, non‑deleted users + admin users)
       const countUsers = await query(`
-        SELECT COUNT(*) as count 
-        FROM users 
-        WHERE status = 1 
-        AND deleted = 0
-        AND user_id NOT IN (SELECT id FROM admin_users)
-      `);
+        SELECT SUM(cnt) as count FROM (
+          SELECT COUNT(*) as cnt FROM users WHERE status = 1 AND deleted = 0
+          UNION ALL
+          SELECT COUNT(*) as cnt FROM admin_users
+        ) AS t`
+      );
       const countJobs = await query('SELECT COUNT(*) as count FROM user_job_details WHERE deleted = 0');
       const countEvents = await query('SELECT COUNT(*) as count FROM user_event_details WHERE deleted = 0');
       const countService = await query('SELECT COUNT(*) as count FROM user_service_provider WHERE deleted = 0');
@@ -1306,9 +1307,16 @@ class AdminController {
       const searchValue = req.body.search?.value || req.query.search || '';
 
       // Determine what to fetch based on flags
-      // Convert string 'true'/'false' to boolean if needed
-      const fetchAdmins = only_user !== 'true' && only_user !== true;
-      const fetchUsers = only_admin !== 'true' && only_admin !== true;
+      // If only_admin is truthy, fetch only admins; if only_user is truthy, fetch only users; otherwise fetch both
+      let fetchAdmins = true;
+      let fetchUsers = true;
+      if (only_admin) {
+        fetchAdmins = only_admin === 'true' || only_admin === true;
+        fetchUsers = false;
+      } else if (only_user) {
+        fetchUsers = only_user === 'true' || only_user === true;
+        fetchAdmins = false;
+      }
 
       console.log(`Fetch Config: Admins=${fetchAdmins}, Users=${fetchUsers}`);
 
