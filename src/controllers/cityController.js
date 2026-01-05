@@ -40,13 +40,13 @@ const CityController = {
 
       // If not found in users, check in admin_users (for admin testing/access)
       if (!user) {
-        const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
-        if (adminRows.length > 0) {
-          user = adminRows[0];
-          // For admin users, unique_token might be different or needed from elsewhere, 
-          // but we follow the same token validation logic if possible.
-          // Note: admin_users usually have a 'token' or 'unique_token' column.
-          // If admin_users has no unique_token, we use whatever is available.
+        try {
+          const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
+          if (adminRows.length > 0) {
+            user = adminRows[0];
+          }
+        } catch (e) {
+          console.log("Admin table check skipped");
         }
       }
 
