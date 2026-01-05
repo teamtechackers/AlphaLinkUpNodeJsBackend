@@ -262,14 +262,14 @@ class AdminController {
         rcode: 200,
         user_id: idEncode(decodedUserId),
         unique_token: token,
-        count_users: countUsers[0]?.count || 0,
-        count_jobs: countJobs[0]?.count || 0,
-        count_events: countEvents[0]?.count || 0,
-        count_service: countService[0]?.count || 0,
-        count_investor: countInvestor[0]?.count || 0,
-        count_meetings_total: countMeetingsTotal[0]?.count || 0,
-        count_meetings_pending: countMeetingsPending[0]?.count || 0,
-        count_meetings_approved: countMeetingsApproved[0]?.count || 0,
+        count_users: parseInt(countUsers[0]?.count || 0),
+        count_jobs: parseInt(countJobs[0]?.count || 0),
+        count_events: parseInt(countEvents[0]?.count || 0),
+        count_service: parseInt(countService[0]?.count || 0),
+        count_investor: parseInt(countInvestor[0]?.count || 0),
+        count_meetings_total: parseInt(countMeetingsTotal[0]?.count || 0),
+        count_meetings_pending: parseInt(countMeetingsPending[0]?.count || 0),
+        count_meetings_approved: parseInt(countMeetingsApproved[0]?.count || 0),
         list_jobs: listJobs || [],
         list_investor: listInvestor || [],
         message: 'Dashboard data retrieved successfully'
@@ -1324,23 +1324,24 @@ class AdminController {
       let totalCount = 0;
 
       if (fetchUsers) {
-        const totalNormalUsers = await query('SELECT COUNT(*) as count FROM users WHERE deleted = 0');
-        totalCount += (totalNormalUsers[0]?.count || 0);
+        // Only count active non-deleted users to match dashboard exactly
+        const totalNormalUsers = await query('SELECT COUNT(*) as count FROM users WHERE status = 1 AND deleted = 0');
+        totalCount += parseInt(totalNormalUsers[0]?.count || 0);
       }
 
       if (fetchAdmins) {
         const totalAdmins = await query('SELECT COUNT(*) as count FROM admin_users');
-        totalCount += (totalAdmins[0]?.count || 0);
+        totalCount += parseInt(totalAdmins[0]?.count || 0);
       }
 
       // Build search query for normal users
       let userSearchQuery = '';
       let userSearchParams = [];
       if (searchValue) {
-        userSearchQuery = 'WHERE (u.full_name LIKE ? OR u.mobile LIKE ? OR u.email LIKE ?) AND u.deleted = 0';
+        userSearchQuery = 'WHERE (u.full_name LIKE ? OR u.mobile LIKE ? OR u.email LIKE ?) AND u.status = 1 AND u.deleted = 0';
         userSearchParams.push(`%${searchValue}%`, `%${searchValue}%`, `%${searchValue}%`);
       } else {
-        userSearchQuery = 'WHERE u.deleted = 0';
+        userSearchQuery = 'WHERE u.status = 1 AND u.deleted = 0';
       }
 
       // Build search query for admins
@@ -1552,8 +1553,8 @@ class AdminController {
         user_id: user_id,
         unique_token: token,
         draw: drawValue,
-        recordsTotal: totalCount,
-        recordsFiltered: filteredCount,
+        recordsTotal: parseInt(totalCount),
+        recordsFiltered: parseInt(filteredCount),
         users_list: formattedUsersList
       });
 
