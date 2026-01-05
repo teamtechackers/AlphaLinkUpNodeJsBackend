@@ -201,15 +201,12 @@ class AdminController {
 
       // Get dashboard counts (matching PHP exactly)
       // Count active non-deleted users excluding admin users
-      // Get dashboard counts (matching Salek DB schema)
-      // Count active non-deleted users excluding admin users
-      // Schema: users(id, is_active, deleted_at)
       const countUsers = await query(`
         SELECT COUNT(*) as count 
         FROM users 
-        WHERE is_active = 1 
-        AND deleted_at IS NULL
-        AND id NOT IN (SELECT id FROM admin_users)
+        WHERE status = 1 
+        AND deleted = 0
+        AND user_id NOT IN (SELECT id FROM admin_users)
       `);
       const countJobs = await query('SELECT COUNT(*) as count FROM user_job_details WHERE deleted = 0');
       const countEvents = await query('SELECT COUNT(*) as count FROM user_event_details WHERE deleted = 0');
@@ -1319,8 +1316,7 @@ class AdminController {
       let totalCount = 0;
 
       if (fetchUsers) {
-        // Schema: users(id, is_active, deleted_at ...)
-        const totalNormalUsers = await query('SELECT COUNT(*) as count FROM users WHERE deleted_at IS NULL');
+        const totalNormalUsers = await query('SELECT COUNT(*) as count FROM users WHERE deleted = 0');
         totalCount += (totalNormalUsers[0]?.count || 0);
       }
 
@@ -1333,11 +1329,10 @@ class AdminController {
       let userSearchQuery = '';
       let userSearchParams = [];
       if (searchValue) {
-        // Schema: phone_number instead of mobile, NO email column
-        userSearchQuery = 'WHERE (u.full_name LIKE ? OR u.phone_number LIKE ?) AND u.deleted_at IS NULL';
-        userSearchParams.push(`%${searchValue}%`, `%${searchValue}%`);
+        userSearchQuery = 'WHERE (u.full_name LIKE ? OR u.mobile LIKE ? OR u.email LIKE ?) AND u.deleted = 0';
+        userSearchParams.push(`%${searchValue}%`, `%${searchValue}%`, `%${searchValue}%`);
       } else {
-        userSearchQuery = 'WHERE u.deleted_at IS NULL';
+        userSearchQuery = 'WHERE u.deleted = 0';
       }
 
       // Build search query for admins
@@ -1369,20 +1364,26 @@ class AdminController {
         // This is inefficient but maintaining exact PHP logic compatibility for now
         let normalUsersQuery = `
           SELECT
-            u.id as user_id,
+            u.user_id,
             u.full_name,
-            u.phone_number as mobile,
-            '' as email,
-            u.image as profile_photo,
+            u.mobile,
+            u.email,
+            u.profile_photo,
             u.address,
-            u.country as country_name,
-            '' as state_name,
-            '' as city_name,
-            u.is_active as status,
+            u.country_id,
+            u.state_id,
+            u.city_id,
+            u.status,
+            c.name as country_name,
+            s.name as state_name,
+            ci.name as city_name,
             'user' as user_type,
             NULL as is_super_admin,
             NULL as username
           FROM users u
+          LEFT JOIN countries c ON u.country_id = c.id
+          LEFT JOIN states s ON u.state_id = s.id
+          LEFT JOIN cities ci ON u.city_id = ci.id
           ${userSearchQuery}
         `;
         normalUsers = await query(normalUsersQuery, userSearchParams);

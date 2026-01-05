@@ -35,18 +35,18 @@ const CityController = {
       }
 
       // Check in users table
-      let userRows = await query('SELECT * FROM users WHERE id = ? AND is_active = 1 LIMIT 1', [decodedUserId]);
+      let userRows = await query('SELECT * FROM users WHERE user_id = ? AND deleted = 0 LIMIT 1', [decodedUserId]);
       let user = userRows.length > 0 ? userRows[0] : null;
 
       // If not found in users, check in admin_users (for admin testing/access)
       if (!user) {
-        try {
-          const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
-          if (adminRows.length > 0) {
-            user = adminRows[0];
-          }
-        } catch (e) {
-          console.log("Admin table check skipped");
+        const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
+        if (adminRows.length > 0) {
+          user = adminRows[0];
+          // For admin users, unique_token might be different or needed from elsewhere, 
+          // but we follow the same token validation logic if possible.
+          // Note: admin_users usually have a 'token' or 'unique_token' column.
+          // If admin_users has no unique_token, we use whatever is available.
         }
       }
 
@@ -58,23 +58,23 @@ const CityController = {
         });
       }
 
-      // Token check skipped
-      // if (user.unique_token !== token) { ... }
-
-      let rows = [];
-      try {
-        rows = await query('SELECT city_id, city_name FROM cities WHERE city_id > 0 LIMIT 100');
-      } catch (e) {
-        console.error("City query failed", e);
+      if (user.unique_token !== token) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Token Mismatch Exception'
+        });
       }
+
+      const rows = await query('SELECT id AS city_id, name AS city_name FROM cities WHERE state_id = ? AND deleted = 0', [state_id]);
 
       return res.json({
         status: true,
         rcode: 200,
-        user_id: user.id ? user.id.toString() : user_id,
+        user_id: user_id,
         unique_token: token,
         city_list: rows.map(row => ({
-          city_id: row.city_id ? row.city_id.toString() : "",
+          city_id: row.city_id.toString(),
           city_name: row.city_name || ""
         }))
       });
