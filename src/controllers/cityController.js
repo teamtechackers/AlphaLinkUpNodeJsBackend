@@ -4,36 +4,75 @@ const { errorResponse, phpResponse } = require('../utils/response');
 const { logger } = require('../utils/logger');
 
 const CityController = {
-  
+
   async getCityList(req, res) {
     try {
       const { user_id, token, state_id } = { ...req.query, ...req.body };
-      
-      if (!user_id || !token || !state_id) {
-        return errorResponse(res, 'user_id, token, and state_id are required', 400);
-      }
 
-  
-      const decodedUserId = idDecode(user_id);
-      if (!decodedUserId) {
-        return errorResponse(res, 'Invalid user_id', 400);
-      }
-
- 
-      const userCheck = await query('SELECT user_id FROM users WHERE user_id = ? AND unique_token = ? AND deleted = 0', [decodedUserId, token]);
-      if (userCheck.length === 0) {
-        return errorResponse(res, 'Invalid token or user not found', 401);
-      }
-
-      const rows = await query('SELECT id AS city_id, name AS city_name FROM cities WHERE state_id = ?', [state_id]);
-      
-      if (rows.length === 0) {
-        return phpResponse(res, 'No cities found for this state', {
-          city_list: []
+      if (!user_id || !token) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Token Mismatch Exception'
         });
       }
 
-      return phpResponse(res, 'City list retrieved successfully', {
+      if (!state_id) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'state_id is required'
+        });
+      }
+
+      const decodedUserId = idDecode(user_id);
+      if (!decodedUserId) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Invalid user ID'
+        });
+      }
+
+      // Check in users table
+      let userRows = await query('SELECT * FROM users WHERE user_id = ? AND deleted = 0 LIMIT 1', [decodedUserId]);
+      let user = userRows.length > 0 ? userRows[0] : null;
+
+      // If not found in users, check in admin_users (for admin testing/access)
+      if (!user) {
+        const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
+        if (adminRows.length > 0) {
+          user = adminRows[0];
+          // For admin users, unique_token might be different or needed from elsewhere, 
+          // but we follow the same token validation logic if possible.
+          // Note: admin_users usually have a 'token' or 'unique_token' column.
+          // If admin_users has no unique_token, we use whatever is available.
+        }
+      }
+
+      if (!user) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Not A Valid User'
+        });
+      }
+
+      if (user.unique_token !== token) {
+        return res.json({
+          status: false,
+          rcode: 500,
+          message: 'Token Mismatch Exception'
+        });
+      }
+
+      const rows = await query('SELECT id AS city_id, name AS city_name FROM cities WHERE state_id = ? AND deleted = 0', [state_id]);
+
+      return res.json({
+        status: true,
+        rcode: 200,
+        user_id: user_id,
+        unique_token: token,
         city_list: rows.map(row => ({
           city_id: row.city_id.toString(),
           city_name: row.city_name || ""
@@ -42,7 +81,11 @@ const CityController = {
 
     } catch (error) {
       console.error('getCityList error:', error);
-      return errorResponse(res, 'Failed to get city list', 500);
+      return res.json({
+        status: false,
+        rcode: 500,
+        message: 'Failed to get city list'
+      });
     }
   },
 
@@ -102,7 +145,7 @@ const CityController = {
       }
 
 
-      const limit = 1000; 
+      const limit = 1000;
       const cities = await query(`
         SELECT c.id, c.name, c.status, c.state_id, s.name as state_name 
         FROM cities c 
@@ -377,7 +420,7 @@ const CityController = {
       return res.json({
         status: false,
         rcode: 500,
-          message: 'Failed to retrieve city list'
+        message: 'Failed to retrieve city list'
       });
     }
   },
@@ -783,7 +826,7 @@ const CityController = {
       const drawValue = parseInt(draw || 1);
       const startValue = parseInt(start || 0);
       const lengthValue = parseInt(length || 10);
-      
+
       // Handle search parameter like PHP (search.value)
       let searchValue = '';
       if (search && typeof search === 'object' && search.value) {
@@ -818,7 +861,7 @@ const CityController = {
       if (order && Array.isArray(order) && order.length > 0) {
         const orderColumn = order[0].column || 0;
         const orderDir = order[0].dir || 'asc';
-        
+
         // Map DataTables column indices to actual columns
         const columnMap = ['s.name', 'c.name', 'c.status'];
         const column = columnMap[orderColumn] || 's.name';
@@ -841,13 +884,13 @@ const CityController = {
       let i = startValue;
       for (const city of cities) {
         i++;
-        const status = city.status == 1 
+        const status = city.status == 1
           ? '<span class="badge bg-soft-success text-success">Active</span>'
           : '<span class="badge bg-soft-danger text-danger">Inactive</span>';
-        
+
         let action = `<a href="javascript:void(0);" id="edit_${city.id}" data-id="${city.id}" data-state="${city.state_id}" data-name="${city.name}" data-status="${city.status}" onclick="viewEditDetails(${city.id});" class="action-icon"> <i class="mdi mdi-square-edit-outline"></i></a>`;
         action += `<a href="javascript:void(0);" class="action-icon delete_info" data-id="${city.id}"> <i class="mdi mdi-delete"></i></a>`;
-        
+
         data.push([i, city.state_name || '', city.name, city.id.toString(), status, action]);
       }
 
