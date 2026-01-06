@@ -14,7 +14,7 @@ const StateController = {
         ...req.query,
         ...req.body
       };
-      
+
       if (!user_id || !token) {
         return res.json({
           status: false,
@@ -22,7 +22,7 @@ const StateController = {
           message: 'Token Mismatch Exception'
         });
       }
-      
+
       if (!country_id) {
         return res.json({
           status: false,
@@ -30,7 +30,7 @@ const StateController = {
           message: 'country_id is required'
         });
       }
-      
+
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
         return res.json({
@@ -39,7 +39,7 @@ const StateController = {
           message: 'Invalid user ID'
         });
       }
-      
+
       const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return res.json({
@@ -48,9 +48,9 @@ const StateController = {
           message: 'Not A Valid User'
         });
       }
-      
+
       const user = userRows[0];
-      
+
       if (user.unique_token !== token) {
         return res.json({
           status: false,
@@ -58,9 +58,9 @@ const StateController = {
           message: 'Token Mismatch Exception'
         });
       }
-      
+
       const rows = await query('SELECT id AS state_id, name AS state_name FROM states WHERE country_id = ?', [country_id]);
-      
+
       return res.json({
         status: true,
         rcode: 200,
@@ -71,7 +71,7 @@ const StateController = {
           state_name: row.state_name || ""
         }))
       });
-      
+
     } catch (error) {
       console.error('getStateList error:', error);
       return res.json({
@@ -329,7 +329,7 @@ const StateController = {
       }
 
       // Get user details and validate
-      const userRows = await query('SELECT user_id FROM users WHERE user_id = ? AND unique_token = ? AND deleted = 0', [decodedUserId, token]);
+      const userRows = await query('SELECT user_id FROM users WHERE user_id = ? AND unique_token = ?', [decodedUserId, token]);
       if (!userRows.length) {
         return res.json({
           status: false,
@@ -373,13 +373,13 @@ const StateController = {
         LEFT JOIN countries c ON s.country_id = c.id 
         WHERE s.deleted = 0
       `;
-      
+
       const queryParams = [];
       if (searchValue) {
         statesQuery += ` AND (s.name LIKE ? OR c.name LIKE ?)`;
         queryParams.push(`%${searchValue}%`, `%${searchValue}%`);
       }
-      
+
       statesQuery += ` ORDER BY ${orderByColumn} ${orderByDir} LIMIT ? OFFSET ?`;
       queryParams.push(lengthParam, startParam);
 
@@ -388,10 +388,10 @@ const StateController = {
       // Format data for DataTables
       const data = states.map((state, index) => {
         const rowNumber = startParam + index + 1;
-        const statusBadge = state.status == 1 
+        const statusBadge = state.status == 1
           ? '<span class="badge bg-soft-success text-success">Active</span>'
           : '<span class="badge bg-soft-danger text-danger">Inactive</span>';
-        
+
         let action = `<a href="javascript:void(0);" id="edit_${state.id}" data-id="${state.id}" data-country="${state.country_id}" data-name="${state.name}" data-status="${state.status}" onclick="viewEditDetails(${state.id});" class="action-icon"> <i class="mdi mdi-square-edit-outline"></i></a>`;
         action += `<a href="javascript:void(0);" class="action-icon delete_info" data-id="${state.id}"> <i class="mdi mdi-delete"></i></a>`;
 
@@ -503,16 +503,16 @@ const StateController = {
         LEFT JOIN countries c ON c.id = s.country_id
         WHERE s.deleted = 0
       `;
-      
+
       let queryParams = [];
-      
+
       if (keys && keys.trim() !== '') {
         statesQuery += ' AND s.country_id = ?';
         queryParams.push(keys);
       }
-      
+
       statesQuery += ' ORDER BY c.name ASC, s.name ASC';
-      
+
       const states = await query(statesQuery, queryParams);
 
       // Return response in PHP format (matching exactly)
@@ -607,7 +607,7 @@ const StateController = {
         SELECT id, name FROM states 
         WHERE id = ? AND deleted = 0
       `, [keys]);
-      
+
       if (stateRows.length === 0) {
         return res.json({
           status: 'Error',
@@ -618,14 +618,14 @@ const StateController = {
       // Check if state is being used in other tables
       const cityCount = await query('SELECT COUNT(*) as count FROM cities WHERE state_id = ? AND deleted = 0', [keys]);
       const userCount = await query('SELECT COUNT(*) as count FROM users WHERE state_id = ?', [keys]);
-      
+
       if (cityCount[0].count > 0) {
         return res.json({
           status: 'Error',
           info: 'Cannot delete state. It is being used in cities.'
         });
       }
-      
+
       if (userCount[0].count > 0) {
         return res.json({
           status: 'Error',
@@ -736,12 +736,12 @@ const StateController = {
       // Check for duplicate state name within the same country
       let duplicateCheckQuery = 'SELECT COUNT(*) as count FROM states WHERE country_id = ? AND name = ? AND deleted = 0';
       let duplicateCheckParams = [parseInt(cid), name.trim()];
-      
+
       if (id && id > 0) {
         duplicateCheckQuery += ' AND id != ?';
         duplicateCheckParams.push(id);
       }
-      
+
       const duplicateResult = await query(duplicateCheckQuery, duplicateCheckParams);
       const isDuplicate = duplicateResult[0].count > 0;
 
