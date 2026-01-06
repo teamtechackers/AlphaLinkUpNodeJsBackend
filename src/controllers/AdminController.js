@@ -931,12 +931,12 @@ class AdminController {
   static async submitUsers(req, res) {
     try {
       // Support both query parameters and form data
+      const bodyParams = { ...req.query, ...req.body };
       const {
         user_id,
         token,
         row_id,
         full_name,
-        mobile,
         email,
         address,
         country_id,
@@ -947,10 +947,10 @@ class AdminController {
         username,
         password,
         permissions
-      } = {
-        ...req.query,
-        ...req.body
-      };
+      } = bodyParams;
+
+      // Extract mobile (support phone_number alias from some frontends)
+      const mobile = bodyParams.mobile || bodyParams.phone_number;
 
       // Get uploaded profile photo filename
       console.log('submitUsers - req.file:', req.file);
@@ -1010,55 +1010,69 @@ class AdminController {
       // ==================== CREATING ADMIN (SubAdmin or SuperAdmin) ====================
       if (actualUserRole === 'subadmin' || actualUserRole === 'superadmin') {
 
-        // Only SuperAdmin can create other admins
+        // Only SuperAdmin can create/modify other admins
         if (admin.is_super_admin !== 1) {
           return res.json({
             status: 'Error',
-            info: 'Only SuperAdmin can create admin users'
+            info: 'Only SuperAdmin can manage admin users'
           });
         }
 
-        // Validate admin-specific fields
-        if (!username || !password) {
-          return res.json({
-            status: 'Error',
-            info: 'Username and password are required for admin creation'
-          });
-        }
-
-        // Check if username already exists
-        const existingAdmin = await query(
-          'SELECT id FROM admin_users WHERE username = ?',
-          [username]
-        );
-
-        if (existingAdmin.length > 0) {
-          return res.json({
-            status: 'Error',
-            info: 'Username already exists'
-          });
-        }
-
-        // Hash password
         const bcrypt = require('bcryptjs');
-        const hashedPassword = await bcrypt.hash(password, 12);
+        let finalAdminId;
 
-        // Determine if SuperAdmin or SubAdmin
-        const isSuperAdmin = actualUserRole === 'superadmin' ? 1 : 0;
+        if (row_id && row_id !== '') {
+          // ==================== UPDATE ADMIN ====================
+          finalAdminId = row_id;
 
-        // Insert into admin_users table
-        const adminResult = await query(
-          `INSERT INTO admin_users (username, password, email, full_name, is_super_admin, created_at)
-           VALUES (?, ?, ?, ?, ?, NOW())`,
-          [username, hashedPassword, email || '', full_name || '', isSuperAdmin]
-        );
+          let updateAdminQuery, updateAdminParams;
+          if (password && password.trim() !== '') {
+            const hashedPassword = await bcrypt.hash(password, 12);
+            updateAdminQuery = 'UPDATE admin_users SET email = ?, full_name = ?, password = ? WHERE id = ?';
+            updateAdminParams = [email || '', full_name || username || '', hashedPassword, finalAdminId];
+          } else {
+            updateAdminQuery = 'UPDATE admin_users SET email = ?, full_name = ? WHERE id = ?';
+            updateAdminParams = [email || '', full_name || username || '', finalAdminId];
+          }
+          await query(updateAdminQuery, updateAdminParams);
+          console.log(`✅ Admin ${finalAdminId} updated`);
+        } else {
+          // ==================== CREATE ADMIN ====================
+          if (!username || !password) {
+            return res.json({
+              status: 'Error',
+              info: 'Username and password are required for admin creation'
+            });
+          }
 
-        const newAdminId = adminResult.insertId;
+          // Check if username already exists
+          const existingAdmin = await query(
+            'SELECT id FROM admin_users WHERE username = ?',
+            [username]
+          );
 
-        // IMPORTANT: Also create entry in users table for token management
+          if (existingAdmin.length > 0) {
+            return res.json({
+              status: 'Error',
+              info: 'Username already exists'
+            });
+          }
+
+          const hashedPassword = await bcrypt.hash(password, 12);
+          const isSuperAdmin = actualUserRole === 'superadmin' ? 1 : 0;
+
+          const adminResult = await query(
+            `INSERT INTO admin_users (username, password, email, full_name, is_super_admin, created_at)
+             VALUES (?, ?, ?, ?, ?, NOW())`,
+            [username, hashedPassword, email || '', full_name || username || '', isSuperAdmin]
+          );
+          finalAdminId = adminResult.insertId;
+          console.log(`✅ Admin ${finalAdminId} created`);
+        }
+
+        // IMPORTANT: Sync with 'users' table for token and profile photo management
         const crypto = require('crypto');
-        const md5 = require('md5');
-        const defaultMobile = `admin${newAdminId}`; // Unique mobile for admin
+        const defaultMobile = `admin${finalAdminId}`;
         const now = new Date();
         const timestamp = now.getFullYear().toString() +
           (now.getMonth() + 1).toString().padStart(2, '0') +
@@ -1066,63 +1080,73 @@ class AdminController {
           now.getHours().toString().padStart(2, '0') +
           now.getMinutes().toString().padStart(2, '0') +
           now.getSeconds().toString().padStart(2, '0');
+
         const actualMobile = mobile || defaultMobile;
         const str_token = actualMobile + timestamp;
         const unique_token = crypto.createHash('md5').update(str_token).digest('hex');
 
-        // Insert or Update into users table with same ID
-        // Use ON DUPLICATE KEY UPDATE to handle existing user_id
-        await query(
-          `INSERT INTO users (user_id, full_name, mobile, email, unique_token, status, created_dts, created_by, deleted)
-           VALUES (?, ?, ?, ?, ?, 1, NOW(), ?, 0)
-           ON DUPLICATE KEY UPDATE
-           full_name = VALUES(full_name),
-           mobile = VALUES(mobile),
-           email = VALUES(email),
-           unique_token = VALUES(unique_token),
-           status = 1,
-           updated_at = NOW(),
-           updated_by = VALUES(created_by)`,
-          [newAdminId, full_name || username, actualMobile, email || '', unique_token, decodedUserId]
-        );
+        // Insert or Update the 'users' table record associated with this admin
+        let userQuery, userParams;
+        if (profile_photo) {
+          userQuery = `
+            INSERT INTO users (user_id, full_name, mobile, email, unique_token, profile_photo, status, created_dts, created_by, deleted)
+            VALUES (?, ?, ?, ?, ?, ?, 1, NOW(), ?, 0)
+            ON DUPLICATE KEY UPDATE
+            full_name = VALUES(full_name),
+            mobile = VALUES(mobile),
+            email = VALUES(email),
+            unique_token = VALUES(unique_token),
+            profile_photo = VALUES(profile_photo),
+            status = 1,
+            updated_at = NOW(),
+            updated_by = VALUES(created_by)
+          `;
+          userParams = [finalAdminId, full_name || username || '', actualMobile, email || '', unique_token, profile_photo, decodedUserId];
+        } else {
+          userQuery = `
+            INSERT INTO users (user_id, full_name, mobile, email, unique_token, status, created_dts, created_by, deleted)
+            VALUES (?, ?, ?, ?, ?, 1, NOW(), ?, 0)
+            ON DUPLICATE KEY UPDATE
+            full_name = VALUES(full_name),
+            mobile = VALUES(mobile),
+            email = VALUES(email),
+            unique_token = VALUES(unique_token),
+            status = 1,
+            updated_at = NOW(),
+            updated_by = VALUES(created_by)
+          `;
+          userParams = [finalAdminId, full_name || username || '', actualMobile, email || '', unique_token, decodedUserId];
+        }
+        await query(userQuery, userParams);
 
-        // Assign permissions (only for SubAdmin)
+        // Assign/Update permissions (only for SubAdmin)
         if (actualUserRole === 'subadmin' && permissions) {
-          // Parse permissions if it's a string (from FormData)
           let permissionsArray = permissions;
           if (typeof permissions === 'string') {
-            try {
-              permissionsArray = JSON.parse(permissions);
-            } catch (e) {
-              console.error('Failed to parse permissions:', permissions);
-              permissionsArray = [];
-            }
+            try { permissionsArray = JSON.parse(permissions); } catch (e) { permissionsArray = []; }
           }
 
-          console.log('Permissions to assign:', permissionsArray, 'Type:', typeof permissionsArray);
+          if (Array.isArray(permissionsArray)) {
+            // Clear existing permissions if updating
+            await query('DELETE FROM admin_user_permissions WHERE admin_user_id = ?', [finalAdminId]);
 
-          if (Array.isArray(permissionsArray) && permissionsArray.length > 0) {
-            const permissionValues = permissionsArray.map(permId =>
-              [newAdminId, permId, decodedUserId]
-            );
-
-            const placeholders = permissionValues.map(() => '(?, ?, ?)').join(',');
-            const flatValues = permissionValues.flat();
-
-            await query(
-              `INSERT INTO admin_user_permissions (admin_user_id, permission_id, granted_by)
-               VALUES ${placeholders}`,
-              flatValues
-            );
-
-            console.log(`✅ Assigned ${permissionsArray.length} permissions to SubAdmin ${newAdminId}`);
+            if (permissionsArray.length > 0) {
+              const permissionValues = permissionsArray.map(permId => [finalAdminId, permId, decodedUserId]);
+              const placeholders = permissionValues.map(() => '(?, ?, ?)').join(',');
+              const flatValues = permissionValues.flat();
+              await query(
+                `INSERT INTO admin_user_permissions (admin_user_id, permission_id, granted_by) VALUES ${placeholders}`,
+                flatValues
+              );
+              console.log(`✅ Updated ${permissionsArray.length} permissions for admin ${finalAdminId}`);
+            }
           }
         }
 
         return res.json({
           status: 'Success',
-          info: `${actualUserRole === 'superadmin' ? 'SuperAdmin' : 'SubAdmin'} Created Successfully`,
-          admin_id: String(newAdminId)
+          info: `${actualUserRole === 'superadmin' ? 'SuperAdmin' : 'SubAdmin'} ${row_id ? 'Updated' : 'Created'} Successfully`,
+          admin_id: String(finalAdminId)
         });
       }
 
@@ -1682,7 +1706,8 @@ class AdminController {
 
       // Add profile photo URL if exists (matching PHP exactly)
       if (user.profile_photo) {
-        response.profile_photo = `http://localhost:3000/uploads/profile_photos/${user.profile_photo}`;
+        const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
+        response.profile_photo = `${baseUrl}/uploads/profiles/${user.profile_photo}`;
       }
 
       return res.json(response);
@@ -2367,7 +2392,8 @@ class AdminController {
         });
 
         // Service image (matching PHP exactly)
-        const imagePath = row.service_image ? `http://localhost:3000/uploads/services/${row.service_image}` : '';
+        const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
+        const imagePath = row.service_image ? `${baseUrl}/uploads/services/${row.service_image}` : '';
         const images = imagePath ? `<img src="${imagePath}" width="80px" />` : '';
 
         data.push([i, images, row.name, row.service_name, row.company_name, row.title, row.tag_line, row.service_description, row.avg_service_rating, status, created]);
@@ -3353,7 +3379,8 @@ class AdminController {
       if (images.length > 0) {
         lists += '<div class="row">';
         for (const row of images) {
-          const path = `http://localhost:3000/uploads/business_documents/${row.business_documents_file}`;
+          const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
+          const path = `${baseUrl}/uploads/business_documents/${row.business_documents_file}`;
           lists += `
             <div class="col-md-4">
               <img src="${path}" width="100%" alt="No Image" />
