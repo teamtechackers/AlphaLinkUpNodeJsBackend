@@ -1066,7 +1066,8 @@ class AdminController {
           now.getHours().toString().padStart(2, '0') +
           now.getMinutes().toString().padStart(2, '0') +
           now.getSeconds().toString().padStart(2, '0');
-        const str_token = defaultMobile + timestamp;
+        const actualMobile = mobile || defaultMobile;
+        const str_token = actualMobile + timestamp;
         const unique_token = crypto.createHash('md5').update(str_token).digest('hex');
 
         // Insert or Update into users table with same ID
@@ -1082,7 +1083,7 @@ class AdminController {
            status = 1,
            updated_at = NOW(),
            updated_by = VALUES(created_by)`,
-          [newAdminId, full_name || username, defaultMobile, email || '', unique_token, decodedUserId]
+          [newAdminId, full_name || username, actualMobile, email || '', unique_token, decodedUserId]
         );
 
         // Assign permissions (only for SubAdmin)
