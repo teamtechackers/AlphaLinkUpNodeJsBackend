@@ -53,7 +53,7 @@ class UserProfileController {
       }
 
       // Get base URL for images (works for both localhost and live)
-      const baseUrl = `${req.protocol}://${req.get('host')}`;
+      const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
       const profilePath = `${baseUrl}/uploads/profiles/`;
       const qrPath = `${baseUrl}/uploads/qr_codes/`;
 
@@ -103,6 +103,7 @@ class UserProfileController {
       // Get project details with dynamic project logo URLs (handle missing table gracefully)
       let projectRows = [];
       try {
+        const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
         const projectLogoPath = `${baseUrl}/uploads/project_logo/`;
         projectRows = await query(
           `SELECT user_project_details.*, 
@@ -334,7 +335,7 @@ class UserProfileController {
       }
 
       // Get user profile by mobile (matching PHP implementation)
-      const baseUrl = `${req.protocol}://${req.get('host')}`;
+      const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
       const profilePhotoPath = `${baseUrl}/uploads/profiles/`;
       const qrCodePath = `${baseUrl}/uploads/qr_codes/`;
 
@@ -512,7 +513,7 @@ class UserProfileController {
       }
 
       // Get user profile by mobile number with all required fields
-      const baseUrl = `${req.protocol}://${req.get('host')}`;
+      const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
       const profilePhotoPath = `${baseUrl}/uploads/profiles/`;
       const qrCodePath = `${baseUrl}/uploads/qr_codes/`;
 
