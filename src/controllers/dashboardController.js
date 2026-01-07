@@ -472,7 +472,6 @@ const DashboardController = {
 
   async getAdminDashboard(req, res) {
     try {
-      console.log("Hitting getAdminDashboard");
       const { user_id, token } = { ...req.query, ...req.body };
 
       if (!user_id || !token) {
