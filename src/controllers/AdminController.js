@@ -4333,6 +4333,13 @@ class AdminController {
         });
       }
 
+      let { deleted_request } = { ...req.query, ...req.body };
+
+      // Default to 1 if not provided
+      if (deleted_request === undefined || deleted_request === '') {
+        deleted_request = 1;
+      }
+
       const requests = await query(`
         SELECT 
           user_id, 
@@ -4342,9 +4349,9 @@ class AdminController {
           created_dts,
           deleted_request 
         FROM users 
-        WHERE deleted_request = 1 AND deleted = 0
+        WHERE deleted_request = ? AND deleted = 0
         ORDER BY updated_at DESC
-      `);
+      `, [deleted_request]);
 
       return res.json({
         status: true,
