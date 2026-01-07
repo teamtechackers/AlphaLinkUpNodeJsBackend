@@ -1089,33 +1089,64 @@ class AdminController {
         let userQuery, userParams;
         if (profile_photo) {
           userQuery = `
-            INSERT INTO users (user_id, full_name, mobile, email, unique_token, profile_photo, status, created_dts, created_by, deleted)
-            VALUES (?, ?, ?, ?, ?, ?, 1, NOW(), ?, 0)
+            INSERT INTO users (user_id, full_name, mobile, email, unique_token, profile_photo, address, country_id, state_id, city_id, status, created_dts, created_by, deleted)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, NOW(), ?, 0)
             ON DUPLICATE KEY UPDATE
             full_name = VALUES(full_name),
             mobile = VALUES(mobile),
             email = VALUES(email),
             unique_token = VALUES(unique_token),
             profile_photo = VALUES(profile_photo),
+            address = VALUES(address),
+            country_id = VALUES(country_id),
+            state_id = VALUES(state_id),
+            city_id = VALUES(city_id),
             status = 1,
             updated_at = NOW(),
             updated_by = VALUES(created_by)
           `;
-          userParams = [finalAdminId, full_name || username || '', actualMobile, email || '', unique_token, profile_photo, decodedUserId];
+          userParams = [
+            finalAdminId,
+            full_name || username || '',
+            actualMobile,
+            email || '',
+            unique_token,
+            profile_photo,
+            address || '',
+            country_id ? parseInt(country_id) : null,
+            state_id ? parseInt(state_id) : null,
+            city_id ? parseInt(city_id) : null,
+            decodedUserId
+          ];
         } else {
           userQuery = `
-            INSERT INTO users (user_id, full_name, mobile, email, unique_token, status, created_dts, created_by, deleted)
-            VALUES (?, ?, ?, ?, ?, 1, NOW(), ?, 0)
+            INSERT INTO users (user_id, full_name, mobile, email, unique_token, address, country_id, state_id, city_id, status, created_dts, created_by, deleted)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, NOW(), ?, 0)
             ON DUPLICATE KEY UPDATE
             full_name = VALUES(full_name),
             mobile = VALUES(mobile),
             email = VALUES(email),
             unique_token = VALUES(unique_token),
+            address = VALUES(address),
+            country_id = VALUES(country_id),
+            state_id = VALUES(state_id),
+            city_id = VALUES(city_id),
             status = 1,
             updated_at = NOW(),
             updated_by = VALUES(created_by)
           `;
-          userParams = [finalAdminId, full_name || username || '', actualMobile, email || '', unique_token, decodedUserId];
+          userParams = [
+            finalAdminId,
+            full_name || username || '',
+            actualMobile,
+            email || '',
+            unique_token,
+            address || '',
+            country_id ? parseInt(country_id) : null,
+            state_id ? parseInt(state_id) : null,
+            city_id ? parseInt(city_id) : null,
+            decodedUserId
+          ];
         }
         await query(userQuery, userParams);
 
@@ -1703,6 +1734,27 @@ class AdminController {
         list_state: listState,
         list_cities: listCities
       };
+
+      // Check if this user is also an admin to provide role and extra fields
+      const targetAdminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [keys]);
+      if (targetAdminRows.length > 0) {
+        const targetAdmin = targetAdminRows[0];
+        response.username = targetAdmin.username;
+        response.user_role = targetAdmin.is_super_admin === 1 ? 'superadmin' : 'subadmin';
+
+        // Fetch permissions for subadmins
+        if (targetAdmin.is_super_admin !== 1) {
+          const perms = await query(`
+            SELECT ap.permission_id
+            FROM admin_user_permissions aup
+            JOIN admin_permissions ap ON aup.permission_id = ap.permission_id
+            WHERE aup.admin_user_id = ?
+          `, [targetAdmin.id]);
+          response.permissions = perms.map(p => p.permission_id);
+        }
+      } else {
+        response.user_role = 'user';
+      }
 
       // Add profile photo URL if exists (matching PHP exactly)
       if (user.profile_photo) {
