@@ -1705,13 +1705,13 @@ class UserProfileController {
 
   static async requestAccountDeletion(req, res) {
     try {
-      const { user_id, token } = { ...req.query, ...req.body };
+      const { user_id, token, deleted_request } = { ...req.query, ...req.body };
 
-      if (!user_id || !token) {
+      if (!user_id || !token || deleted_request === undefined) {
         return res.json({
           status: false,
           rcode: 400,
-          message: 'user_id and token are required'
+          message: 'user_id, token and deleted_request are required'
         });
       }
 
@@ -1735,12 +1735,17 @@ class UserProfileController {
       }
 
       // Update deleted_request
-      await query('UPDATE users SET deleted_request = 1 WHERE user_id = ?', [decodedUserId]);
+      const status = parseInt(deleted_request);
+      await query('UPDATE users SET deleted_request = ? WHERE user_id = ?', [status, decodedUserId]);
+
+      const msg = status === 1
+        ? 'Account deletion request submitted successfully'
+        : 'Account deletion request cancelled successfully';
 
       return res.json({
         status: true,
         rcode: 200,
-        message: 'Account deletion request submitted successfully'
+        message: msg
       });
 
     } catch (error) {
