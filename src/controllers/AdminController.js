@@ -4292,6 +4292,60 @@ class AdminController {
     }
   }
 
+
+  static async getDeletionRequests(req, res) {
+    try {
+      const { user_id, token } = { ...req.query, ...req.body };
+
+      if (!user_id || !token) {
+        return res.json({
+          status: false,
+          rcode: 400,
+          message: 'user_id and token are required'
+        });
+      }
+
+      // Verify admin
+      const adminRows = await query('SELECT user_id FROM admin_users WHERE user_id = ? AND unique_token = ? LIMIT 1', [user_id, token]);
+      if (adminRows.length === 0) {
+        return res.json({
+          status: false,
+          rcode: 401,
+          message: 'Invalid admin token'
+        });
+      }
+
+      const requests = await query(`
+        SELECT 
+          user_id, 
+          full_name, 
+          email, 
+          mobile, 
+          created_dts,
+          deleted_request 
+        FROM users 
+        WHERE deleted_request = 1 AND deleted = 0
+        ORDER BY updated_at DESC
+      `);
+
+      return res.json({
+        status: true,
+        rcode: 200,
+        requests: requests.map(r => ({
+          ...r,
+          user_id: idEncode(r.user_id)
+        }))
+      });
+
+    } catch (error) {
+      console.error('Get deletion requests error:', error);
+      return res.json({
+        status: false,
+        rcode: 500,
+        message: 'Failed to fetch deletion requests'
+      });
+    }
+  }
 }
 
 module.exports = AdminController;

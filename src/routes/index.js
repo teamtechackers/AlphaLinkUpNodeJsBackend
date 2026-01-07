@@ -111,6 +111,8 @@ router.get('/Api-View-User-Detail-By-Mobile', UserProfileController.getUserDetai
 router.post('/Api-View-User-Detail-By-Mobile', uploadFormData.none(), UserProfileController.getUserDetailByMobile);
 router.get('/Api-View-Profile-By-Mobile', UserProfileController.getUserProfileByMobile);
 router.post('/Api-View-Profile-By-Mobile', uploadFormData.none(), UserProfileController.getUserProfileByMobile);
+router.post('/Api-Update-User-Status', uploadFormData.none(), UserProfileController.updateUserStatus);
+router.post('/Api-User-Deleted-Account', uploadFormData.none(), UserProfileController.requestAccountDeletion);
 router.post('/Api-Save-Work-Details', uploadFormData.none(), UserProfileController.saveWorkDetails);
 router.get('/Api-View-Work-Details', UserProfileController.getWorkDetails);
 router.post('/Api-View-Work-Details', uploadFormData.none(), UserProfileController.getWorkDetails);
@@ -363,6 +365,8 @@ router.get('/admin-dashboard', DashboardController.getAdminDashboard);
 router.post('/admin-dashboard', uploadFormData.none(), DashboardController.getAdminDashboard);
 router.get('/admin-user-overview', DashboardController.getAdminUserOverview);
 router.post('/admin-user-overview', uploadFormData.none(), DashboardController.getAdminUserOverview);
+router.get('/Api-Admin-Deletion-Requests', AdminController.getDeletionRequests);
+router.post('/Api-Admin-Deletion-Requests', AdminController.getDeletionRequests);
 
 router.get('/list-service-provider', AdminController.viewServiceProvider);
 router.post('/list-service-provider', uploadFormData.none(), AdminController.viewServiceProvider);

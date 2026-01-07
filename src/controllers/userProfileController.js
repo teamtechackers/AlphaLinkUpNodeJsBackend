@@ -1702,6 +1702,56 @@ class UserProfileController {
       });
     }
   }
+
+  static async requestAccountDeletion(req, res) {
+    try {
+      const { user_id, token } = { ...req.query, ...req.body };
+
+      if (!user_id || !token) {
+        return res.json({
+          status: false,
+          rcode: 400,
+          message: 'user_id and token are required'
+        });
+      }
+
+      const decodedUserId = idDecode(user_id);
+      if (!decodedUserId) {
+        return res.json({
+          status: false,
+          rcode: 400,
+          message: 'Invalid user ID'
+        });
+      }
+
+      // Verify user and token
+      const userRows = await query('SELECT user_id FROM users WHERE user_id = ? AND unique_token = ? AND deleted = 0 LIMIT 1', [decodedUserId, token]);
+      if (userRows.length === 0) {
+        return res.json({
+          status: false,
+          rcode: 401,
+          message: 'Invalid token or user not found'
+        });
+      }
+
+      // Update deleted_request
+      await query('UPDATE users SET deleted_request = 1 WHERE user_id = ?', [decodedUserId]);
+
+      return res.json({
+        status: true,
+        rcode: 200,
+        message: 'Account deletion request submitted successfully'
+      });
+
+    } catch (error) {
+      console.error('Request account deletion error:', error);
+      return res.json({
+        status: false,
+        rcode: 500,
+        message: 'Failed to submit account deletion request'
+      });
+    }
+  }
 }
 
 module.exports = UserProfileController;

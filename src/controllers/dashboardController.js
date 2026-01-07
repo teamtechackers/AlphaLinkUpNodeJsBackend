@@ -489,6 +489,7 @@ const DashboardController = {
       const [totalServices] = await query('SELECT COUNT(*) as count FROM user_service_provider WHERE deleted = 0');
       const [totalInvestors] = await query('SELECT COUNT(*) as count FROM user_investor WHERE deleted = 0');
       const [totalBusinessCards] = await query('SELECT COUNT(*) as count FROM user_business_cards WHERE deleted = 0');
+      const [totalDeletionRequests] = await query('SELECT COUNT(*) as count FROM users WHERE deleted_request = 1 AND deleted = 0');
 
       const recentUsers = await query('SELECT user_id, full_name, email, created_dts FROM users WHERE deleted = 0 ORDER BY created_dts DESC LIMIT 5');
       const recentJobs = await query('SELECT job_id, job_title, company_name, created_dts FROM user_job_details WHERE deleted = 0 ORDER BY created_dts DESC LIMIT 5');
@@ -504,7 +505,8 @@ const DashboardController = {
             total_events: String(totalEvents.count || 0),
             total_services: String(totalServices.count || 0),
             total_investors: String(totalInvestors.count || 0),
-            total_business_cards: String(totalBusinessCards.count || 0)
+            total_business_cards: String(totalBusinessCards.count || 0),
+            total_deletion_requests: String(totalDeletionRequests.count || 0)
           },
           recent_activities: {
             recent_users: recentUsers.map(user => ({
