@@ -478,7 +478,18 @@ const DashboardController = {
         return errorResponse(res, 'user_id and token are required', 400);
       }
 
-      const adminCheck = await query('SELECT user_id FROM admin_users WHERE user_id = ? AND unique_token = ? AND deleted = 0', [user_id, token]);
+      const decodedUserId = idDecode(user_id);
+      if (!decodedUserId) {
+        return errorResponse(res, 'Invalid user ID', 400);
+      }
+
+      const adminCheck = await query(`
+        SELECT u.user_id 
+        FROM users u 
+        JOIN admin_users a ON a.id = u.user_id 
+        WHERE u.user_id = ? AND u.unique_token = ? AND u.deleted = 0
+      `, [decodedUserId, token]);
+
       if (adminCheck.length === 0) {
         return errorResponse(res, 'Invalid admin token', 401);
       }
@@ -547,7 +558,18 @@ const DashboardController = {
         return errorResponse(res, 'user_id and token are required', 400);
       }
 
-      const adminCheck = await query('SELECT user_id FROM admin_users WHERE user_id = ? AND unique_token = ? AND deleted = 0', [user_id, token]);
+      const decodedUserId = idDecode(user_id);
+      if (!decodedUserId) {
+        return errorResponse(res, 'Invalid user ID', 400);
+      }
+
+      const adminCheck = await query(`
+        SELECT u.user_id 
+        FROM users u 
+        JOIN admin_users a ON a.id = u.user_id 
+        WHERE u.user_id = ? AND u.unique_token = ? AND u.deleted = 0
+      `, [decodedUserId, token]);
+
       if (adminCheck.length === 0) {
         return errorResponse(res, 'Invalid admin token', 401);
       }

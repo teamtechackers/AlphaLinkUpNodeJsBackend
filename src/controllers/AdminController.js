@@ -4305,8 +4305,24 @@ class AdminController {
         });
       }
 
+      const decodedUserId = idDecode(user_id);
+      if (!decodedUserId) {
+        return res.json({
+          status: false,
+          rcode: 400,
+          message: 'Invalid user ID'
+        });
+      }
+
       // Verify admin
-      const adminRows = await query('SELECT user_id FROM admin_users WHERE user_id = ? AND unique_token = ? LIMIT 1', [user_id, token]);
+      const adminRows = await query(`
+        SELECT u.user_id 
+        FROM users u 
+        JOIN admin_users a ON a.id = u.user_id 
+        WHERE u.user_id = ? AND u.unique_token = ? AND u.deleted = 0
+        LIMIT 1
+      `, [decodedUserId, token]);
+
       if (adminRows.length === 0) {
         return res.json({
           status: false,
