@@ -111,7 +111,7 @@ router.get('/Api-View-User-Detail-By-Mobile', UserProfileController.getUserDetai
 router.post('/Api-View-User-Detail-By-Mobile', uploadFormData.none(), UserProfileController.getUserDetailByMobile);
 router.get('/Api-View-Profile-By-Mobile', UserProfileController.getUserProfileByMobile);
 router.post('/Api-View-Profile-By-Mobile', uploadFormData.none(), UserProfileController.getUserProfileByMobile);
-router.post('/Api-User-Deleted-Account', uploadFormData.none(), UserProfileController.requestAccountDeletion);
+// router.post('/Api-User-Deleted-Account', uploadFormData.none(), UserProfileController.requestAccountDeletion);
 router.post('/Api-Save-Work-Details', uploadFormData.none(), UserProfileController.saveWorkDetails);
 router.get('/Api-View-Work-Details', UserProfileController.getWorkDetails);
 router.post('/Api-View-Work-Details', uploadFormData.none(), UserProfileController.getWorkDetails);
