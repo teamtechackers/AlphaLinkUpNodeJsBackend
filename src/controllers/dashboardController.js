@@ -4,11 +4,11 @@ const { errorResponse, phpResponse } = require('../utils/response');
 const { logger } = require('../utils/logger');
 
 const DashboardController = {
-  
+
   async dashboard(req, res) {
     try {
       const { user_id, token, location, lat, long, limit, start, length, filter_type } = { ...req.query, ...req.body };
-      
+
       if (!user_id || !token) {
         return errorResponse(res, 'user_id and token are required', 400);
       }
@@ -24,26 +24,26 @@ const DashboardController = {
       }
 
       let paginationStart = 0;
-      let paginationLength = 20; 
-      
+      let paginationLength = 20;
+
       if (start !== undefined && start !== null && start !== '') {
         paginationStart = parseInt(start) || 0;
       }
-      
+
       if (length !== undefined && length !== null && length !== '') {
         paginationLength = parseInt(length) || 20;
       } else if (limit !== undefined && limit !== null && limit !== '') {
         paginationLength = parseInt(limit) || 20;
       }
-      
+
       paginationStart = Math.max(0, paginationStart);
       paginationLength = Math.max(1, Math.min(100, paginationLength)); // Max 100 items per request
 
-      
+
       const hasCoordinates = lat && long;
       const isZeroCoordinates = hasCoordinates && parseFloat(lat) === 0 && parseFloat(long) === 0;
       const isValidCoordinates = hasCoordinates && !isZeroCoordinates;
-      
+
       if (hasCoordinates && !isValidCoordinates && !isZeroCoordinates) {
         return errorResponse(res, 'Invalid coordinates provided', 400);
       } else if (location && !hasCoordinates) {
@@ -54,7 +54,7 @@ const DashboardController = {
       const radius = generalSettingsRows.length > 0 ? generalSettingsRows[0].dashboard_search_radius : 50; // Default 50km
 
       const arrAttendedEventids = [];
-      
+
       if (hasCoordinates && !isZeroCoordinates) {
         const eventsAttendedRows = await query(
           `SELECT event_attendees.event_id FROM event_attendees 
@@ -75,7 +75,7 @@ const DashboardController = {
            )`,
           [decodedUserId, lat, long, lat, radius]
         );
-        
+
         eventsAttendedRows.forEach(row => {
           arrAttendedEventids[row.event_id] = row.event_id;
         });
@@ -87,7 +87,7 @@ const DashboardController = {
           SELECT user_event_details.*, 
                  event_mode.name as event_mode, 
                  event_type.name as event_type,
-                 IF(user_event_details.event_banner != '', CONCAT('${process.env.BASE_URL || req.protocol + '://' + req.get('host')}/uploads/events/', user_event_details.event_banner), '') AS event_banner,
+                 IF(user_event_details.event_banner != '', CONCAT('${process.env.BASE_URL}/uploads/events/', user_event_details.event_banner), '') AS event_banner,
                  COUNT(DISTINCT event_attendees.event_id) AS total_attendees,
                  COALESCE(
                  (6371 * ACOS(
@@ -107,9 +107,9 @@ const DashboardController = {
           LEFT JOIN event_attendees ON event_attendees.event_id = user_event_details.event_id
           WHERE user_event_details.user_id != ? AND user_event_details.deleted = 0
         `;
-        
+
         const eventsParams = [lat, long, lat, decodedUserId];
-        
+
         if (filter_type === 'today') {
           eventsQuery += ' AND user_event_details.event_date = CURDATE()';
         } else if (filter_type === 'tomorrow') {
@@ -119,14 +119,14 @@ const DashboardController = {
         } else {
           eventsQuery += ' AND user_event_details.event_date >= CURDATE()';
         }
-        
+
         eventsQuery += ' GROUP BY user_event_details.event_id HAVING distance_in_km <= ? ORDER BY user_event_details.event_date DESC';
-        
+
         eventsQuery += ' LIMIT ? OFFSET ?';
         eventsParams.push(radius, paginationLength, paginationStart);
-        
+
         const eventsRows = await query(eventsQuery, eventsParams);
-        
+
         eventsList = eventsRows.map(row => ({
           event_id: row.event_id.toString(),
           user_id: row.user_id.toString(),
@@ -166,7 +166,7 @@ const DashboardController = {
           SELECT user_event_details.*, 
                  event_mode.name as event_mode, 
                  event_type.name as event_type,
-                 IF(user_event_details.event_banner != '', CONCAT('${process.env.BASE_URL || req.protocol + '://' + req.get('host')}/uploads/events/', user_event_details.event_banner), '') AS event_banner,
+                 IF(user_event_details.event_banner != '', CONCAT('${process.env.BASE_URL}/uploads/events/', user_event_details.event_banner), '') AS event_banner,
                  COUNT(DISTINCT event_attendees.event_id) AS total_attendees
           FROM user_event_details 
           JOIN event_mode ON event_mode.id = user_event_details.event_mode_id
@@ -174,9 +174,9 @@ const DashboardController = {
           LEFT JOIN event_attendees ON event_attendees.event_id = user_event_details.event_id
           WHERE user_event_details.user_id != ? AND user_event_details.deleted = 0
         `;
-        
+
         const eventsParams = [decodedUserId];
-        
+
         if (filter_type === 'today') {
           eventsQuery += ' AND user_event_details.event_date = CURDATE()';
         } else if (filter_type === 'tomorrow') {
@@ -186,14 +186,14 @@ const DashboardController = {
         } else {
           eventsQuery += ' AND user_event_details.event_date >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)';
         }
-        
+
         eventsQuery += ' GROUP BY user_event_details.event_id ORDER BY user_event_details.created_dts DESC';
-        
+
         eventsQuery += ' LIMIT ? OFFSET ?';
         eventsParams.push(paginationLength, paginationStart);
-        
+
         const eventsRows = await query(eventsQuery, eventsParams);
-        
+
         eventsList = eventsRows.map(row => ({
           event_id: row.event_id.toString(),
           user_id: row.user_id.toString(),
@@ -264,10 +264,10 @@ const DashboardController = {
             AND user_job_details.job_lat IS NOT NULL 
             AND user_job_details.job_lng IS NOT NULL
         `;
-        
+
         const jobsParams = [lat, long, lat, decodedUserId];
-        
-    
+
+
         if (filter_type === 'today') {
           jobsQuery += ' AND DATE(user_job_details.created_dts) = CURDATE()';
         } else if (filter_type === 'tomorrow') {
@@ -277,23 +277,23 @@ const DashboardController = {
         } else {
           jobsQuery += ' AND DATE(user_job_details.created_dts) >= CURDATE()';
         }
-        
+
         jobsQuery += ' GROUP BY user_job_details.job_id HAVING distance_in_km <= ? ORDER BY user_job_details.created_dts DESC';
-        
+
         jobsQuery += ' LIMIT ? OFFSET ?';
         jobsParams.push(radius, paginationLength, paginationStart);
-        
+
         const jobsRows = await query(jobsQuery, jobsParams);
-        
+
         jobsList = jobsRows.map(job => {
           const skills = job.skill_names ? job.skill_names.split(', ') : [];
           const skillIds = job.skill_ids ? job.skill_ids.split(',') : [];
-          
+
           const mappedSkills = skillIds.map((id, index) => ({
             id: id.trim(),
             skill: skills[index] ? skills[index].trim() : ""
           }));
-          
+
           return {
             job_id: job.job_id.toString(),
             user_id: job.user_id.toString(),
@@ -345,9 +345,9 @@ const DashboardController = {
           LEFT JOIN skills ON FIND_IN_SET(skills.id, user_job_details.skill_ids)
           WHERE user_job_details.user_id != ? AND user_job_details.deleted = 0
         `;
-        
+
         const jobsParams = [decodedUserId];
-        
+
         if (filter_type === 'today') {
           jobsQuery += ' AND DATE(user_job_details.created_dts) = CURDATE()';
         } else if (filter_type === 'tomorrow') {
@@ -357,23 +357,23 @@ const DashboardController = {
         } else {
           jobsQuery += ' AND user_job_details.created_dts >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)';
         }
-        
+
         jobsQuery += ' GROUP BY user_job_details.job_id ORDER BY user_job_details.created_dts DESC';
-        
+
         jobsQuery += ' LIMIT ? OFFSET ?';
         jobsParams.push(paginationLength, paginationStart);
-        
+
         const jobsRows = await query(jobsQuery, jobsParams);
-        
+
         jobsList = jobsRows.map(job => {
           const skills = job.skill_names ? job.skill_names.split(', ') : [];
           const skillIds = job.skill_ids ? job.skill_ids.split(',') : [];
-          
+
           const mappedSkills = skillIds.map((id, index) => ({
             id: id.trim(),
             skill: skills[index] ? skills[index].trim() : ""
           }));
-          
+
           return {
             job_id: job.job_id.toString(),
             user_id: job.user_id.toString(),
@@ -432,7 +432,7 @@ const DashboardController = {
           FROM user_investors_unlocked 
           WHERE user_id = ?
         `, [decodedUserId]);
-        
+
         if (meetingStats && meetingStats.length > 0) {
           totalMeetingsCount = parseInt(meetingStats[0].total_meetings) || 0;
           pendingMeetingRequests = parseInt(meetingStats[0].pending_meetings) || 0;
