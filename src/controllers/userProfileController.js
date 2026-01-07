@@ -63,7 +63,12 @@ class UserProfileController {
               users.state_id, COALESCE(states.name,'') AS state, users.country_id, COALESCE(countries.name,'') AS country,
               users.interests, COALESCE(linkedin_url,'') AS linkedin_url, COALESCE(summary,'') AS summary,
               IF(profile_photo != '', CONCAT(?, profile_photo), '') AS profile_photo,
-              IF(qr_image != '', CONCAT(?, qr_image), '') AS qr_image,
+              IF(qr_image != '', 
+                IF(qr_image LIKE 'uploads/%', 
+                   CONCAT(?, SUBSTRING(qr_image, 18)), 
+                   IF(qr_image LIKE 'http%', qr_image, CONCAT(?, qr_image))
+                ), 
+                '') AS qr_image,
               profile_updated, card_requested, is_service_provider, is_investor
        FROM users
        LEFT JOIN countries ON countries.id = users.country_id
@@ -355,7 +360,12 @@ class UserProfileController {
                 COALESCE(linkedin_url, '') as linkedin_url,
                 COALESCE(summary, '') as summary,
                 IF(profile_photo != '', CONCAT(?, profile_photo), '') AS profile_photo,
-                IF(qr_image != '', CONCAT(?, qr_image), '') AS qr_image,
+                IF(qr_image != '', 
+                  IF(qr_image LIKE 'uploads/%', 
+                     CONCAT(?, SUBSTRING(qr_image, 18)), 
+                     IF(qr_image LIKE 'http%', qr_image, CONCAT(?, qr_image))
+                  ), 
+                  '') AS qr_image,
                 profile_updated,
                 card_requested,
                 is_service_provider,
@@ -537,7 +547,12 @@ class UserProfileController {
           COALESCE(u.linkedin_url, '') as linkedin_url,
           COALESCE(u.summary, '') as summary,
           IF(u.profile_photo != '', CONCAT(?, u.profile_photo), '') AS profile_photo,
-          IF(u.qr_image != '', CONCAT(?, u.qr_image), '') AS qr_image,
+          IF(u.qr_image != '', 
+             IF(u.qr_image LIKE 'uploads/%', 
+                CONCAT(?, SUBSTRING(u.qr_image, 18)), 
+                IF(u.qr_image LIKE 'http%', u.qr_image, CONCAT(?, u.qr_image))
+             ), 
+             '') AS qr_image,
           u.profile_updated,
           u.card_requested,
           u.is_service_provider,
