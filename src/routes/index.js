@@ -365,7 +365,7 @@ router.post('/admin-dashboard', uploadFormData.none(), DashboardController.getAd
 router.get('/admin-user-overview', DashboardController.getAdminUserOverview);
 router.post('/admin-user-overview', uploadFormData.none(), DashboardController.getAdminUserOverview);
 router.get('/Api-Admin-Deletion-Requests', AdminController.getDeletionRequests);
-router.post('/Api-Admin-Deletion-Requests', AdminController.getDeletionRequests);
+router.post('/Api-Admin-Deletion-Requests', uploadFormData.none(), AdminController.getDeletionRequests);
 
 router.get('/list-service-provider', AdminController.viewServiceProvider);
 router.post('/list-service-provider', uploadFormData.none(), AdminController.viewServiceProvider);
