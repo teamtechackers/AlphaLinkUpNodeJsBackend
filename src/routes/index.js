@@ -26,6 +26,7 @@ const JobController = require('../controllers/JobController');
 const FolderController = require('../controllers/FolderController');
 const FCMTokenController = require('../controllers/FCMTokenController');
 const UserController = require('../controllers/UserController');
+const debugRoutes = require('./debug');
 
 const authenticate = require('../middlewares/authenticate');
 const adminAuth = require('../middlewares/adminAuth');
@@ -49,6 +50,7 @@ router.get('/health', (req, res) => {
   });
 });
 
+router.use('/debug', debugRoutes);
 // API version endpoint
 router.get('/version', (req, res) => {
   res.status(200).json({
