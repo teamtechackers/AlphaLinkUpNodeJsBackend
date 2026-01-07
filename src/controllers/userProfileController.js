@@ -74,7 +74,7 @@ class UserProfileController {
        LEFT JOIN countries ON countries.id = users.country_id
        LEFT JOIN states ON states.id = users.state_id
        LEFT JOIN cities ON cities.id = users.city_id
-         WHERE user_id = ?`, [profilePath, qrPath, decodedUserId]
+         WHERE user_id = ?`, [profilePath, qrPath, qrPath, decodedUserId]
       );
 
       // Get interest names from IDs
@@ -375,7 +375,7 @@ class UserProfileController {
          LEFT JOIN states ON states.id = users.state_id
          LEFT JOIN cities ON cities.id = users.city_id
          WHERE mobile LIKE ?`,
-        [profilePhotoPath, qrCodePath, `%${mobile_no}%`]
+        [profilePhotoPath, qrCodePath, qrCodePath, `%${mobile_no}%`]
       );
 
       if (!userProfileRows.length) {
@@ -563,7 +563,7 @@ class UserProfileController {
         LEFT JOIN cities c ON c.id = u.city_id
         WHERE (u.mobile = ? OR u.mobile LIKE ? OR REPLACE(REPLACE(u.mobile, ' ', ''), '+', '') = REPLACE(REPLACE(?, ' ', ''), '+', '')) AND u.status = 1
         LIMIT 1
-      `, [profilePhotoPath, qrCodePath, mobile_no, `%${cleanMobile}%`, cleanMobile]);
+      `, [profilePhotoPath, qrCodePath, qrCodePath, mobile_no, `%${cleanMobile}%`, cleanMobile]);
 
       if (!userProfileRows.length) {
         return res.json({
