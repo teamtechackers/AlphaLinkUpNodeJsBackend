@@ -213,6 +213,7 @@ class AdminController {
       const countEvents = await query('SELECT COUNT(*) as count FROM user_event_details WHERE deleted = 0');
       const countService = await query('SELECT COUNT(*) as count FROM user_service_provider WHERE deleted = 0');
       const countInvestor = await query('SELECT COUNT(*) as count FROM user_investor WHERE deleted = 0');
+      const countDeletionRequests = await query('SELECT COUNT(*) as count FROM users WHERE deleted_request = 1 AND deleted = 0');
 
       // Get meeting counts
       // Total meetings (all non-deleted meetings)
@@ -267,6 +268,7 @@ class AdminController {
         count_events: parseInt(countEvents[0]?.count || 0),
         count_service: parseInt(countService[0]?.count || 0),
         count_investor: parseInt(countInvestor[0]?.count || 0),
+        count_deletion_requests: parseInt(countDeletionRequests[0]?.count || 0),
         count_meetings_total: parseInt(countMeetingsTotal[0]?.count || 0),
         count_meetings_pending: parseInt(countMeetingsPending[0]?.count || 0),
         count_meetings_approved: parseInt(countMeetingsApproved[0]?.count || 0),
