@@ -4358,7 +4358,7 @@ class AdminController {
         rcode: 200,
         requests: requests.map(r => ({
           ...r,
-          user_id: idEncode(r.user_id)
+          user_id: r.user_id
         }))
       });
 
