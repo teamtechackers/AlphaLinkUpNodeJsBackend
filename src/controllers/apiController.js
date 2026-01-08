@@ -2337,7 +2337,7 @@ const ApiController = {
       const adminMeetingRequests = meetingRequests.map(item => ({
         meeting_id: item.iu_id,                // Unique row ID
         meeting_type_id: item.meeting_id,      // Meeting type ID
-        request_id: item.meeting_id,           // Meeting type ID
+        request_id: item.user_id,              // Requester's user ID
         requester_name: item.requester_name || 'Unknown User',
         investor_id: item.investor_id,
         investor_name: item.investor_name,
