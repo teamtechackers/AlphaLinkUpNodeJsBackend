@@ -2335,9 +2335,9 @@ const ApiController = {
 
       // Transform to admin format
       const adminMeetingRequests = meetingRequests.map(item => ({
-        meeting_id: item.meeting_id,           // Meeting type ID (from database)
-        meeting_type_id: item.meeting_id,      // Meeting type ID (consistent with above)
-        request_id: item.iu_id,                // Unique request ID (primary identifier)
+        meeting_id: item.iu_id,                // Unique row ID
+        meeting_type_id: item.meeting_id,      // Meeting type ID
+        request_id: item.meeting_id,           // Meeting type ID
         requester_name: item.requester_name || 'Unknown User',
         investor_id: item.investor_id,
         investor_name: item.investor_name,
@@ -2704,15 +2704,18 @@ const ApiController = {
   // Admin Update Meeting Request - Time, Date, Status
   async updateAdminMeetingRequest(req, res) {
     try {
-      const { user_id, token, request_id, meeting_date, meeting_time, request_status, meeting_location, meeting_url } = {
+      const { user_id, token, meeting_id, request_id, meeting_date, meeting_time, request_status, meeting_location, meeting_url } = {
         ...req.query,
         ...req.body
       };
 
-      console.log('updateAdminMeetingRequest - Parameters:', { user_id, token, request_id, meeting_date, meeting_time, request_status });
+      console.log('updateAdminMeetingRequest - Parameters:', { user_id, token, meeting_id, request_id, meeting_date, meeting_time, request_status });
 
-      if (!user_id || !token || !request_id) {
-        return fail(res, 500, 'user_id, token, and request_id are required');
+      // Use meeting_id if provided (unique row ID), otherwise fall back to request_id
+      const uniqueId = meeting_id || request_id;
+
+      if (!user_id || !token || !uniqueId) {
+        return fail(res, 500, 'user_id, token, and meeting_id (or request_id) are required');
       }
 
       const decodedUserId = idDecode(user_id);
@@ -2745,7 +2748,7 @@ const ApiController = {
         LEFT JOIN meetings_type mt ON mt.id = uiul.meeting_id
         WHERE uiul.iu_id = ? 
         LIMIT 1
-      `, [request_id]);
+      `, [uniqueId]);
 
       if (!meetingRequest.length) {
         return fail(res, 404, 'Meeting request not found');
