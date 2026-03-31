@@ -2121,7 +2121,7 @@ class AdminController {
           description: description ? description.trim() : '',
           avg_sp_rating: avg_sp_rating ? parseFloat(avg_sp_rating) : 0,
           approval_status: approval_status ? parseInt(approval_status) : 1,
-          status: status !== undefined ? parseInt(status) : 1,
+          status: (status !== undefined && status !== '') ? parseInt(status) : 1,
           deleted: 0,
           created_dts: new Date().toISOString().slice(0, 19).replace('T', ' '),
           created_by: admin.role_id
@@ -2147,10 +2147,17 @@ class AdminController {
           description: description ? description.trim() : '',
           avg_sp_rating: avg_sp_rating ? parseFloat(avg_sp_rating) : 0,
           approval_status: approval_status ? parseInt(approval_status) : 1,
-          status: status !== undefined ? parseInt(status) : 1,
           updated_at: new Date().toISOString().slice(0, 19).replace('T', ' '),
           updated_by: admin.role_id
         };
+
+        // If status is not provided, fetch current status from DB
+        if (status === undefined || status === '') {
+          const existingRows = await query('SELECT status FROM user_service_provider WHERE sp_id = ? LIMIT 1', [row_id]);
+          updateData.status = existingRows.length ? existingRows[0].status : 1;
+        } else {
+          updateData.status = parseInt(status);
+        }
 
         await query(
           'UPDATE user_service_provider SET user_id = ?, country_id = ?, state_id = ?, city_id = ?, description = ?, avg_sp_rating = ?, approval_status = ?, status = ?, updated_at = ?, updated_by = ? WHERE sp_id = ?',
@@ -2938,7 +2945,7 @@ class AdminController {
           description: description ? description.trim() : '',
           card_number: card_number ? card_number.trim() : '',
           card_status: card_status ? parseInt(card_status) : 1,
-          status: status !== undefined ? parseInt(status) : 1,
+          status: (status !== undefined && status !== '') ? parseInt(status) : 1,
           name: (card_activation_name || name) ? (card_activation_name || name).trim() : '',
           business_name: business_name ? business_name.trim() : '',
           business_location: business_location ? business_location.trim() : '',
@@ -2967,13 +2974,20 @@ class AdminController {
           description: description ? description.trim() : '',
           card_number: card_number ? card_number.trim() : '',
           card_status: card_status ? parseInt(card_status) : 1,
-          status: status !== undefined ? parseInt(status) : 1,
           name: (card_activation_name || name) ? (card_activation_name || name).trim() : '',
           business_name: business_name ? business_name.trim() : '',
           business_location: business_location ? business_location.trim() : '',
           updated_at: new Date().toISOString().slice(0, 19).replace('T', ' '),
           updated_by: admin.role_id
         };
+
+        // If status is not provided, fetch current status from DB
+        if (status === undefined || status === '') {
+          const existingRows = await query('SELECT status FROM user_business_cards WHERE ubc_id = ? LIMIT 1', [row_id]);
+          updateData.status = existingRows.length ? existingRows[0].status : 1;
+        } else {
+          updateData.status = parseInt(status);
+        }
 
         await query(
           'UPDATE user_business_cards SET user_id = ?, country_id = ?, state_id = ?, city_id = ?, description = ?, card_number = ?, card_status = ?, status = ?, name = ?, business_name = ?, business_location = ?, updated_at = ?, updated_by = ? WHERE ubc_id = ?',
@@ -4277,8 +4291,8 @@ class AdminController {
           // Already has path, just add base URL
           investorDetails.image = `${baseUrl}/uploads/investors/${investorDetails.image}`;
         } else {
-          // Just filename, add thumbs folder
-          investorDetails.image = `${baseUrl}/uploads/investors/thumbs/${investorDetails.image}`;
+          // Just filename
+          investorDetails.image = `${baseUrl}/uploads/investors/${investorDetails.image}`;
         }
       }
 
