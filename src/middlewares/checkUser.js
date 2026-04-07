@@ -16,7 +16,7 @@ async function checkUser(req, res, next) {
   }
   const decoded = idDecode(userIdParam);
   if (!decoded) return fail(res, 500, 'Not A Valid User');
-  const rows = await query('SELECT * FROM users WHERE user_id = ?', [decoded]);
+  const rows = await query("SELECT * FROM users WHERE user_id = ? AND deleted = 0", [decoded]);
   if (!rows || rows.length === 0) return fail(res, 500, 'Not A Valid User');
   req.user = { id: Number(decoded), details: rows[0] };
   return next();

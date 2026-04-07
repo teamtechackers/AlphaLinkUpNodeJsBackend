@@ -52,7 +52,7 @@ const ApiController = {
         return fail(res, 500, 'Invalid user ID');
       }
 
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? AND deleted = 0 LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return fail(res, 500, 'Not A Valid User');
       }
@@ -95,7 +95,7 @@ const ApiController = {
         return fail(res, 500, 'Invalid user ID');
       }
 
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? AND deleted = 0 LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return fail(res, 500, 'Not A Valid User');
       }
@@ -146,7 +146,7 @@ const ApiController = {
         });
       }
 
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? AND deleted = 0 LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return res.json({
           status: false,
@@ -220,7 +220,7 @@ const ApiController = {
         });
       }
 
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? AND deleted = 0 LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return res.json({
           status: false,
@@ -342,7 +342,7 @@ const ApiController = {
         return fail(res, 500, 'Invalid user ID');
       }
 
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? AND deleted = 0 LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return fail(res, 500, 'Not A Valid User');
       }
@@ -432,7 +432,7 @@ const ApiController = {
         return fail(res, 500, 'Invalid user ID');
       }
 
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? AND deleted = 0 LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return fail(res, 500, 'Not A Valid User');
       }
@@ -519,7 +519,7 @@ const ApiController = {
         return fail(res, 500, 'Invalid user ID');
       }
 
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? AND deleted = 0 LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return fail(res, 500, 'Not A Valid User');
       }
@@ -589,7 +589,7 @@ const ApiController = {
         });
       }
 
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? AND deleted = 0 LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return res.json({
           status: false,
@@ -646,7 +646,7 @@ const ApiController = {
         rcode: 200,
         user_id: user_id,
         unique_token: token,
-        qr_image: user.qr_image ? `${process.env.BASE_URL || 'http://192.168.0.100:3000'}/${user.qr_image}` : '',
+        qr_image: user.qr_image ? `${process.env.BASE_URL || 'http://192.168.0.100:3000'}/uploads/qr_codes/${user.qr_image}` : '',
         business_card_info: businessCardInfo,
         promotions_list: promotionsList
       });
@@ -685,7 +685,7 @@ const ApiController = {
         return fail(res, 500, 'Invalid user ID');
       }
 
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? AND deleted = 0 LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return fail(res, 500, 'Not A Valid User');
       }
@@ -770,7 +770,7 @@ const ApiController = {
         });
       }
 
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? AND deleted = 0 LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return res.json({
           status: false,
@@ -869,7 +869,7 @@ const ApiController = {
         });
       }
 
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? AND deleted = 0 LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return res.json({
           status: false,
@@ -945,7 +945,7 @@ const ApiController = {
         return fail(res, 500, 'Invalid user ID');
       }
 
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? AND deleted = 0 LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return fail(res, 500, 'Not A Valid User');
       }
@@ -1042,7 +1042,7 @@ const ApiController = {
         });
       }
 
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? AND deleted = 0 LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return res.json({
           status: false,
@@ -1243,7 +1243,7 @@ const ApiController = {
         });
       }
 
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? AND deleted = 0 LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return res.json({
           status: false,
@@ -1339,7 +1339,7 @@ const ApiController = {
         return fail(res, 500, 'Invalid user ID');
       }
 
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? AND deleted = 0 LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return fail(res, 500, 'Not A Valid User');
       }
@@ -1405,7 +1405,7 @@ const ApiController = {
         return fail(res, 500, 'Invalid user ID');
       }
 
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? AND deleted = 0 LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return fail(res, 500, 'Not A Valid User');
       }
@@ -1511,7 +1511,7 @@ const ApiController = {
         return fail(res, 500, 'Invalid user ID');
       }
 
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? AND deleted = 0 LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return fail(res, 500, 'Not A Valid User');
       }
@@ -1601,7 +1601,7 @@ const ApiController = {
         });
       }
 
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? AND deleted = 0 LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return res.json({
           status: false,
@@ -1725,7 +1725,7 @@ const ApiController = {
         });
       }
 
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? AND deleted = 0 LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return res.json({
           status: false,
@@ -1974,7 +1974,7 @@ const ApiController = {
         return fail(res, 500, 'Invalid investor_id');
       }
 
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? AND deleted = 0 LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return fail(res, 500, 'Not A Valid User');
       }
@@ -2046,7 +2046,7 @@ const ApiController = {
       if (isNaN(iuId) || iuId <= 0) {
         return fail(res, 500, 'Invalid iu_id');
       }
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? AND deleted = 0 LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return fail(res, 500, 'Not A Valid User');
       }
@@ -2105,7 +2105,7 @@ const ApiController = {
       if (!decodedUserId) {
         return fail(res, 500, 'Invalid user ID');
       }
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? AND deleted = 0 LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return fail(res, 500, 'Not A Valid User');
       }
@@ -2272,7 +2272,7 @@ const ApiController = {
       }
 
       // Check if user is valid
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? AND deleted = 0 LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return fail(res, 500, 'Not A Valid User');
       }
@@ -2296,7 +2296,7 @@ const ApiController = {
           ui.language,
           ui.avg_rating,
           CASE 
-            WHEN ui.image != '' THEN CONCAT('${process.env.BASE_URL || 'http://localhost:3000'}/uploads/investors/thumbs/', ui.image)
+            WHEN ui.image != '' THEN CONCAT('${process.env.BASE_URL || 'http://localhost:3000'}/uploads/investors/', ui.image)
             ELSE ''
           END AS image,
           countries.name AS country,
@@ -2414,7 +2414,7 @@ const ApiController = {
       }
 
       // Check if admin user is valid
-      const adminRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      const adminRows = await query('SELECT * FROM users WHERE user_id = ? AND deleted = 0 LIMIT 1', [decodedUserId]);
       if (!adminRows.length) {
         return fail(res, 500, 'Not A Valid Admin User');
       }
@@ -2454,7 +2454,7 @@ const ApiController = {
         LEFT JOIN cities c ON c.id = u.city_id
         LEFT JOIN states s ON s.id = u.state_id
         LEFT JOIN countries co ON co.id = u.country_id
-        WHERE u.user_id = ? LIMIT 1
+        WHERE u.deleted = 0 AND u.user_id = ? LIMIT 1
       `, [targetUserId]);
 
       if (!userRows.length) {
@@ -2535,7 +2535,7 @@ const ApiController = {
       }
 
       // Check if admin user is valid
-      const adminRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      const adminRows = await query('SELECT * FROM users WHERE user_id = ? AND deleted = 0 LIMIT 1', [decodedUserId]);
       if (!adminRows.length) {
         return fail(res, 500, 'Not A Valid Admin User');
       }
@@ -2554,7 +2554,7 @@ const ApiController = {
           cities.name AS city,
           fs.investment_range,
           CASE 
-            WHEN ui.image != '' THEN CONCAT('${process.env.BASE_URL || 'http://localhost:3000'}/uploads/investors/thumbs/', ui.image)
+            WHEN ui.image != '' THEN CONCAT('${process.env.BASE_URL || 'http://localhost:3000'}/uploads/investors/', ui.image)
             ELSE ''
           END AS image
         FROM user_investor ui
@@ -2584,7 +2584,7 @@ const ApiController = {
           u.profile_photo,
           u.created_dts
         FROM users u
-        WHERE u.user_id = ?
+        WHERE u.deleted = 0 AND u.user_id = ?
       `, [investor.user_id]);
 
       // Get meeting statistics for this investor
@@ -2724,7 +2724,7 @@ const ApiController = {
       }
 
       // Check if admin user is valid
-      const adminRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      const adminRows = await query('SELECT * FROM users WHERE user_id = ? AND deleted = 0 LIMIT 1', [decodedUserId]);
       if (!adminRows.length) {
         return fail(res, 500, 'Not A Valid Admin User');
       }
@@ -2911,7 +2911,7 @@ const ApiController = {
       }
 
       // Check if admin user is valid
-      const adminRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      const adminRows = await query('SELECT * FROM users WHERE user_id = ? AND deleted = 0 LIMIT 1', [decodedUserId]);
       if (!adminRows.length) {
         return fail(res, 500, 'Not A Valid Admin User');
       }
@@ -2938,7 +2938,7 @@ const ApiController = {
           COALESCE(mt.type, '') AS meeting_type,
           COALESCE(mt.mins, '') AS mins,
           CASE 
-            WHEN ui.image != '' THEN CONCAT('${process.env.BASE_URL || 'http://localhost:3000'}/uploads/investors/thumbs/', ui.image)
+            WHEN ui.image != '' THEN CONCAT('${process.env.BASE_URL || 'http://localhost:3000'}/uploads/investors/', ui.image)
             ELSE ''
           END AS investor_image
         FROM user_investors_unlocked uiul
@@ -3026,7 +3026,7 @@ const ApiController = {
           ui.profile AS investor_profile,
           ui.avg_rating,
           CASE 
-            WHEN ui.image != '' THEN CONCAT('${process.env.BASE_URL || 'http://localhost:3000'}/uploads/investors/thumbs/', ui.image)
+            WHEN ui.image != '' THEN CONCAT('${process.env.BASE_URL || 'http://localhost:3000'}/uploads/investors/', ui.image)
             ELSE ''
           END AS investor_image,
           countries.name AS country,
@@ -3071,7 +3071,7 @@ const ApiController = {
       if (!decodedUserId) {
         return fail(res, 500, 'Invalid user ID');
       }
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? AND deleted = 0 LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return fail(res, 500, 'Not A Valid User');
       }
@@ -3161,7 +3161,7 @@ const ApiController = {
         return fail(res, 500, 'Invalid user ID');
       }
 
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? AND deleted = 0 LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return fail(res, 500, 'Not A Valid User');
       }
@@ -3184,7 +3184,7 @@ const ApiController = {
           ui.language,
           ui.avg_rating,
           CASE 
-            WHEN ui.image != '' THEN CONCAT('${process.env.BASE_URL || req.protocol + '://' + req.get('host')}/uploads/investors/thumbs/', ui.image)
+            WHEN ui.image != '' THEN CONCAT('${process.env.BASE_URL || req.protocol + '://' + req.get('host')}/uploads/investors/', ui.image)
             ELSE ''
           END AS image,
           countries.name AS country,
@@ -3285,7 +3285,7 @@ const ApiController = {
         return fail(res, 500, 'Invalid user ID');
       }
 
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? AND deleted = 0 LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return fail(res, 500, 'Not A Valid User');
       }
@@ -3307,7 +3307,7 @@ const ApiController = {
       // Get user names for connected users
       const userNames = {};
       for (const userId of connectedUsers) {
-        const userData = await query('SELECT full_name, mobile FROM users WHERE user_id = ?', [userId]);
+        const userData = await query('SELECT full_name, mobile FROM users WHERE deleted = 0 AND user_id = ?', [userId]);
         if (userData.length > 0) {
           userNames[userId] = userData[0].full_name || userData[0].mobile || `User_${userId}`;
         }
@@ -3361,7 +3361,7 @@ const ApiController = {
         return fail(res, 500, 'Invalid user ID');
       }
 
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? AND deleted = 0 LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return fail(res, 500, 'Not A Valid User');
       }
@@ -3417,7 +3417,7 @@ const ApiController = {
             ELSE ''
           END AS profile_photo
         FROM users
-        WHERE user_id != ?
+        WHERE user_id != ? AND deleted = 0
         ORDER BY created_dts ASC
       `, [profilePath, decodedUserId]);
 
@@ -3487,7 +3487,7 @@ const ApiController = {
         });
       }
 
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? AND deleted = 0 LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return res.json({
           status: false,
@@ -3589,7 +3589,7 @@ const ApiController = {
         return fail(res, 500, 'Invalid user ID');
       }
 
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? AND deleted = 0 LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return fail(res, 500, 'Not A Valid User');
       }
@@ -3619,7 +3619,7 @@ const ApiController = {
 
       if (chatResult.insertId > 0) {
         console.log(`✅ Chat insert successful, proceeding with WebSocket check`);
-        const senderRows = await query('SELECT full_name, profile_photo FROM users WHERE user_id = ?', [senderId]);
+        const senderRows = await query('SELECT full_name, profile_photo FROM users WHERE deleted = 0 AND user_id = ?', [senderId]);
         const sender = senderRows[0] || {};
 
         const messageData = {
@@ -3711,7 +3711,7 @@ const ApiController = {
           try {
             const NotificationService = require('../notification/NotificationService');
 
-            const receiverRows = await query('SELECT fcm_token, full_name FROM users WHERE user_id = ?', [receiverId]);
+            const receiverRows = await query('SELECT fcm_token, full_name FROM users WHERE deleted = 0 AND user_id = ?', [receiverId]);
             const receiver = receiverRows[0] || {};
 
             if (receiver.fcm_token) {
@@ -3775,7 +3775,7 @@ const ApiController = {
       }
 
       // Get user details and validate
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? AND deleted = 0 LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return fail(res, 500, 'Not A Valid User');
       }
@@ -3827,7 +3827,7 @@ const ApiController = {
         return fail(res, 500, 'Invalid user ID');
       }
 
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? AND deleted = 0 LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return fail(res, 500, 'Not A Valid User');
       }
@@ -3891,7 +3891,7 @@ const ApiController = {
       }
 
       // Get user details and validate
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? AND deleted = 0 LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return fail(res, 500, 'Not A Valid User');
       }
@@ -3948,7 +3948,7 @@ const ApiController = {
         });
       }
 
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? AND deleted = 0 LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return res.json({
           status: false,
@@ -4032,7 +4032,7 @@ const ApiController = {
         return fail(res, 500, 'Invalid user ID');
       }
 
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? AND deleted = 0 LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return fail(res, 500, 'Not A Valid User');
       }
@@ -4148,7 +4148,7 @@ const ApiController = {
         });
       }
 
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? AND deleted = 0 LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return res.json({
           status: false,
@@ -4297,7 +4297,7 @@ const ApiController = {
       }
 
       // Validate user
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? AND deleted = 0 LIMIT 1', [decodedUserId]);
       if (userRows.length === 0) {
         return res.json({
           status: false,
@@ -4441,7 +4441,7 @@ const ApiController = {
       }
 
       // Validate user
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? AND deleted = 0 LIMIT 1', [decodedUserId]);
       if (userRows.length === 0) {
         return res.json({
           status: false,
@@ -4520,7 +4520,7 @@ const ApiController = {
       }
 
       // Validate user
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? AND deleted = 0 LIMIT 1', [decodedUserId]);
       if (userRows.length === 0) {
         return res.json({
           status: false,
@@ -4590,7 +4590,7 @@ const ApiController = {
       }
 
       // Validate user
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? AND deleted = 0 LIMIT 1', [decodedUserId]);
       if (userRows.length === 0) {
         return res.json({
           status: false,
@@ -4645,7 +4645,7 @@ const ApiController = {
       const { user_id, token, notification_id } = req.body;
 
       // Validate user
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [user_id]);
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? AND deleted = 0 LIMIT 1', [user_id]);
       if (userRows.length === 0) {
         return res.json({
           status: false,
@@ -4734,7 +4734,7 @@ const ApiController = {
       }
 
       // Verify user token
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? AND deleted = 0 LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return res.json({
           status: false,

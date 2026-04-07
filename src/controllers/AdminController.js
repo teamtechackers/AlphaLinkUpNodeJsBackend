@@ -169,7 +169,7 @@ class AdminController {
       }
 
       // Get user details and validate
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? AND deleted = 0 LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return res.json({
           status: false,
@@ -318,7 +318,7 @@ class AdminController {
       }
 
       // Get user details and validate
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? AND deleted = 0 LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return res.json({
           status: false,
@@ -402,7 +402,7 @@ class AdminController {
       }
 
       // Get user details and validate
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? AND deleted = 0 LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return res.json({
           status: false,
@@ -529,7 +529,7 @@ class AdminController {
       }
 
       // Get user details and validate
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? AND deleted = 0 LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return res.json({
           status: false,
@@ -670,7 +670,7 @@ class AdminController {
       }
 
       // Get user details and validate
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? AND deleted = 0 LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return res.json({
           status: false,
@@ -777,7 +777,7 @@ class AdminController {
       }
 
       // Get user details and validate
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? AND deleted = 0 LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return res.json({
           status: false,
@@ -887,7 +887,7 @@ class AdminController {
       }
 
       // Check if user exists
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? AND deleted = 0 LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return res.json({
           status: false,
@@ -983,7 +983,7 @@ class AdminController {
       }
 
       // Check if user exists
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? AND deleted = 0 LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return res.json({
           status: false,
@@ -1337,7 +1337,7 @@ class AdminController {
       }
 
       // Check if user exists
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? AND deleted = 0 LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return res.json({
           status: false,
@@ -1396,10 +1396,10 @@ class AdminController {
       let userSearchQuery = '';
       let userSearchParams = [];
       if (searchValue) {
-        userSearchQuery = 'WHERE (u.full_name LIKE ? OR u.mobile LIKE ? OR u.email LIKE ?) AND u.status = 1 AND u.deleted = 0';
+        userSearchQuery = 'WHERE (u.full_name LIKE ? OR u.mobile LIKE ? OR u.email LIKE ?) AND u.status = 1 AND u.deleted = 0 AND u.user_id NOT IN (SELECT id FROM admin_users)';
         userSearchParams.push(`%${searchValue}%`, `%${searchValue}%`, `%${searchValue}%`);
       } else {
-        userSearchQuery = 'WHERE u.status = 1 AND u.deleted = 0';
+        userSearchQuery = 'WHERE u.status = 1 AND u.deleted = 0 AND u.user_id NOT IN (SELECT id FROM admin_users)';
       }
 
       // Build search query for admins
@@ -1657,7 +1657,7 @@ class AdminController {
       }
 
       // Check if user exists
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? AND deleted = 0 LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return res.json({
           status: false,
@@ -1807,7 +1807,7 @@ class AdminController {
       }
 
       // Check if user exists
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? AND deleted = 0 LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return res.json({
           status: false,
@@ -1918,7 +1918,7 @@ class AdminController {
       }
 
       // Check if user exists
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? AND deleted = 0 LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return res.json({
           status: false,
@@ -2003,7 +2003,7 @@ class AdminController {
       }
 
       // Check if user exists
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? AND deleted = 0 LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return res.json({
           status: false,
@@ -2080,7 +2080,7 @@ class AdminController {
       }
 
       // Check if user exists
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? AND deleted = 0 LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return res.json({
           status: false,
@@ -2210,7 +2210,7 @@ class AdminController {
       }
 
       // Check if user exists
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? AND deleted = 0 LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return res.json({
           status: false,
@@ -2357,7 +2357,7 @@ class AdminController {
       }
 
       // Check if user exists
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? AND deleted = 0 LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return res.json({
           status: false,
@@ -2509,7 +2509,7 @@ class AdminController {
       }
 
       // Check if user exists
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? AND deleted = 0 LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return res.json({
           status: false,
@@ -2632,7 +2632,7 @@ class AdminController {
       }
 
       // Check if user exists
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? AND deleted = 0 LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return res.json({
           status: false,
@@ -2718,7 +2718,7 @@ class AdminController {
       }
 
       // Check if user exists
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? AND deleted = 0 LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return res.json({
           status: false,
@@ -2816,7 +2816,7 @@ class AdminController {
       }
 
       // Check if user exists
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? AND deleted = 0 LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return res.json({
           status: false,
@@ -2902,7 +2902,7 @@ class AdminController {
 
       // Check if user exists
       console.log('Checking user with decodedUserId:', decodedUserId);
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? AND deleted = 0 LIMIT 1', [decodedUserId]);
       console.log('User rows found:', userRows.length);
       if (!userRows.length) {
         console.log('User not found in users table for decodedUserId:', decodedUserId);
@@ -3040,7 +3040,7 @@ class AdminController {
       }
 
       // Check if user exists
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? AND deleted = 0 LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return res.json({
           status: false,
@@ -3202,7 +3202,7 @@ class AdminController {
       }
 
       // Check if user exists
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? AND deleted = 0 LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return res.json({
           status: false,
@@ -3325,7 +3325,7 @@ class AdminController {
       }
 
       // Check if user exists
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? AND deleted = 0 LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return res.json({
           status: false,
@@ -3411,7 +3411,7 @@ class AdminController {
       }
 
       // Check if user exists
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? AND deleted = 0 LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return res.json({
           status: false,
@@ -3502,7 +3502,7 @@ class AdminController {
       }
 
       // Get user details and validate
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? AND deleted = 0 LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return res.json({
           status: false,
@@ -3601,7 +3601,7 @@ class AdminController {
       }
 
       // Check if user exists
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? AND deleted = 0 LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return res.json({
           status: false,
@@ -3687,7 +3687,7 @@ class AdminController {
       }
 
       // Check if admin user exists
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? AND deleted = 0 LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return res.json({
           status: false,
@@ -3864,7 +3864,7 @@ class AdminController {
       }
 
       // Check if user exists
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? AND deleted = 0 LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return res.json({
           status: false,
@@ -4044,7 +4044,7 @@ class AdminController {
       }
 
       // Check if user exists
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? AND deleted = 0 LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return res.json({
           status: false,
@@ -4153,7 +4153,7 @@ class AdminController {
       }
 
       // Check if user exists
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? AND deleted = 0 LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return res.json({
           status: false,
@@ -4233,7 +4233,7 @@ class AdminController {
       }
 
       // Check if user exists
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? AND deleted = 0 LIMIT 1', [decodedUserId]);
       if (!userRows.length) {
         return res.json({
           status: false,
@@ -4333,7 +4333,7 @@ class AdminController {
       // Verify admin
       const adminRows = await query(`
         SELECT u.user_id 
-        FROM users u 
+        FROM users u
         JOIN admin_users a ON a.id = u.user_id 
         WHERE u.user_id = ? AND u.unique_token = ? AND u.deleted = 0
         LIMIT 1

@@ -38,7 +38,7 @@ class FCMTokenController {
       }
 
       const userRows = await query(
-        'SELECT user_id FROM users WHERE user_id = ? AND token = ? LIMIT 1',
+        'SELECT user_id FROM users WHERE user_id = ? AND unique_token = ? AND deleted = 0 LIMIT 1',
         [decodedUserId, token]
       );
 
@@ -105,7 +105,7 @@ class FCMTokenController {
       }
 
       const userRows = await query(
-        'SELECT fcm_token FROM users WHERE user_id = ? AND token = ? LIMIT 1',
+        'SELECT fcm_token FROM users WHERE user_id = ? AND unique_token = ? AND deleted = 0 LIMIT 1',
         [decodedUserId, token]
       );
 

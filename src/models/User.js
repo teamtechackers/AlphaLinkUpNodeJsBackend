@@ -77,7 +77,7 @@ class User {
          LEFT JOIN states s ON s.id = u.state_id
          LEFT JOIN cities ci ON ci.id = u.city_id
          LEFT JOIN interests i ON i.id = u.interests
-         WHERE u.user_id = ?`,
+         WHERE u.user_id = ? AND u.deleted = 0 LIMIT 1`,
         [userId]
       );
 
@@ -92,7 +92,7 @@ class User {
   static async findByUsername(username) {
     try {
       const [user] = await query(
-        'SELECT * FROM users WHERE username = ? AND status = 1',
+        'SELECT * FROM users WHERE username = ? AND status = 1 AND deleted = \'0\' LIMIT 1',
         [username]
       );
 
@@ -107,7 +107,7 @@ class User {
   static async findByEmail(email) {
     try {
       const [user] = await query(
-        'SELECT * FROM users WHERE email = ? AND status = 1',
+        'SELECT * FROM users WHERE email = ? AND status = 1 AND deleted = \'0\' LIMIT 1',
         [email]
       );
 
@@ -122,7 +122,7 @@ class User {
   static async findByMobile(mobile) {
     try {
       const [user] = await query(
-        'SELECT * FROM users WHERE mobile = ? ORDER BY user_id DESC LIMIT 1',
+        'SELECT * FROM users WHERE mobile = ? AND deleted = \'0\' ORDER BY user_id DESC LIMIT 1',
         [mobile]
       );
 
@@ -137,7 +137,7 @@ class User {
   static async findByQRCode(qrCode) {
     try {
       const [user] = await query(
-        'SELECT * FROM users WHERE qr_image = ? AND status = 1',
+        'SELECT * FROM users WHERE qr_image = ? AND status = 1 AND deleted = \'0\' LIMIT 1',
         [qrCode]
       );
 
@@ -152,7 +152,7 @@ class User {
   static async findByToken(token) {
     try {
       const [user] = await query(
-        'SELECT * FROM users WHERE unique_token = ? AND status = 1',
+        'SELECT * FROM users WHERE unique_token = ? AND status = 1 AND deleted = \'0\' LIMIT 1',
         [token]
       );
 
@@ -411,11 +411,11 @@ class User {
   static async getUserStats(userId) {
     try {
       const [jobStats] = await query(
-        "SELECT COUNT(*) AS total_jobs FROM user_job_details WHERE user_id = ? AND deleted = '0'"
+        "SELECT COUNT(*) AS total_jobs FROM user_job_details WHERE user_id = ? AND deleted = 0"
       );
       
       const [eventStats] = await query(
-        "SELECT COUNT(*) AS total_events FROM user_event_details WHERE user_id = ? AND deleted = '0'"
+        "SELECT COUNT(*) AS total_events FROM user_event_details WHERE user_id = ? AND deleted = 0"
       );
       
       const [contactStats] = await query(
@@ -423,7 +423,7 @@ class User {
       );
       
       const [serviceStats] = await query(
-        "SELECT COUNT(*) AS total_services FROM user_service_provider WHERE user_id = ? AND deleted = '0'"
+        "SELECT COUNT(*) AS total_services FROM user_service_provider WHERE user_id = ? AND deleted = 0"
       );
 
       return {
