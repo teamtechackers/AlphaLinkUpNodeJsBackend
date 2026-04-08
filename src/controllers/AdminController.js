@@ -204,7 +204,7 @@ class AdminController {
       // Count total users including admins (active, non‑deleted users + admin users)
       const countUsers = await query(`
         SELECT SUM(cnt) as count FROM (
-          SELECT COUNT(*) as cnt FROM users WHERE status = 1 AND deleted = 0
+          SELECT COUNT(*) as cnt FROM users WHERE status = 1 AND deleted = 0 AND user_id NOT IN (SELECT id FROM admin_users)
           UNION ALL
           SELECT COUNT(*) as cnt FROM admin_users
         ) AS t`
@@ -3654,7 +3654,7 @@ class AdminController {
   static async submitInvestors(req, res) {
     try {
       // Get parameters from body
-      const { user_id, token, row_id, name, country_id, state_id, city_id, fund_size_id, linkedin_url, bio, availability, profile, investment_stage, meeting_city, countries_to_invest, investment_industry, language, approval_status, status, user_for_investor } = req.body;
+      const { user_id, token, row_id, name, country_id, state_id, city_id, fund_size_id, linkedin_url, bio, availability, profile, investment_stage, meeting_city, countries_to_invest, investment_industry, language, approval_status, user_for_investor } = req.body;
 
       // Get uploaded image filename
       const image = req.file ? req.file.filename : '';
@@ -3665,7 +3665,7 @@ class AdminController {
       console.log('submitInvestors - row_id (investor_id):', row_id);
       console.log('submitInvestors - image:', image);
 
-      console.log('submitInvestors - Parameters:', { user_id, token, row_id, user_for_investor, name, country_id, state_id, city_id, fund_size_id, linkedin_url, bio, availability, profile, investment_stage, meeting_city, countries_to_invest, investment_industry, language, approval_status, status, image });
+      console.log('submitInvestors - Parameters:', { user_id, token, row_id, user_for_investor, name, country_id, state_id, city_id, fund_size_id, linkedin_url, bio, availability, profile, investment_stage, meeting_city, countries_to_invest, investment_industry, language, approval_status, image });
 
       // Check if user_id and token are provided
       if (!user_id || !token) {
@@ -3735,13 +3735,12 @@ class AdminController {
               investment_industry = ?,
               language = ?,
               approval_status = ?,
-              status = ?,
               image = ?,
               updated_at = NOW()
             WHERE investor_id = ?
           `;
           updateParams = [
-            name, country_id, state_id, city_id, fund_size_id, linkedin_url, bio, availability, profile, investment_stage, meeting_city, countries_to_invest, investment_industry, language, approval_status, status, image, investorId
+            name, country_id, state_id, city_id, fund_size_id, linkedin_url, bio, availability, profile, investment_stage, meeting_city, countries_to_invest, investment_industry, language, approval_status, image, investorId
           ];
         } else {
           updateQuery = `
@@ -3762,12 +3761,11 @@ class AdminController {
               investment_industry = ?,
               language = ?,
               approval_status = ?,
-              status = ?,
               updated_at = NOW()
             WHERE investor_id = ?
           `;
           updateParams = [
-            name, country_id, state_id, city_id, fund_size_id, linkedin_url, bio, availability, profile, investment_stage, meeting_city, countries_to_invest, investment_industry, language, approval_status, status, investorId
+            name, country_id, state_id, city_id, fund_size_id, linkedin_url, bio, availability, profile, investment_stage, meeting_city, countries_to_invest, investment_industry, language, approval_status, investorId
           ];
         }
 
@@ -3785,8 +3783,8 @@ class AdminController {
             user_id, name, country_id, state_id, city_id, fund_size_id, 
             linkedin_url, bio, availability, profile, investment_stage, 
             meeting_city, countries_to_invest, investment_industry, 
-            language, approval_status, status, image, deleted, created_dts, updated_at
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, NOW(), NOW())
+            language, approval_status, image, deleted, created_dts, updated_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, NOW(), NOW())
         `;
 
         // Use user_for_investor if provided (as simple number), otherwise use admin user_id
@@ -3813,7 +3811,6 @@ class AdminController {
           investment_industry,
           language,
           approval_status,
-          status,
           image || '' // Use uploaded image or empty string
         ]);
 

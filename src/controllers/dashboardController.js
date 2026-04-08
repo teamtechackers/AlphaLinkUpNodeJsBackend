@@ -494,7 +494,13 @@ const DashboardController = {
         return errorResponse(res, 'Invalid admin token', 401);
       }
 
-      const [totalUsers] = await query('SELECT COUNT(*) as count FROM users WHERE deleted = 0');
+      const [totalUsersData] = await query(`
+        SELECT SUM(cnt) as count FROM (
+          SELECT COUNT(*) as cnt FROM users WHERE status = 1 AND deleted = 0 AND user_id NOT IN (SELECT id FROM admin_users)
+          UNION ALL
+          SELECT COUNT(*) as cnt FROM admin_users
+        ) AS t`);
+      const totalUsers = { count: totalUsersData.count || 0 };
       const [totalJobs] = await query('SELECT COUNT(*) as count FROM user_job_details WHERE deleted = 0');
       const [totalEvents] = await query('SELECT COUNT(*) as count FROM user_event_details WHERE deleted = 0');
       const [totalServices] = await query('SELECT COUNT(*) as count FROM user_service_provider WHERE deleted = 0');
