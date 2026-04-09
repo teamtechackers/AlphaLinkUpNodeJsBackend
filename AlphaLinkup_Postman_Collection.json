@@ -1,34 +1,40 @@
-Zz{
+{
   "info": {
-    "name": "AlphaLinkup API Collection",
-    "description": "Complete API collection for AlphaLinkup Backend",
+    "name": "AlphaLinkup Backend API",
+    "description": "Comprehensive collection of all user and admin APIs.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://alphalinkup.com/api",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "user_id",
+      "value": "MQ==",
+      "type": "string"
+    }
+  ],
   "item": [
     {
-      "name": "Auth & Onboarding",
+      "name": "1. Authentication",
       "item": [
         {
           "name": "Send OTP",
           "request": {
             "method": "POST",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/Api-Send-Otp" },
             "body": {
               "mode": "formdata",
               "formdata": [
-                {
-                  "key": "mobile",
-                  "value": "923XXXXXXXXX",
-                  "type": "text"
-                }
-              ]
-            },
-            "url": {
-              "raw": "{{baseUrl}}/Api-Send-Otp",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "Api-Send-Otp"
+                { "key": "mobile", "value": "03001234567", "type": "text" }
               ]
             }
           }
@@ -37,28 +43,13 @@ Zz{
           "name": "Verify OTP",
           "request": {
             "method": "POST",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/Api-Verify-Otp" },
             "body": {
               "mode": "formdata",
               "formdata": [
-                {
-                  "key": "mobile",
-                  "value": "923XXXXXXXXX",
-                  "type": "text"
-                },
-                {
-                  "key": "otp",
-                  "value": "123456",
-                  "type": "text"
-                }
-              ]
-            },
-            "url": {
-              "raw": "{{baseUrl}}/Api-Verify-Otp",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "Api-Verify-Otp"
+                { "key": "mobile", "value": "03001234567", "type": "text" },
+                { "key": "otp", "value": "1234", "type": "text" }
               ]
             }
           }
@@ -67,52 +58,14 @@ Zz{
           "name": "Login",
           "request": {
             "method": "POST",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"username\": \"superadmin\",\n  \"password\": \"superadmin\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{baseUrl}}/Api-Login",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "Api-Login"
-              ]
-            }
-          }
-        },
-        {
-          "name": "Logout",
-          "request": {
-            "method": "POST",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/Api-Login" },
             "body": {
               "mode": "formdata",
               "formdata": [
-                {
-                  "key": "user_id",
-                  "value": "{{user_id}}",
-                  "type": "text"
-                },
-                {
-                  "key": "token",
-                  "value": "{{token}}",
-                  "type": "text"
-                }
-              ]
-            },
-            "url": {
-              "raw": "{{baseUrl}}/Api-Logout",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "Api-Logout"
+                { "key": "mobile", "value": "", "type": "text" },
+                { "key": "password", "value": "", "type": "text" },
+                { "key": "fcm_token", "value": "", "type": "text" }
               ]
             }
           }
@@ -120,366 +73,84 @@ Zz{
       ]
     },
     {
-      "name": "Master Data",
+      "name": "2. Admin Panel",
+      "item": [
+        {
+          "name": "Admin Login",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/admin-login" },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "username", "value": "superadmin", "type": "text" },
+                { "key": "password", "value": "superadmin", "type": "text" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Admin Dashboard",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/admin-dashboard" },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "user_id", "value": "{{user_id}}", "type": "text" },
+                { "key": "token", "value": "{{token}}", "type": "text" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "User List (AJAX)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/list-users-ajax" },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "user_id", "value": "{{user_id}}", "type": "text" },
+                { "key": "token", "value": "{{token}}", "type": "text" },
+                { "key": "draw", "value": "1", "type": "text" },
+                { "key": "start", "value": "0", "type": "text" },
+                { "key": "length", "value": "10", "type": "text" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Master Data",
       "item": [
         {
           "name": "Country List",
           "request": {
             "method": "GET",
-            "url": {
-              "raw": "{{baseUrl}}/Api-Country-List",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "Api-Country-List"
-              ]
-            }
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/Api-Country-List" }
           }
         },
         {
           "name": "State List",
           "request": {
             "method": "POST",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/Api-State-List" },
             "body": {
               "mode": "formdata",
               "formdata": [
-                {
-                  "key": "country_id",
-                  "value": "166",
-                  "type": "text"
-                }
-              ]
-            },
-            "url": {
-              "raw": "{{baseUrl}}/Api-State-List",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "Api-State-List"
-              ]
-            }
-          }
-        },
-        {
-          "name": "City List",
-          "request": {
-            "method": "POST",
-            "body": {
-              "mode": "formdata",
-              "formdata": [
-                {
-                  "key": "state_id",
-                  "value": "2728",
-                  "type": "text"
-                }
-              ]
-            },
-            "url": {
-              "raw": "{{baseUrl}}/Api-City-List",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "Api-City-List"
-              ]
-            }
-          }
-        },
-        {
-          "name": "Interests List",
-          "request": {
-            "method": "GET",
-            "url": {
-              "raw": "{{baseUrl}}/Api-Interests-List",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "Api-Interests-List"
-              ]
-            }
-          }
-        },
-        {
-          "name": "Employment Type List",
-          "request": {
-            "method": "GET",
-            "url": {
-              "raw": "{{baseUrl}}/Api-Employment-Type-List",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "Api-Employment-Type-List"
+                { "key": "country_id", "value": "1", "type": "text" }
               ]
             }
           }
         }
       ]
-    },
-    {
-      "name": "Profile",
-      "item": [
-        {
-          "name": "View Profile",
-          "request": {
-            "method": "GET",
-            "url": {
-              "raw": "{{baseUrl}}/Api-View-Profile?user_id={{user_id}}&token={{token}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "Api-View-Profile"
-              ],
-              "query": [
-                {
-                  "key": "user_id",
-                  "value": "{{user_id}}"
-                },
-                {
-                  "key": "token",
-                  "value": "{{token}}"
-                }
-              ]
-            }
-          }
-        },
-        {
-          "name": "Update Profile",
-          "request": {
-            "method": "POST",
-            "body": {
-              "mode": "formdata",
-              "formdata": [
-                {
-                  "key": "user_id",
-                  "value": "{{user_id}}",
-                  "type": "text"
-                },
-                {
-                  "key": "token",
-                  "value": "{{token}}",
-                  "type": "text"
-                },
-                {
-                  "key": "full_name",
-                  "value": "Test User",
-                  "type": "text"
-                },
-                {
-                  "key": "profile_photo",
-                  "value": "",
-                  "type": "file"
-                }
-              ]
-            },
-            "url": {
-              "raw": "{{baseUrl}}/Api-Update-Profile",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "Api-Update-Profile"
-              ]
-            }
-          }
-        },
-        {
-          "name": "Delete Account",
-          "request": {
-            "method": "POST",
-            "body": {
-              "mode": "formdata",
-              "formdata": [
-                {
-                  "key": "user_id",
-                  "value": "{{user_id}}",
-                  "type": "text"
-                },
-                {
-                  "key": "token",
-                  "value": "{{token}}",
-                  "type": "text"
-                }
-              ]
-            },
-            "url": {
-              "raw": "{{baseUrl}}/Api-User-Deleted-Account",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "Api-User-Deleted-Account"
-              ]
-            }
-          }
-        }
-      ]
-    },
-    {
-      "name": "Admin",
-      "item": [
-        {
-          "name": "Admin Dashboard",
-          "request": {
-            "method": "GET",
-            "url": {
-              "raw": "{{baseUrl}}/admin-dashboard?user_id={{user_id}}&token={{token}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "admin-dashboard"
-              ],
-              "query": [
-                {
-                  "key": "user_id",
-                  "value": "{{user_id}}"
-                },
-                {
-                  "key": "token",
-                  "value": "{{token}}"
-                }
-              ]
-            }
-          }
-        },
-        {
-          "name": "List Users (AJAX)",
-          "request": {
-            "method": "POST",
-            "body": {
-              "mode": "formdata",
-              "formdata": [
-                {
-                  "key": "user_id",
-                  "value": "{{user_id}}",
-                  "type": "text"
-                },
-                {
-                  "key": "token",
-                  "value": "{{token}}",
-                  "type": "text"
-                },
-                {
-                  "key": "draw",
-                  "value": "1",
-                  "type": "text"
-                },
-                {
-                  "key": "start",
-                  "value": "0",
-                  "type": "text"
-                },
-                {
-                  "key": "length",
-                  "value": "10",
-                  "type": "text"
-                }
-              ]
-            },
-            "url": {
-              "raw": "{{baseUrl}}/list-users-ajax",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "list-users-ajax"
-              ]
-            }
-          }
-        },
-        {
-          "name": "View Investor Details",
-          "request": {
-            "method": "POST",
-            "body": {
-              "mode": "formdata",
-              "formdata": [
-                {
-                  "key": "user_id",
-                  "value": "{{user_id}}",
-                  "type": "text"
-                },
-                {
-                  "key": "token",
-                  "value": "{{token}}",
-                  "type": "text"
-                },
-                {
-                  "key": "keys",
-                  "value": "1",
-                  "type": "text"
-                }
-              ]
-            },
-            "url": {
-              "raw": "{{baseUrl}}/view-investors-details",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "view-investors-details"
-              ]
-            }
-          }
-        }
-      ]
-    },
-    {
-      "name": "System",
-      "item": [
-        {
-          "name": "Health Check",
-          "request": {
-            "method": "GET",
-            "url": {
-              "raw": "{{baseUrl}}/health",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "health"
-              ]
-            }
-          }
-        },
-        {
-          "name": "Version",
-          "request": {
-            "method": "GET",
-            "url": {
-              "raw": "{{baseUrl}}/version",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "version"
-              ]
-            }
-          }
-        }
-      ]
-    }
-  ],
-  "variable": [
-    {
-      "key": "baseUrl",
-      "value": "http://www.alphalinkup.com:3000",
-      "type": "string"
-    },
-    {
-      "key": "user_id",
-      "value": "MQ==",
-      "type": "string"
-    },
-    {
-      "key": "token",
-      "value": "4948068b011abc7501b7ab38bf1fb86c",
-      "type": "string"
     }
   ]
 }
