@@ -1,7 +1,7 @@
 {
   "info": {
-    "name": "AlphaLinkup Backend API - ULTIMATE",
-    "description": "Complete collection of 150+ endpoints for user and admin sides.",
+    "name": "AlphaLinkup Backend API - ULTIMATE (100% Complete)",
+    "description": "Complete collection of ALL endpoints (User & Admin).",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -20,73 +20,54 @@
       ]
     },
     {
-      "name": "2. Admin Panel (Full)",
+      "name": "2. Master Data",
+      "item": [
+        { "name": "Country List", "request": { "method": "GET", "url": "{{baseUrl}}/Api-Country-List" } },
+        { "name": "State List", "request": { "method": "POST", "url": "{{baseUrl}}/Api-State-List", "body": { "mode": "formdata", "formdata": [{ "key": "country_id", "value": "1" }] } } },
+        { "name": "City List", "request": { "method": "POST", "url": "{{baseUrl}}/Api-City-List", "body": { "mode": "formdata", "formdata": [{ "key": "state_id", "value": "" }] } } },
+        { "name": "Interests List", "request": { "method": "GET", "url": "{{baseUrl}}/Api-Interests-List" } },
+        { "name": "Employment Type List", "request": { "method": "GET", "url": "{{baseUrl}}/Api-Employment-Type-List" } },
+        { "name": "Job Type List", "request": { "method": "GET", "url": "{{baseUrl}}/Api-Job-Type-List" } }
+      ]
+    },
+    {
+      "name": "3. Admin Panel (Full System)",
       "item": [
         { "name": "Admin Login", "request": { "method": "POST", "url": "{{baseUrl}}/admin-login", "body": { "mode": "formdata", "formdata": [{ "key": "username", "value": "superadmin" }, { "key": "password", "value": "superadmin" }] } } },
         { "name": "Admin Dashboard", "request": { "method": "POST", "url": "{{baseUrl}}/admin-dashboard", "body": { "mode": "formdata", "formdata": [{ "key": "user_id", "value": "{{user_id}}" }, { "key": "token", "value": "{{token}}" }] } } },
         { "name": "List Users (AJAX)", "request": { "method": "POST", "url": "{{baseUrl}}/list-users-ajax", "body": { "mode": "formdata", "formdata": [{ "key": "user_id", "value": "{{user_id}}" }, { "key": "token", "value": "{{token}}" }, { "key": "start", "value": "0" }, { "key": "length", "value": "10" }] } } },
-        { "name": "Submit User", "request": { "method": "POST", "url": "{{baseUrl}}/submit-users", "body": { "mode": "formdata", "formdata": [{ "key": "user_id", "value": "{{user_id}}" }, { "key": "full_name", "value": "" }, { "key": "mobile", "value": "" }, { "key": "password", "value": "" }, { "key": "role_id", "value": "3" }] } } },
-        { "name": "List Investors (AJAX)", "request": { "method": "POST", "url": "{{baseUrl}}/list-investors-ajax", "body": { "mode": "formdata", "formdata": [{ "key": "user_id", "value": "{{user_id}}" }] } } },
-        { "name": "Submit Investor", "request": { "method": "POST", "url": "{{baseUrl}}/submit-investors", "body": { "mode": "formdata", "formdata": [{ "key": "name", "value": "" }, { "key": "image", "type": "file" }] } } },
-        { "name": "List Jobs (AJAX)", "request": { "method": "POST", "url": "{{baseUrl}}/list-jobs-ajax" } },
+        { "name": "Submit User", "request": { "method": "POST", "url": "{{baseUrl}}/submit-users", "body": { "mode": "formdata", "formdata": [{ "key": "user_id", "value": "{{user_id}}" }, { "key": "full_name", "value": "" }, { "key": "role_id", "value": "3" }] } } },
+        { "name": "List Investors", "request": { "method": "POST", "url": "{{baseUrl}}/list-investors-ajax" } },
+        { "name": "Submit Investor", "request": { "method": "POST", "url": "{{baseUrl}}/submit-investors", "body": { "mode": "formdata", "formdata": [{ "key": "name", "value": "" }] } } },
+        { "name": "List Jobs", "request": { "method": "POST", "url": "{{baseUrl}}/list-jobs-ajax" } },
         { "name": "Submit Job", "request": { "method": "POST", "url": "{{baseUrl}}/submit-jobs", "body": { "mode": "formdata", "formdata": [{ "key": "job_title", "value": "" }] } } },
-        { "name": "List Events (AJAX)", "request": { "method": "POST", "url": "{{baseUrl}}/list-events-ajax" } },
+        { "name": "List Events", "request": { "method": "POST", "url": "{{baseUrl}}/list-events-ajax" } },
         { "name": "Submit Event", "request": { "method": "POST", "url": "{{baseUrl}}/submit-events", "body": { "mode": "formdata", "formdata": [{ "key": "event_name", "value": "" }] } } },
-        { "name": "Deletion Requests", "request": { "method": "POST", "url": "{{baseUrl}}/Api-Admin-Deletion-Requests", "body": { "mode": "formdata", "formdata": [{ "key": "user_id", "value": "{{user_id}}" }] } } },
-        { "name": "Card Activation Requests", "request": { "method": "POST", "url": "{{baseUrl}}/list-card-activation-requests-ajax" } },
-        { "name": "Permissions List", "request": { "method": "POST", "url": "{{baseUrl}}/admin-permissions-list" } }
+        { "name": "List Locations (Admin)", "item": [
+          { "name": "List Country (Admin)", "request": { "method": "POST", "url": "{{baseUrl}}/list-country" } },
+          { "name": "Save Country (Admin)", "request": { "method": "POST", "url": "{{baseUrl}}/save-country" } },
+          { "name": "List States (Admin)", "request": { "method": "POST", "url": "{{baseUrl}}/list-state" } },
+          { "name": "Submit State (Admin)", "request": { "method": "POST", "url": "{{baseUrl}}/submit-state" } },
+          { "name": "List Cities (Admin)", "request": { "method": "POST", "url": "{{baseUrl}}/list-city" } }
+        ]}
       ]
     },
     {
-      "name": "3. Master Data",
-      "item": [
-        { "name": "Countries", "request": { "method": "GET", "url": "{{baseUrl}}/Api-Country-List" } },
-        { "name": "States", "request": { "method": "POST", "url": "{{baseUrl}}/Api-State-List", "body": { "mode": "formdata", "formdata": [{ "key": "country_id", "value": "1" }] } } },
-        { "name": "Cities", "request": { "method": "POST", "url": "{{baseUrl}}/Api-City-List", "body": { "mode": "formdata", "formdata": [{ "key": "state_id", "value": "" }] } } },
-        { "name": "Interests", "request": { "method": "GET", "url": "{{baseUrl}}/Api-Interests-List" } },
-        { "name": "Employment Types", "request": { "method": "GET", "url": "{{baseUrl}}/Api-Employment-Type-List" } },
-        { "name": "Job Types", "request": { "method": "GET", "url": "{{baseUrl}}/Api-Job-Type-List" } },
-        { "name": "Industries", "request": { "method": "GET", "url": "{{baseUrl}}/Api-Industry-Type-List" } }
-      ]
-    },
-    {
-      "name": "4. User Profile",
+      "name": "4. User Operations",
       "item": [
         { "name": "View Profile", "request": { "method": "POST", "url": "{{baseUrl}}/Api-View-Profile", "body": { "mode": "formdata", "formdata": [{ "key": "user_id", "value": "{{user_id}}" }, { "key": "token", "value": "{{token}}" }] } } },
-        { "name": "Update Profile", "request": { "method": "POST", "url": "{{baseUrl}}/Api-Update-Profile", "body": { "mode": "formdata", "formdata": [{ "key": "user_id", "value": "{{user_id}}" }, { "key": "full_name", "value": "" }] } } },
-        { "name": "Save Work Details", "request": { "method": "POST", "url": "{{baseUrl}}/Api-Save-Work-Details", "body": { "mode": "formdata", "formdata": [{ "key": "user_id", "value": "{{user_id}}" }, { "key": "company_name", "value": "" }] } } },
-        { "name": "Save Projects", "request": { "method": "POST", "url": "{{baseUrl}}/Api-Save-Project-Details", "body": { "mode": "formdata", "formdata": [{ "key": "user_id", "value": "{{user_id}}" }] } } },
-        { "name": "Request Account Deletion", "request": { "method": "POST", "url": "{{baseUrl}}/Api-User-Deleted-Account", "body": { "mode": "formdata", "formdata": [{ "key": "user_id", "value": "{{user_id}}" }] } } }
-      ]
-    },
-    {
-      "name": "5. User Operations (Jobs/Events/Service/Investor)",
-      "item": [
-        { "name": "User Dashboard", "request": { "method": "POST", "url": "{{baseUrl}}/Api-Dashboard", "body": { "mode": "formdata", "formdata": [{ "key": "user_id", "value": "{{user_id}}" }, { "key": "token", "value": "{{token}}" }] } } },
-        { "name": "List Jobs", "request": { "method": "POST", "url": "{{baseUrl}}/Api-View-Job-Information", "body": { "mode": "formdata", "formdata": [{ "key": "user_id", "value": "{{user_id}}" }] } } },
+        { "name": "Update Profile", "request": { "method": "POST", "url": "{{baseUrl}}/Api-Update-Profile", "body": { "mode": "formdata", "formdata": [{ "key": "user_id", "value": "{{user_id}}" }] } } },
+        { "name": "Chat History", "request": { "method": "POST", "url": "{{baseUrl}}/Api-View-Chat", "body": { "mode": "formdata", "formdata": [{ "key": "chat_user_id", "value": "" }] } } },
         { "name": "Apply for Job", "request": { "method": "POST", "url": "{{baseUrl}}/Api-Apply-Job", "body": { "mode": "formdata", "formdata": [{ "key": "job_id", "value": "" }, { "key": "resume_file", "type": "file" }] } } },
-        { "name": "List Events", "request": { "method": "POST", "url": "{{baseUrl}}/Api-View-Event-Information", "body": { "mode": "formdata", "formdata": [{ "key": "user_id", "value": "{{user_id}}" }] } } },
-        { "name": "List Services", "request": { "method": "GET", "url": "{{baseUrl}}/Api-All-Services-List" } },
-        { "name": "List Investors", "request": { "method": "GET", "url": "{{baseUrl}}/Api-All-Investors-List" } },
-        { "name": "Investor Profile", "request": { "method": "GET", "url": "{{baseUrl}}/Api-My-Investor-Profile" } }
+        { "name": "Save Event", "request": { "method": "POST", "url": "{{baseUrl}}/Api-Save-Event-Information", "body": { "mode": "formdata", "formdata": [{ "key": "event_name", "value": "" }] } } }
       ]
     },
     {
-      "name": "6. Chat & Social",
-      "item": [
-        { "name": "Save Chat", "request": { "method": "POST", "url": "{{baseUrl}}/Api-Save-Chat", "body": { "mode": "formdata", "formdata": [{ "key": "sender_id", "value": "" }, { "key": "message", "value": "" }] } } },
-        { "name": "View Chat History", "request": { "method": "POST", "url": "{{baseUrl}}/Api-View-Chat", "body": { "mode": "formdata", "formdata": [{ "key": "chat_user_id", "value": "" }] } } },
-        { "name": "Chat Users List", "request": { "method": "GET", "url": "{{baseUrl}}/Api-Chat-Users-List" } },
-        { "name": "Online Users Status", "request": { "method": "POST", "url": "{{baseUrl}}/Api-Online-Users-Status", "body": { "mode": "formdata", "formdata": [{ "key": "user_ids", "value": "[]" }] } } }
-      ]
-    },
-    {
-      "name": "7. Notifications & FCM",
+      "name": "5. Advanced Support",
       "item": [
         { "name": "Update FCM Token", "request": { "method": "POST", "url": "{{baseUrl}}/Api-Update-FCM-Token", "body": { "mode": "formdata", "formdata": [{ "key": "fcm_token", "value": "" }] } } },
-        { "name": "Notification Stats", "request": { "method": "GET", "url": "{{baseUrl}}/Api-Notification-Stats" } },
-        { "name": "Notifications List", "request": { "method": "GET", "url": "{{baseUrl}}/Api-Notifications-List" } },
-        { "name": "Mark Mark Read", "request": { "method": "POST", "url": "{{baseUrl}}/Api-Notification-Mark-Read", "body": { "mode": "formdata", "formdata": [{ "key": "notification_id", "value": "" }] } } }
+        { "name": "Admin Permissions", "request": { "method": "POST", "url": "{{baseUrl}}/admin-permissions-list" } },
+        { "name": "Sub-admin Management", "request": { "method": "POST", "url": "{{baseUrl}}/admin-subadmin-list" } }
       ]
     }
   ]
