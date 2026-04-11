@@ -81,14 +81,22 @@ class AdminPermissionController {
       // Hash password
       const hashedPassword = await bcrypt.hash(password, 12);
 
-      // Create SubAdmin
-      const result = await query(
-        `INSERT INTO admin_users (username, password, email, full_name, is_super_admin, created_at)
-         VALUES (?, ?, ?, ?, 0, NOW())`,
-        [username, hashedPassword, email || '', full_name || '']
+      // We MUST insert into the `users` table first so that admin_users.id exactly matches users.user_id.
+      // This is necessary because almost all controllers check the `users` table for session validation.
+      const userResult = await query(
+        `INSERT INTO users (full_name, email, mobile, created_dts, deleted) VALUES (?, ?, ?, NOW(), 0)`,
+        [full_name || username, email || '', `subadmin_${Date.now()}`]
+      );
+      
+      const newAdminId = userResult.insertId;
+
+      // Create SubAdmin with matching ID
+      await query(
+        `INSERT INTO admin_users (id, username, password, email, full_name, is_super_admin, created_at)
+         VALUES (?, ?, ?, ?, ?, 0, NOW())`,
+        [newAdminId, username, hashedPassword, email || '', full_name || '']
       );
 
-      const newAdminId = result.insertId;
       const decodedUserId = idDecode(user_id);
 
       // Assign permissions
@@ -168,14 +176,20 @@ class AdminPermissionController {
       // Hash password
       const hashedPassword = await bcrypt.hash(password, 12);
 
-      // Create SuperAdmin
-      const result = await query(
-        `INSERT INTO admin_users (username, password, email, full_name, is_super_admin, created_at)
-         VALUES (?, ?, ?, ?, 1, NOW())`,
-        [username, hashedPassword, email || '', full_name || '']
+      // Insert into users table first
+      const userResult = await query(
+        `INSERT INTO users (full_name, email, mobile, created_dts, deleted) VALUES (?, ?, ?, NOW(), 0)`,
+        [full_name || username, email || '', `superadmin_${Date.now()}`]
       );
+      
+      const newSuperAdminId = userResult.insertId;
 
-      const newSuperAdminId = result.insertId;
+      // Create SuperAdmin with matching ID
+      await query(
+        `INSERT INTO admin_users (id, username, password, email, full_name, is_super_admin, created_at)
+         VALUES (?, ?, ?, ?, ?, 1, NOW())`,
+        [newSuperAdminId, username, hashedPassword, email || '', full_name || '']
+      );
 
       logger.info(`SuperAdmin created: ${username}`);
 
