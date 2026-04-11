@@ -523,6 +523,8 @@ router.get('/admin-subadmin-list', requireSuperAdmin, AdminPermissionController.
 router.post('/admin-subadmin-list', requireSuperAdmin, uploadFormData.none(), AdminPermissionController.getSubAdminList);
 router.post('/admin-update-subadmin-permissions', requireSuperAdmin, uploadFormData.none(), AdminPermissionController.updateSubAdminPermissions);
 router.post('/admin-delete-subadmin', requireSuperAdmin, uploadFormData.none(), AdminPermissionController.deleteSubAdmin);
+router.get('/admin-my-permissions', uploadFormData.none(), AdminPermissionController.getMyPermissions);
+router.post('/admin-my-permissions', uploadFormData.none(), AdminPermissionController.getMyPermissions);
 
 // 404 handler for undefined routes (MUST be at the end)
 router.use('*', (req, res) => {

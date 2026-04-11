@@ -368,6 +368,91 @@ class AdminPermissionController {
       });
     }
   }
+  // Get permissions for the logged-in admin
+  static async getMyPermissions(req, res) {
+    try {
+      const { user_id, token } = {
+        ...req.query,
+        ...req.body
+      };
+
+      if (!user_id || !token) {
+        return res.json({
+          status: false,
+          rcode: 403,
+          message: 'Authentication required'
+        });
+      }
+
+      const decodedUserId = idDecode(user_id);
+      if (!decodedUserId) {
+        return res.json({
+          status: false,
+          rcode: 403,
+          message: 'Invalid user ID'
+        });
+      }
+
+      // 1. Get admin user info
+      const adminRows = await query('SELECT id, is_super_admin, token FROM admin_users WHERE id = ?', [decodedUserId]);
+      if (adminRows.length === 0) {
+        return res.json({
+          status: false,
+          rcode: 403,
+          message: 'Admin user not found'
+        });
+      }
+
+      const admin = adminRows[0];
+
+      // 2. Validate token
+      if (admin.token !== token) {
+        // Fallback check in users table for legacy sessions
+        const legacyCheck = await query('SELECT unique_token FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+        if (!legacyCheck.length || legacyCheck[0].unique_token !== token) {
+          return res.json({
+            status: false,
+            rcode: 403,
+            message: 'Invalid token'
+          });
+        }
+      }
+
+      // 3. Get all available permissions
+      const allPermissions = await query('SELECT permission_key FROM admin_permissions');
+
+      // 4. Get assigned permissions for this user
+      const assignedPermissions = await query(`
+        SELECT ap.permission_key 
+        FROM admin_user_permissions aup
+        JOIN admin_permissions ap ON aup.permission_id = ap.permission_id
+        WHERE aup.admin_user_id = ?
+      `, [decodedUserId]);
+
+      const assignedKeys = new Set(assignedPermissions.map(p => p.permission_key));
+      const permissionMap = {};
+
+      allPermissions.forEach(perm => {
+        // If super admin, all are true. Otherwise check if assigned.
+        permissionMap[perm.permission_key] = admin.is_super_admin === 1 || assignedKeys.has(perm.permission_key);
+      });
+
+      return res.json({
+        status: true,
+        rcode: 200,
+        is_super_admin: admin.is_super_admin === 1,
+        permissions: permissionMap
+      });
+
+    } catch (error) {
+      logger.error('Get my permissions error:', error);
+      return res.json({
+        status: false,
+        rcode: 500,
+        message: 'Internal server error'
+      });
+    }
+  }
 }
 
 module.exports = AdminPermissionController;
