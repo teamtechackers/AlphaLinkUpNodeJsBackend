@@ -79,7 +79,7 @@ class AdminController {
       // Update admin user with new token and last login
       try {
         // Update token in admin_users table directly
-        await query('UPDATE admin_users SET token = ?, last_login = NOW() WHERE id = ?', [uniqueToken, admin.id]);
+        await query('UPDATE admin_users SET token = ? WHERE id = ?', [uniqueToken, admin.id]);
 
         // Check if users table has this admin ID (backward compat)
         const userRows = await query('SELECT user_id FROM users WHERE user_id = ? LIMIT 1', [admin.id]);
