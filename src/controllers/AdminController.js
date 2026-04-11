@@ -78,15 +78,15 @@ class AdminController {
 
       // Update admin user with new token and last login
       try {
-        // Check if users table has this admin ID
+        // Update token in admin_users table directly
+        await query('UPDATE admin_users SET token = ?, last_login = NOW() WHERE id = ?', [uniqueToken, admin.id]);
+
+        // Check if users table has this admin ID (backward compat)
         const userRows = await query('SELECT user_id FROM users WHERE user_id = ? LIMIT 1', [admin.id]);
         if (userRows.length > 0) {
           // Update token in users table
           await query('UPDATE users SET unique_token = ?, updated_at = NOW() WHERE user_id = ?', [uniqueToken, admin.id]);
         }
-
-        // Update last login in admin_users table
-        await query('UPDATE admin_users SET last_login = NOW() WHERE id = ?', [admin.id]);
       } catch (error) {
         console.log('Token update warning:', error.message);
       }

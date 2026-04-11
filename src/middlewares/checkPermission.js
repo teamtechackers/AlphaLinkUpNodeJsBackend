@@ -39,32 +39,7 @@ const checkPermission = (permissionKey) => {
         });
       }
 
-      // First check if user exists in users table and get their data
-      const userRows = await query(
-        'SELECT * FROM users WHERE user_id = ? LIMIT 1',
-        [decodedUserId]
-      );
-
-      if (!userRows.length) {
-        return res.json({
-          status: false,
-          rcode: 403,
-          message: 'User not found'
-        });
-      }
-
-      const user = userRows[0];
-
-      // Validate token
-      if (user.unique_token !== token) {
-        return res.json({
-          status: false,
-          rcode: 403,
-          message: 'Invalid token'
-        });
-      }
-
-      // Check if this user is an admin
+      // Check if this user is an admin FIRST
       const adminRows = await query(
         'SELECT * FROM admin_users WHERE id = ? LIMIT 1',
         [decodedUserId]
@@ -79,6 +54,28 @@ const checkPermission = (permissionKey) => {
       }
 
       const admin = adminRows[0];
+
+      // Validate Admin Token
+      if (admin.token !== token) {
+        // Fallback to older mechanism in case token is only in users table for old sessions
+        const legacyCheck = await query('SELECT unique_token FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+        if (!legacyCheck.length || legacyCheck[0].unique_token !== token) {
+           return res.json({
+             status: false,
+             rcode: 403,
+             message: 'Invalid admin token'
+           });
+        }
+      }
+
+      // We still try to grab `users` context for backward compatibility 
+      // but DO NOT fail if it does not exist (sub-admins won't have it).
+      const userRows = await query(
+        'SELECT * FROM users WHERE user_id = ? LIMIT 1',
+        [decodedUserId]
+      );
+      const user = userRows.length > 0 ? userRows[0] : { id: decodedUserId };
+
 
       // SuperAdmin has all permissions - BYPASS ALL CHECKS
       if (admin.is_super_admin === 1) {
@@ -150,32 +147,7 @@ const requireSuperAdmin = async (req, res, next) => {
       });
     }
 
-    // First check if user exists in users table and validate token
-    const userRows = await query(
-      'SELECT * FROM users WHERE user_id = ? LIMIT 1',
-      [decodedUserId]
-    );
-
-    if (!userRows.length) {
-      return res.json({
-        status: false,
-        rcode: 403,
-        message: 'User not found'
-      });
-    }
-
-    const user = userRows[0];
-
-    // Validate token
-    if (user.unique_token !== token) {
-      return res.json({
-        status: false,
-        rcode: 403,
-        message: 'Invalid token'
-      });
-    }
-
-    // Check if user is SuperAdmin
+    // Check if user is SuperAdmin FIRST
     const adminRows = await query(
       'SELECT * FROM admin_users WHERE id = ? AND is_super_admin = 1 LIMIT 1',
       [decodedUserId]
@@ -188,6 +160,27 @@ const requireSuperAdmin = async (req, res, next) => {
         message: 'Access denied. SuperAdmin only.'
       });
     }
+
+    const admin = adminRows[0];
+
+    // Validate Admin Token
+    if (admin.token !== token) {
+      // Fallback
+      const legacyCheck = await query('SELECT unique_token FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      if (!legacyCheck.length || legacyCheck[0].unique_token !== token) {
+         return res.json({
+           status: false,
+           rcode: 403,
+           message: 'Invalid admin token'
+         });
+      }
+    }
+
+    const userRows = await query(
+      'SELECT * FROM users WHERE user_id = ? LIMIT 1',
+      [decodedUserId]
+    );
+    const user = userRows.length > 0 ? userRows[0] : { id: decodedUserId };
 
     req.admin = adminRows[0];
     req.user = user;
