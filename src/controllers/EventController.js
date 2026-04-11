@@ -1298,11 +1298,17 @@ class EventController {
 
       const event_banner_file = req.file ? req.file.filename : '';
 
-      const eventUserId = req.body.user_id || req.query.user_id;
+      console.log('--- DEBUG SUBMIT EVENTS ---');
+      console.log('URL:', req.originalUrl);
+      console.log('Query Params:', JSON.stringify(req.query));
+      console.log('Body Params:', JSON.stringify(req.body));
+      console.log('File:', req.file ? req.file.filename : 'No file');
 
+      const eventUserId = req.body.user_id || req.query.user_id;
       const adminUserId = req.query.user_id || req.body.user_id;
 
-      console.log('submitEvents - Parameters:', { user_id, token, row_id, eventUserId, event_name, industry_type, country_id, state_id, city_id, event_venue, event_link, event_lat, event_lng, event_geo_address, event_date, event_start_time, event_end_time, event_mode_id, event_type_id, event_details, status, event_banner_file });
+      console.log('Resolved IDs:', { eventUserId, adminUserId, token });
+
 
       if (!adminUserId || !token) {
         return res.json({
