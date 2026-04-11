@@ -1298,9 +1298,9 @@ class EventController {
 
       const event_banner_file = req.file ? req.file.filename : '';
 
-      const eventUserId = req.body.user_id;
+      const eventUserId = req.body.user_id || req.query.user_id;
 
-      const adminUserId = req.query.user_id;
+      const adminUserId = req.query.user_id || req.body.user_id;
 
       console.log('submitEvents - Parameters:', { user_id, token, row_id, eventUserId, event_name, industry_type, country_id, state_id, city_id, event_venue, event_link, event_lat, event_lng, event_geo_address, event_date, event_start_time, event_end_time, event_mode_id, event_type_id, event_details, status, event_banner_file });
 
