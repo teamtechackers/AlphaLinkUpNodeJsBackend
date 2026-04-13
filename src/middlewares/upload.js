@@ -24,6 +24,7 @@ function storageFor(subdir) {
   ensureDirSync(base);
   return multer.diskStorage({
     destination: function (req, file, cb) {
+      console.log('Multer - Destination for:', file.fieldname, 'Target:', base);
       cb(null, base);
     },
     filename: function (req, file, cb) {
