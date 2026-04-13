@@ -127,8 +127,10 @@ app.use((req, res, next) => {
   next();
 });
 
-// Static file serving for uploads
+// Static file serving for uploads and assets
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+app.use('/static/assets', express.static(path.join(__dirname, '../assets')));
+app.use('/assets', express.static(path.join(__dirname, '../assets'))); // Fallback support
 
 // Health and version endpoints are now handled in routes/index.js
 

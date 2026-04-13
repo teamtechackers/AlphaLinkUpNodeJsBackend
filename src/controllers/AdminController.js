@@ -1558,8 +1558,14 @@ class AdminController {
       // Apply pagination
       const paginatedUsers = allUsers.slice(startValue, startValue + lengthValue);
 
-      // Format data as objects with role and permissions
+      // Format data (matching PHP structure exactly)
       const formattedUsersList = paginatedUsers.map((user, index) => {
+        // Status badge (matching PHP exactly)
+        let statusBadge = `<span class="badge bg-soft-success text-success">Active</span>`;
+        if (user.status == 0) {
+          statusBadge = `<span class="badge bg-soft-danger text-danger">Inactive</span>`;
+        }
+
         const userData = {
           row_id: startValue + index + 1,
           user_id: String(user.user_id),
@@ -1574,7 +1580,7 @@ class AdminController {
           state_name: user.state_name || "",
           city_id: user.city_id ? String(user.city_id) : "",
           city_name: user.city_name || "",
-          status: user.status == 1 ? "Active" : "Inactive",
+          status: statusBadge,
           user_type: user.user_type || "user",
           role: user.user_type === 'superadmin' ? 'SuperAdmin' :
             user.user_type === 'subadmin' ? 'SubAdmin' : 'Normal User'
@@ -1589,7 +1595,6 @@ class AdminController {
           // Add permissions for SubAdmin
           if (user.user_type === 'subadmin') {
             const userPermissions = adminPermissions[user.user_id] || [];
-            console.log(`SubAdmin ${user.user_id} permissions:`, userPermissions.length);
             userData.permissions = userPermissions;
             userData.permission_count = userPermissions.length;
           } else {
@@ -1598,7 +1603,6 @@ class AdminController {
             userData.all_permissions = true; // SuperAdmin has all permissions
           }
         } else {
-          // Normal user - no password shown
           userData.password = null;
         }
 
