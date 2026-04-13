@@ -204,8 +204,6 @@ router.post('/Api-All-Service-Unlock-List', uploadFormData.none(), ApiController
 router.get('/admin-login', AdminController.adminLogin);
 router.post('/admin-login', uploadFormData.none(), AdminController.adminLogin);
 router.get('/permission-denied', AdminController.permissionDenied);
-router.get('/admin-dashboard', AdminController.getDashboard);
-router.post('/admin-dashboard', uploadFormData.none(), AdminController.getDashboard);
 router.get('/list-country', checkPermission('master_data.view'), CountryController.getAdminCountryList);
 router.post('/list-country', uploadFormData.none(), checkPermission('master_data.view'), CountryController.getAdminCountryList);
 router.get('/list-country-ajax', checkPermission('master_data.view'), CountryController.getAdminCountryLists);
