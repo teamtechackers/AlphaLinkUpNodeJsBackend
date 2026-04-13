@@ -1946,6 +1946,14 @@ class AdminController {
         });
       }
 
+      // Safety check: Prevent deleting the SuperAdmin account
+      if (keys == 1 || keys == '1') {
+        return res.json({
+          status: 'Error',
+          info: 'Cannot delete SuperAdmin account'
+        });
+      }
+
       // Soft delete the user (matching PHP exactly)
       const deleteData = {
         deleted: 1,
