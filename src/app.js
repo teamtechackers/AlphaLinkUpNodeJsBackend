@@ -46,6 +46,8 @@ app.use(helmet({
 // CORS configuration
 app.use(cors({
   origin: [
+    'https://alphalinkup.com',
+    'https://www.alphalinkup.com',
     'https://alphalinkup-react-frontend.onrender.com',
     process.env.BASE_URL || 'http://localhost:3000',
     'http://localhost:3000',
