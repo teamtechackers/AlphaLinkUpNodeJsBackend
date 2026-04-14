@@ -24,7 +24,7 @@ if [ "$EUID" -eq 0 ]; then
 fi
 
 # Variables
-PROJECT_DIR="/home/ubuntu/AlphaLinkup_Backend/AlphaLinkup_NodeJS_Backend"
+PROJECT_DIR="/home/ubuntu/AlphaLinkup_Backend"
 NODE_VERSION="18"
 
 # Function to print status
