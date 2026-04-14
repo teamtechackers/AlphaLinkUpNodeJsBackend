@@ -94,9 +94,9 @@ router.post('/Api-Job-Type-List', uploadFormData.none(), JobTypeController.getJo
 router.get('/Api-Pay-List', PayController.getPayList);
 router.post('/Api-Pay-List', uploadFormData.none(), PayController.getPayList);
 router.get('/Api-Event-Mode-List', EventModeController.getEventModeList);
-router.post('/Api-Event-Mode-List', uploadFormData.none(), checkPermission('events.create'), EventModeController.getEventModeList);
+router.post('/Api-Event-Mode-List', uploadFormData.none(), EventModeController.getEventModeList);
 router.get('/Api-Event-Type-List', EventTypeController.getEventTypeList);
-router.post('/Api-Event-Type-List', uploadFormData.none(), checkPermission('events.create'), EventTypeController.getEventTypeList);
+router.post('/Api-Event-Type-List', uploadFormData.none(), EventTypeController.getEventTypeList);
 router.get('/Api-Fund-Size-List', FundController.getFundSizeList);
 router.post('/Api-Fund-Size-List', uploadFormData.none(), FundController.getFundSizeList);
 router.get('/Api-User-List', UserController.fetchUserByNameId);
@@ -123,10 +123,10 @@ router.post('/Api-Delete-Project-Detail', uploadFormData.none(), ApiController.d
 router.post('/Api-Save-Education-Details', uploadFormData.none(), UserProfileController.saveEducationDetails);
 router.get('/Api-View-Education-Details', UserProfileController.getEducationDetails);
 router.post('/Api-Delete-Education-Detail', uploadFormData.none(), UserProfileController.deleteEducationDetail);
-router.post('/Api-Save-Event-Organiser', uploadFormData.none(), checkPermission('events.create'), EventController.saveEventOrganiser);
-router.post('/Api-Delete-Event-Organiser', uploadFormData.none(), checkPermission('events.create'), EventController.deleteEventOrganiser);
-router.post('/Api-Save-Event-Attendee', uploadFormData.none(), checkPermission('events.create'), EventController.saveEventAttendee);
-router.post('/Api-Delete-Event-Attendee', uploadFormData.none(), checkPermission('events.create'), EventController.deleteEventAttendee);
+router.post('/Api-Save-Event-Organiser', uploadFormData.none(), EventController.saveEventOrganiser);
+router.post('/Api-Delete-Event-Organiser', uploadFormData.none(), EventController.deleteEventOrganiser);
+router.post('/Api-Save-Event-Attendee', uploadFormData.none(), EventController.saveEventAttendee);
+router.post('/Api-Delete-Event-Attendee', uploadFormData.none(), EventController.deleteEventAttendee);
 router.get('/Api-View-User-Detail-By-Qrcode', checkUser, UserProfileController.getUserDetailByQrCode);
 // Dashboard Route - Support both GET and POST for form data
 router.get('/Api-Dashboard', DashboardController.dashboard);
@@ -144,23 +144,23 @@ router.get('/Api-View-Job-Details', JobController.getJobDetail);
 router.post('/Api-View-Job-Details', uploadFormData.none(), JobController.getJobDetail);
 // Removed unused job-related routes
 // Event Routes
-router.post('/Api-Save-Event-Information', uploadEvents.single('event_banner_file'), checkPermission('events.create'), EventController.saveEventInformation);
+router.post('/Api-Save-Event-Information', uploadEvents.single('event_banner_file'), EventController.saveEventInformation);
 router.get('/Api-View-Event-Information', EventController.getEventInformation);
-router.post('/Api-View-Event-Information', uploadFormData.none(), checkPermission('events.create'), EventController.getEventInformation);
+router.post('/Api-View-Event-Information', uploadFormData.none(), EventController.getEventInformation);
 router.get('/Api-View-Event-Details', EventController.getEventDetail);
-router.post('/Api-View-Event-Details', uploadFormData.none(), checkPermission('events.create'), EventController.getEventDetail);
+router.post('/Api-View-Event-Details', uploadFormData.none(), EventController.getEventDetail);
 router.get('/Api-Event-Organisers-List', EventController.getEventOrganisersList);
-router.post('/Api-Event-Organisers-List', uploadFormData.none(), checkPermission('events.create'), EventController.getEventOrganisersList);
-router.post('/Api-Save-Event-Organiser', uploadFormData.none(), checkPermission('events.create'), EventController.saveEventOrganiser);
-router.post('/Api-Delete-Event-Organiser', uploadFormData.none(), checkPermission('events.create'), EventController.deleteEventOrganiser);
+router.post('/Api-Event-Organisers-List', uploadFormData.none(), EventController.getEventOrganisersList);
+router.post('/Api-Save-Event-Organiser', uploadFormData.none(), EventController.saveEventOrganiser);
+router.post('/Api-Delete-Event-Organiser', uploadFormData.none(), EventController.deleteEventOrganiser);
 router.get('/Api-Event-Attendees-List', EventController.getEventAttendeesList);
-router.post('/Api-Event-Attendees-List', uploadFormData.none(), checkPermission('events.create'), EventController.getEventAttendeesList);
+router.post('/Api-Event-Attendees-List', uploadFormData.none(), EventController.getEventAttendeesList);
 router.get('/Api-View-Events-Attended', EventController.getEventsAttendedList);
-router.post('/Api-View-Events-Attended', uploadFormData.none(), checkPermission('events.create'), EventController.getEventsAttendedList);
+router.post('/Api-View-Events-Attended', uploadFormData.none(), EventController.getEventsAttendedList);
 router.get('/Api-View-Events-Organised', EventController.getEventsOrganisedList);
-router.post('/Api-View-Events-Organised', uploadFormData.none(), checkPermission('events.create'), EventController.getEventsOrganisedList);
-router.post('/Api-Save-Event-Attendee', uploadFormData.none(), checkPermission('events.create'), EventController.saveEventAttendee);
-router.post('/Api-Delete-Event-Attendee', uploadFormData.none(), checkPermission('events.create'), EventController.deleteEventAttendee);
+router.post('/Api-View-Events-Organised', uploadFormData.none(), EventController.getEventsOrganisedList);
+router.post('/Api-Save-Event-Attendee', uploadFormData.none(), EventController.saveEventAttendee);
+router.post('/Api-Delete-Event-Attendee', uploadFormData.none(), EventController.deleteEventAttendee);
 // Folder Management Routes
 router.get('/Api-Folders-List-By-Type', FolderController.getFoldersListByType);
 router.post('/Api-Add-Folder-By-Type', uploadFormData.none(), FolderController.saveFolderByType);
