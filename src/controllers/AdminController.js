@@ -1509,8 +1509,11 @@ class AdminController {
 
       // ── SMART PERMISSION CHECK ──────────────────────────────────────────
       if (!req.isSuperAdmin) {
+        // Decode the target user ID (keys) to get the numeric ID for DB lookup
+        const decodedTargetId = idDecode(keys);
+        
         // Check if target user is an admin or regular user
-        const targetIsAdmin = await query('SELECT id FROM admin_users WHERE id = ? LIMIT 1', [keys]);
+        const targetIsAdmin = await query('SELECT id FROM admin_users WHERE id = ? LIMIT 1', [decodedTargetId || keys]);
         const requiredPerm = targetIsAdmin.length > 0 ? 'admins.edit' : 'users.edit';
         const allowed = await AdminController.hasPermission(admin.id, requiredPerm);
         if (!allowed) {
@@ -1758,8 +1761,11 @@ class AdminController {
 
       // ── SMART PERMISSION CHECK ──────────────────────────────────────────
       if (!req.isSuperAdmin) {
+        // Decode the target user ID (keys) to get the numeric ID for DB lookup
+        const decodedTargetId = idDecode(keys);
+
         // Check if target user is an admin or regular user
-        const targetIsAdmin = await query('SELECT id FROM admin_users WHERE id = ? LIMIT 1', [keys]);
+        const targetIsAdmin = await query('SELECT id FROM admin_users WHERE id = ? LIMIT 1', [decodedTargetId || keys]);
         const requiredPerm = targetIsAdmin.length > 0 ? 'admins.delete' : 'users.delete';
         const allowed = await AdminController.hasPermission(admin.id, requiredPerm);
         if (!allowed) {
