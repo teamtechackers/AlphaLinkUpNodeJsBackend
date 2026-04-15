@@ -1311,6 +1311,7 @@ class AdminController {
         let filteredAdminsQuery = `
           SELECT COUNT(*) as count
           FROM admin_users a
+          LEFT JOIN users u ON a.id = u.user_id
           ${adminSearchQuery}
         `;
         const filteredAdmins = await query(filteredAdminsQuery, adminSearchParams);
