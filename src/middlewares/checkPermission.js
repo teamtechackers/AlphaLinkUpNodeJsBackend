@@ -118,6 +118,90 @@ const checkPermission = (permissionKey) => {
 };
 
 /**
+ * Middleware to check if admin has ANY ONE of the provided permission keys.
+ * Use this for routes that can be accessed via multiple permission paths.
+ * e.g., checkAnyPermission(['users.edit', 'admins.edit'])
+ * @param {string[]} permissionKeys - Array of permission keys (OR logic)
+ */
+const checkAnyPermission = (permissionKeys) => {
+  return async (req, res, next) => {
+    try {
+      const { user_id, token } = {
+        ...req.query,
+        ...req.body
+      };
+
+      logger.debug(`checkAnyPermission: Checking keys [${permissionKeys.join(', ')}] for user_id: ${user_id}`);
+
+      if (!user_id || !token) {
+        return res.json({ status: false, rcode: 403, message: 'Authentication required' });
+      }
+
+      const decodedUserId = idDecode(user_id);
+      if (!decodedUserId) {
+        return res.json({ status: false, rcode: 403, message: 'Invalid user ID' });
+      }
+
+      const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
+      if (!adminRows.length) {
+        return res.json({ status: false, rcode: 403, message: 'Access denied. Admin only.' });
+      }
+
+      const admin = adminRows[0];
+
+      // Validate token
+      if (admin.token !== token) {
+        const legacyCheck = await query('SELECT unique_token FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+        if (!legacyCheck.length || legacyCheck[0].unique_token !== token) {
+          return res.json({ status: false, rcode: 403, message: 'Invalid admin token' });
+        }
+      }
+
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      const user = userRows.length > 0 ? userRows[0] : { user_id: decodedUserId };
+
+      // SuperAdmin bypass
+      if (admin.is_super_admin === 1) {
+        req.admin = admin;
+        req.user = user;
+        req.isSuperAdmin = true;
+        return next();
+      }
+
+      // Check if SubAdmin has ANY of the required permissions (OR logic)
+      const placeholders = permissionKeys.map(() => '?').join(', ');
+      const permissionCheck = await query(
+        `SELECT aup.* 
+         FROM admin_user_permissions aup
+         JOIN admin_permissions ap ON aup.permission_id = ap.permission_id
+         WHERE aup.admin_user_id = ? AND ap.permission_key IN (${placeholders})
+         LIMIT 1`,
+        [decodedUserId, ...permissionKeys]
+      );
+
+      if (permissionCheck.length === 0) {
+        logger.warn(`Permission Denied: Admin ${decodedUserId} ("${admin.username}") does not have any of [${permissionKeys.join(', ')}]`);
+        return res.json({
+          status: false,
+          rcode: 403,
+          message: `Access denied. Required any of: ${permissionKeys.join(', ')}`
+        });
+      }
+
+      logger.info(`Permission Granted: Admin ${decodedUserId} accessing via [${permissionKeys.join(', ')}]`);
+      req.admin = admin;
+      req.user = user;
+      req.isSuperAdmin = false;
+      next();
+
+    } catch (error) {
+      logger.error('checkAnyPermission error:', error);
+      return res.json({ status: false, rcode: 500, message: 'Permission check failed' });
+    }
+  };
+};
+
+/**
  * Middleware to check if user is SuperAdmin only
  */
 const requireSuperAdmin = async (req, res, next) => {
@@ -273,6 +357,7 @@ const requireAdmin = async (req, res, next) => {
 
 module.exports = {
   checkPermission,
+  checkAnyPermission,
   requireSuperAdmin,
   requireAdmin
 };

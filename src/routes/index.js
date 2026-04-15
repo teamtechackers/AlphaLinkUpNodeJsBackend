@@ -33,7 +33,7 @@ const authenticate = require('../middlewares/authenticate');
 const adminAuth = require('../middlewares/adminAuth');
 const validate = require('../middlewares/validation');
 const rateLimiter = require('../middlewares/rateLimiter');
-const { checkPermission, requireSuperAdmin, requireAdmin } = require('../middlewares/checkPermission');
+const { checkPermission, checkAnyPermission, requireSuperAdmin, requireAdmin } = require('../middlewares/checkPermission');
 
 const { checkUser } = require('../middlewares/checkUser');
 const { uploadProfilePhoto, uploadFormData, uploadEvents, uploadResume, uploadInvestor, uploadVisitingCards, uploadServices, uploadProjectLogo, uploadBusinessDocs, uploadBusinessCards } = require('../middlewares/upload');
@@ -334,17 +334,17 @@ router.get('/delete-folders', checkPermission('master_data.delete'), FolderContr
 router.post('/delete-folders', uploadFormData.none(), checkPermission('master_data.delete'), FolderController.deleteFolders);
 router.get('/list-users', checkPermission('users.view'), AdminController.viewUsers);
 router.post('/list-users', uploadFormData.none(), checkPermission('users.view'), AdminController.viewUsers);
-router.get('/submit-users', checkPermission('users.create'), AdminController.submitUsers);
+router.get('/submit-users', checkAnyPermission(['users.create', 'admins.create']), AdminController.submitUsers);
 // Multer first, then permission check
-router.post('/submit-users', uploadProfilePhoto.single('profile_photo'), checkPermission('users.create'), AdminController.submitUsers);
-router.get('/list-users-ajax', checkPermission('users.view'), AdminController.listUsersAjax);
-router.post('/list-users-ajax', uploadFormData.none(), checkPermission('users.view'), AdminController.listUsersAjax);
-router.get('/edit-users', checkPermission('users.edit'), AdminController.editUsers);
-router.post('/edit-users', uploadFormData.none(), checkPermission('users.edit'), AdminController.editUsers);
-router.get('/check-duplicate-users', checkPermission('users.view'), AdminController.checkDuplicateUsers);
-router.post('/check-duplicate-users', uploadFormData.none(), checkPermission('users.view'), AdminController.checkDuplicateUsers);
-router.get('/delete-users', checkPermission('users.delete'), AdminController.deleteUsers);
-router.post('/delete-users', uploadFormData.none(), checkPermission('users.delete'), AdminController.deleteUsers);
+router.post('/submit-users', uploadProfilePhoto.single('profile_photo'), checkAnyPermission(['users.create', 'admins.create']), AdminController.submitUsers);
+router.get('/list-users-ajax', checkAnyPermission(['users.view', 'admins.view']), AdminController.listUsersAjax);
+router.post('/list-users-ajax', uploadFormData.none(), checkAnyPermission(['users.view', 'admins.view']), AdminController.listUsersAjax);
+router.get('/edit-users', checkAnyPermission(['users.edit', 'admins.edit']), AdminController.editUsers);
+router.post('/edit-users', uploadFormData.none(), checkAnyPermission(['users.edit', 'admins.edit']), AdminController.editUsers);
+router.get('/check-duplicate-users', checkAnyPermission(['users.view', 'admins.view']), AdminController.checkDuplicateUsers);
+router.post('/check-duplicate-users', uploadFormData.none(), checkAnyPermission(['users.view', 'admins.view']), AdminController.checkDuplicateUsers);
+router.get('/delete-users', checkAnyPermission(['users.delete', 'admins.delete']), AdminController.deleteUsers);
+router.post('/delete-users', uploadFormData.none(), checkAnyPermission(['users.delete', 'admins.delete']), AdminController.deleteUsers);
 router.get('/get-state-list', checkPermission('master_data.view'), StateController.getAdminStateList);
 router.post('/get-state-list', uploadFormData.none(), checkPermission('master_data.view'), StateController.getAdminStateList);
 
