@@ -1198,21 +1198,26 @@ class AdminController {
       // SuperAdmin bypasses all checks (req.isSuperAdmin set by requireAdmin)
       if (!req.isSuperAdmin) {
         let requiredPerm;
-        if (only_admin === 'true' || only_admin === true) {
+        console.log(`[DEBUG PERM] Checking permissions for Admin: ${admin.id}, only_admin: ${only_admin}, only_user: ${only_user}`);
+        
+        if (only_admin === 'true' || only_admin === true || only_admin == 1) {
           requiredPerm = 'admins.view';
-        } else if (only_user === 'true' || only_user === true) {
+        } else if (only_user === 'true' || only_user === true || only_user == 1) {
           requiredPerm = 'users.view';
         } else {
           // Default: fetching both — need at least one
           const hasAdminsView = await AdminController.hasPermission(admin.id, 'admins.view');
           const hasUsersView  = await AdminController.hasPermission(admin.id, 'users.view');
+          console.log(`[DEBUG PERM] Default mode - hasAdminsView: ${hasAdminsView}, hasUsersView: ${hasUsersView}`);
           if (!hasAdminsView && !hasUsersView) {
             return res.json({ status: false, rcode: 403, message: 'Access denied. Required permission: users.view or admins.view' });
           }
           requiredPerm = null; // already checked above
         }
+        
         if (requiredPerm) {
           const allowed = await AdminController.hasPermission(admin.id, requiredPerm);
+          console.log(`[DEBUG PERM] Specific check - requiredPerm: ${requiredPerm}, allowed: ${allowed}`);
           if (!allowed) {
             return res.json({ status: false, rcode: 403, message: `Access denied. Required permission: ${requiredPerm}` });
           }
