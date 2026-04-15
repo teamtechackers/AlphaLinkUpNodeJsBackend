@@ -3436,7 +3436,7 @@ class AdminController {
       // Check if user is admin (role_id = 1 or 2)
       const admin = req.admin;
       const user = req.user;
-      const decodedUserId = admin.id;
+
 
 
       // Get DataTables parameters
@@ -3612,7 +3612,7 @@ class AdminController {
       // Check if user is admin (role_id = 1 or 2)
       const admin = req.admin;
       const user = req.user;
-      const decodedUserId = admin.id;
+
 
 
       // Check if keys is provided
@@ -3717,7 +3717,7 @@ class AdminController {
       // Check if user is admin (role_id = 1 or 2)
       const admin = req.admin;
       const user = req.user;
-      const decodedUserId = admin.id;
+
 
 
       // Check if keys is provided
@@ -3793,7 +3793,7 @@ class AdminController {
       // Check if user is admin (role_id = 1 or 2)
       const admin = req.admin;
       const user = req.user;
-      const decodedUserId = admin.id;
+
 
 
       // Check if keys is provided
