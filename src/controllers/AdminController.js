@@ -13,7 +13,23 @@ const { query } = require('../config/db');
 const { idDecode, idEncode } = require('../utils/idCodec');
 
 class AdminController {
-  // Admin login - PHP compatible version
+
+  /**
+   * Helper: Check if a sub-admin has a specific permission.
+   * SuperAdmin always returns true (checked via req.isSuperAdmin before calling this).
+   */
+  static async hasPermission(adminId, permissionKey) {
+    const rows = await query(
+      `SELECT aup.permission_id
+       FROM admin_user_permissions aup
+       JOIN admin_permissions ap ON aup.permission_id = ap.permission_id
+       WHERE aup.admin_user_id = ? AND ap.permission_key = ?
+       LIMIT 1`,
+      [adminId, permissionKey]
+    );
+    return rows.length > 0;
+  }
+
   static async adminLogin(req, res) {
     try {
       // Support both query parameters and form data
@@ -1178,7 +1194,32 @@ class AdminController {
         fetchAdmins = false;
       }
 
-      console.log(`Fetch Config: Admins=${fetchAdmins}, Users=${fetchUsers}`);
+      // ── SMART PERMISSION CHECK ──────────────────────────────────────────
+      // SuperAdmin bypasses all checks (req.isSuperAdmin set by requireAdmin)
+      if (!req.isSuperAdmin) {
+        let requiredPerm;
+        if (only_admin === 'true' || only_admin === true) {
+          requiredPerm = 'admins.view';
+        } else if (only_user === 'true' || only_user === true) {
+          requiredPerm = 'users.view';
+        } else {
+          // Default: fetching both — need at least one
+          const hasAdminsView = await AdminController.hasPermission(admin.id, 'admins.view');
+          const hasUsersView  = await AdminController.hasPermission(admin.id, 'users.view');
+          if (!hasAdminsView && !hasUsersView) {
+            return res.json({ status: false, rcode: 403, message: 'Access denied. Required permission: users.view or admins.view' });
+          }
+          requiredPerm = null; // already checked above
+        }
+        if (requiredPerm) {
+          const allowed = await AdminController.hasPermission(admin.id, requiredPerm);
+          if (!allowed) {
+            return res.json({ status: false, rcode: 403, message: `Access denied. Required permission: ${requiredPerm}` });
+          }
+        }
+      }
+      // ───────────────────────────────────────────────────────────────────────
+
 
       // Get total count
       let totalCount = 0;
@@ -1461,6 +1502,18 @@ class AdminController {
       const admin = req.admin;
       const user = req.user;
 
+      // ── SMART PERMISSION CHECK ──────────────────────────────────────────
+      if (!req.isSuperAdmin) {
+        // Check if target user is an admin or regular user
+        const targetIsAdmin = await query('SELECT id FROM admin_users WHERE id = ? LIMIT 1', [keys]);
+        const requiredPerm = targetIsAdmin.length > 0 ? 'admins.edit' : 'users.edit';
+        const allowed = await AdminController.hasPermission(admin.id, requiredPerm);
+        if (!allowed) {
+          return res.json({ status: false, rcode: 403, message: `Access denied. Required permission: ${requiredPerm}` });
+        }
+      }
+      // ───────────────────────────────────────────────────────────────────────
+
 
 
 
@@ -1697,6 +1750,18 @@ class AdminController {
 
       const admin = req.admin;
       const user = req.user;
+
+      // ── SMART PERMISSION CHECK ──────────────────────────────────────────
+      if (!req.isSuperAdmin) {
+        // Check if target user is an admin or regular user
+        const targetIsAdmin = await query('SELECT id FROM admin_users WHERE id = ? LIMIT 1', [keys]);
+        const requiredPerm = targetIsAdmin.length > 0 ? 'admins.delete' : 'users.delete';
+        const allowed = await AdminController.hasPermission(admin.id, requiredPerm);
+        if (!allowed) {
+          return res.json({ status: false, rcode: 403, message: `Access denied. Required permission: ${requiredPerm}` });
+        }
+      }
+      // ───────────────────────────────────────────────────────────────────────
 
 
 

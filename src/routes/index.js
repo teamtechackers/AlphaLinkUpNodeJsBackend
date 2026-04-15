@@ -334,17 +334,17 @@ router.get('/delete-folders', checkPermission('master_data.delete'), FolderContr
 router.post('/delete-folders', uploadFormData.none(), checkPermission('master_data.delete'), FolderController.deleteFolders);
 router.get('/list-users', checkPermission('users.view'), AdminController.viewUsers);
 router.post('/list-users', uploadFormData.none(), checkPermission('users.view'), AdminController.viewUsers);
-router.get('/submit-users', checkAnyPermission(['users.create', 'admins.create']), AdminController.submitUsers);
+router.get('/submit-users', requireAdmin, AdminController.submitUsers);
 // Multer first, then permission check
-router.post('/submit-users', uploadProfilePhoto.single('profile_photo'), checkAnyPermission(['users.create', 'admins.create']), AdminController.submitUsers);
-router.get('/list-users-ajax', checkAnyPermission(['users.view', 'admins.view']), AdminController.listUsersAjax);
-router.post('/list-users-ajax', uploadFormData.none(), checkAnyPermission(['users.view', 'admins.view']), AdminController.listUsersAjax);
-router.get('/edit-users', checkAnyPermission(['users.edit', 'admins.edit']), AdminController.editUsers);
-router.post('/edit-users', uploadFormData.none(), checkAnyPermission(['users.edit', 'admins.edit']), AdminController.editUsers);
-router.get('/check-duplicate-users', checkAnyPermission(['users.view', 'admins.view']), AdminController.checkDuplicateUsers);
-router.post('/check-duplicate-users', uploadFormData.none(), checkAnyPermission(['users.view', 'admins.view']), AdminController.checkDuplicateUsers);
-router.get('/delete-users', checkAnyPermission(['users.delete', 'admins.delete']), AdminController.deleteUsers);
-router.post('/delete-users', uploadFormData.none(), checkAnyPermission(['users.delete', 'admins.delete']), AdminController.deleteUsers);
+router.post('/submit-users', uploadProfilePhoto.single('profile_photo'), requireAdmin, AdminController.submitUsers);
+router.get('/list-users-ajax', requireAdmin, AdminController.listUsersAjax);
+router.post('/list-users-ajax', uploadFormData.none(), requireAdmin, AdminController.listUsersAjax);
+router.get('/edit-users', requireAdmin, AdminController.editUsers);
+router.post('/edit-users', uploadFormData.none(), requireAdmin, AdminController.editUsers);
+router.get('/check-duplicate-users', requireAdmin, AdminController.checkDuplicateUsers);
+router.post('/check-duplicate-users', uploadFormData.none(), requireAdmin, AdminController.checkDuplicateUsers);
+router.get('/delete-users', requireAdmin, AdminController.deleteUsers);
+router.post('/delete-users', uploadFormData.none(), requireAdmin, AdminController.deleteUsers);
 router.get('/get-state-list', checkPermission('master_data.view'), StateController.getAdminStateList);
 router.post('/get-state-list', uploadFormData.none(), checkPermission('master_data.view'), StateController.getAdminStateList);
 
