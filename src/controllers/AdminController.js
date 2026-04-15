@@ -161,7 +161,7 @@ class AdminController {
       // Injected by checkPermission middleware
       const admin = req.admin;
       const user = req.user;
-      const decodedUserId = admin.id;
+
 
 
       // Get dashboard counts (matching PHP exactly)
@@ -282,30 +282,10 @@ class AdminController {
         });
       }
 
-      // Get user details and validate
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? AND deleted = 0 LIMIT 1', [decodedUserId]);
-      if (!userRows.length) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'Not A Valid User'
-        });
-      }
-
-      const user = userRows[0];
-
-      // Validate token
-      if (user.unique_token !== token) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'Token Mismatch Exception'
-        });
-      }
-
       const admin = req.admin;
       const user = req.user;
-      const decodedUserId = admin.id;
+
+
 
 
       // Get all industry types ordered by name (matching PHP exactly)
@@ -361,30 +341,10 @@ class AdminController {
         });
       }
 
-      // Get user details and validate
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? AND deleted = 0 LIMIT 1', [decodedUserId]);
-      if (!userRows.length) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'Not A Valid User'
-        });
-      }
-
-      const user = userRows[0];
-
-      // Validate token
-      if (user.unique_token !== token) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'Token Mismatch Exception'
-        });
-      }
-
       const admin = req.admin;
       const user = req.user;
-      const decodedUserId = admin.id;
+
+
 
 
       // Check if required fields are provided
@@ -483,30 +443,11 @@ class AdminController {
         });
       }
 
-      // Get user details and validate
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? AND deleted = 0 LIMIT 1', [decodedUserId]);
-      if (!userRows.length) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'Not A Valid User'
-        });
-      }
-
-      const user = userRows[0];
-
-      // Validate token
-      if (user.unique_token !== token) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'Token Mismatch Exception'
-        });
-      }
-
       const admin = req.admin;
       const user = req.user;
-      const decodedUserId = admin.id;
+
+
+
 
 
       // DataTables parameters
@@ -619,30 +560,11 @@ class AdminController {
         });
       }
 
-      // Get user details and validate
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? AND deleted = 0 LIMIT 1', [decodedUserId]);
-      if (!userRows.length) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'Not A Valid User'
-        });
-      }
-
-      const user = userRows[0];
-
-      // Validate token
-      if (user.unique_token !== token) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'Token Mismatch Exception'
-        });
-      }
-
       const admin = req.admin;
       const user = req.user;
-      const decodedUserId = admin.id;
+
+
+
 
 
       // Check if required fields are provided
@@ -721,30 +643,11 @@ class AdminController {
         });
       }
 
-      // Get user details and validate
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? AND deleted = 0 LIMIT 1', [decodedUserId]);
-      if (!userRows.length) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'Not A Valid User'
-        });
-      }
-
-      const user = userRows[0];
-
-      // Validate token
-      if (user.unique_token !== token) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'Token Mismatch Exception'
-        });
-      }
-
       const admin = req.admin;
       const user = req.user;
-      const decodedUserId = admin.id;
+
+
+
 
 
       // Check if keys (industry type ID) is provided
@@ -826,19 +729,10 @@ class AdminController {
         });
       }
 
-      // Check if user exists
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? AND deleted = 0 LIMIT 1', [decodedUserId]);
-      if (!userRows.length) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'User not found'
-        });
-      }
-
       const admin = req.admin;
       const user = req.user;
-      const decodedUserId = admin.id;
+
+
 
 
       // Get all countries ordered by name (matching PHP exactly)
@@ -917,19 +811,10 @@ class AdminController {
         });
       }
 
-      // Check if user exists
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? AND deleted = 0 LIMIT 1', [decodedUserId]);
-      if (!userRows.length) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'User not found'
-        });
-      }
-
       const admin = req.admin;
       const user = req.user;
-      const decodedUserId = admin.id;
+
+
 
 
       // ==================== HANDLE DIFFERENT USER TYPES ====================
@@ -1267,19 +1152,10 @@ class AdminController {
         });
       }
 
-      // Check if user exists
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? AND deleted = 0 LIMIT 1', [decodedUserId]);
-      if (!userRows.length) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'User not found'
-        });
-      }
-
       const admin = req.admin;
       const user = req.user;
-      const decodedUserId = admin.id;
+
+
 
 
       const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
@@ -1582,19 +1458,10 @@ class AdminController {
         });
       }
 
-      // Check if user exists
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? AND deleted = 0 LIMIT 1', [decodedUserId]);
-      if (!userRows.length) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'User not found'
-        });
-      }
-
       const admin = req.admin;
       const user = req.user;
-      const decodedUserId = admin.id;
+
+
 
 
       // Check if user ID is provided
@@ -1617,15 +1484,16 @@ class AdminController {
         });
       }
 
-      const user = userDetails[0];
+      const viewedUser = userDetails[0];
+
 
       // Get state list for the user's country (matching PHP exactly)
       let listState = '<option value="">Select State</option>';
-      if (user.country_id) {
-        const states = await query('SELECT * FROM states WHERE country_id = ? AND status = 1 ORDER BY name ASC', [user.country_id]);
+      if (viewedUser.country_id) {
+        const states = await query('SELECT * FROM states WHERE country_id = ? AND status = 1 ORDER BY name ASC', [viewedUser.country_id]);
         if (states.length > 0) {
           for (const state of states) {
-            const selected = state.id == user.state_id ? 'selected' : '';
+            const selected = state.id == viewedUser.state_id ? 'selected' : '';
             listState += `<option value="${state.id}" ${selected}>${state.name}</option>`;
           }
         } else {
@@ -1637,11 +1505,11 @@ class AdminController {
 
       // Get city list for the user's state (matching PHP exactly)
       let listCities = '<option value="">Select City</option>';
-      if (user.state_id) {
-        const cities = await query('SELECT * FROM cities WHERE state_id = ? AND status = 1 ORDER BY name ASC', [user.state_id]);
+      if (viewedUser.state_id) {
+        const cities = await query('SELECT * FROM cities WHERE state_id = ? AND status = 1 ORDER BY name ASC', [viewedUser.state_id]);
         if (cities.length > 0) {
           for (const city of cities) {
-            const selected = city.id == user.city_id ? 'selected' : '';
+            const selected = city.id == viewedUser.city_id ? 'selected' : '';
             listCities += `<option value="${city.id}" ${selected}>${city.name}</option>`;
           }
         } else {
@@ -1651,12 +1519,14 @@ class AdminController {
         listCities = '<option value="">City List Empty</option>';
       }
 
+
       // Prepare response (matching PHP exactly)
       const response = {
-        ...user,
+        ...viewedUser,
         list_state: listState,
         list_cities: listCities
       };
+
 
       // Check if this user is also an admin to provide role and extra fields
       const targetAdminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [keys]);
@@ -1680,10 +1550,11 @@ class AdminController {
       }
 
       // Add profile photo URL if exists (matching PHP exactly)
-      if (user.profile_photo) {
+      if (viewedUser.profile_photo) {
         const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
-        response.profile_photo = `${baseUrl}/uploads/profiles/${user.profile_photo}`;
+        response.profile_photo = `${baseUrl}/uploads/profiles/${viewedUser.profile_photo}`;
       }
+
 
       return res.json(response);
 
@@ -1727,19 +1598,10 @@ class AdminController {
         });
       }
 
-      // Check if user exists
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? AND deleted = 0 LIMIT 1', [decodedUserId]);
-      if (!userRows.length) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'User not found'
-        });
-      }
-
       const admin = req.admin;
       const user = req.user;
-      const decodedUserId = admin.id;
+
+
 
 
       // Check if required fields are provided
@@ -1833,19 +1695,10 @@ class AdminController {
         });
       }
 
-      // Check if user exists
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? AND deleted = 0 LIMIT 1', [decodedUserId]);
-      if (!userRows.length) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'User not found'
-        });
-      }
-
       const admin = req.admin;
       const user = req.user;
-      const decodedUserId = admin.id;
+
+
 
 
       // Check if user ID is provided
@@ -1926,7 +1779,7 @@ class AdminController {
 
       const admin = req.admin;
       const user = req.user;
-      const decodedUserId = admin.id;
+
 
 
       // Get all users ordered by full_name (matching PHP exactly)
@@ -1986,19 +1839,10 @@ class AdminController {
         });
       }
 
-      // Check if user exists
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? AND deleted = 0 LIMIT 1', [decodedUserId]);
-      if (!userRows.length) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'User not found'
-        });
-      }
-
       const admin = req.admin;
       const user = req.user;
-      const decodedUserId = admin.id;
+
+
 
 
       // Check if required fields are provided
@@ -2123,7 +1967,7 @@ class AdminController {
 
       const admin = req.admin;
       const user = req.user;
-      const decodedUserId = admin.id;
+
 
 
       // Get DataTables parameters (matching PHP exactly)
@@ -2265,7 +2109,7 @@ class AdminController {
 
       const admin = req.admin;
       const user = req.user;
-      const decodedUserId = admin.id;
+
 
 
       // Check if service_id is provided
@@ -2413,7 +2257,7 @@ class AdminController {
       // Check if user is admin (role_id = 1 or 2)
       const admin = req.admin;
       const user = req.user;
-      const decodedUserId = admin.id;
+
 
 
       // Check if service provider ID is provided
@@ -2532,7 +2376,7 @@ class AdminController {
       // Check if user is admin (role_id = 1 or 2)
       const admin = req.admin;
       const user = req.user;
-      const decodedUserId = admin.id;
+
 
 
       // Check if service provider ID is provided
@@ -2614,7 +2458,7 @@ class AdminController {
       // Check if user is admin (role_id = 1 or 2)
       const admin = req.admin;
       const user = req.user;
-      const decodedUserId = admin.id;
+
 
 
       // Check if service provider ID is provided
@@ -2708,7 +2552,7 @@ class AdminController {
       // Check if user is admin (role_id = 1 or 2)
       const admin = req.admin;
       const user = req.user;
-      const decodedUserId = admin.id;
+
 
 
       // Get all users ordered by full_name (matching PHP exactly)
@@ -2776,36 +2620,10 @@ class AdminController {
         });
       }
 
-      // Check if user exists
-      console.log('Checking user with decodedUserId:', decodedUserId);
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? AND deleted = 0 LIMIT 1', [decodedUserId]);
-      console.log('User rows found:', userRows.length);
-      if (!userRows.length) {
-        console.log('User not found in users table for decodedUserId:', decodedUserId);
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'User not found'
-        });
-      }
-
-      // Check if user is admin (role_id = 1 or 2)
       const admin = req.admin;
       const user = req.user;
-      const decodedUserId = admin.id;
 
 
-      // Check if required fields are provided
-      if (!sp_user_id) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'user_id is required'
-        });
-      }
-
-      // Get admin role_id
-      const admin = adminRows[0];
 
       if (!row_id || row_id === '') {
         // Insert new card activation request (matching PHP exactly)
@@ -2924,7 +2742,7 @@ class AdminController {
       // Check if user is admin (role_id = 1 or 2)
       const admin = req.admin;
       const user = req.user;
-      const decodedUserId = admin.id;
+
 
 
       // Get DataTables parameters (matching PHP exactly)
@@ -3082,7 +2900,7 @@ class AdminController {
       // Check if user is admin (role_id = 1 or 2)
       const admin = req.admin;
       const user = req.user;
-      const decodedUserId = admin.id;
+
 
 
       // Check if card activation request ID is provided
@@ -3201,7 +3019,7 @@ class AdminController {
       // Check if user is admin (role_id = 1 or 2)
       const admin = req.admin;
       const user = req.user;
-      const decodedUserId = admin.id;
+
 
 
       // Check if card activation request ID is provided
@@ -3283,7 +3101,7 @@ class AdminController {
       // Check if user is admin (role_id = 1 or 2)
       const admin = req.admin;
       const user = req.user;
-      const decodedUserId = admin.id;
+
 
 
       // Check if card activation request ID is provided
@@ -3350,40 +3168,6 @@ class AdminController {
       // Decode user ID
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'Invalid user ID'
-        });
-      }
-
-      // Get user details and validate
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? AND deleted = 0 LIMIT 1', [decodedUserId]);
-      if (!userRows.length) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'Not A Valid User'
-        });
-      }
-
-      const user = userRows[0];
-
-      // Validate token
-      if (user.unique_token !== token) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'Token Mismatch Exception'
-        });
-      }
-
-      // Check if user is admin (role_id = 1 or 2)
-      const admin = req.admin;
-      const user = req.user;
-      const decodedUserId = admin.id;
-
-
       // Check if keys (city ID) is provided
       if (!keys) {
         return res.json({
@@ -3465,7 +3249,7 @@ class AdminController {
       // Check if user is admin (role_id = 1 or 2)
       const admin = req.admin;
       const user = req.user;
-      const decodedUserId = admin.id;
+
 
 
       // Get users list (matching PHP exactly)
