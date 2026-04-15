@@ -365,8 +365,8 @@ router.get('/list_cities_ajax', checkPermission('master_data.view'), CityControl
 router.post('/list_cities_ajax', uploadFormData.none(), checkPermission('master_data.view'), CityController.listCitiesAjax);
 
 // Admin Dashboard Routes
-router.get('/admin-dashboard', checkPermission('reports.view'), DashboardController.getAdminDashboard);
-router.post('/admin-dashboard', uploadFormData.none(), checkPermission('reports.view'), DashboardController.getAdminDashboard);
+router.get('/admin-dashboard', requireAdmin, DashboardController.getAdminDashboard);
+router.post('/admin-dashboard', uploadFormData.none(), requireAdmin, DashboardController.getAdminDashboard);
 router.get('/admin-user-overview', checkPermission('reports.view'), DashboardController.getAdminUserOverview);
 router.post('/admin-user-overview', uploadFormData.none(), checkPermission('reports.view'), DashboardController.getAdminUserOverview);
 router.get('/Api-Admin-Deletion-Requests', checkPermission('users.delete'), AdminController.getDeletionRequests);
