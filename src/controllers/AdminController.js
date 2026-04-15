@@ -1236,7 +1236,8 @@ class AdminController {
       }
 
       if (fetchAdmins) {
-        const totalAdmins = await query('SELECT COUNT(*) as count FROM admin_users');
+        // Only count admins that are not marked as deleted in the users table
+        const totalAdmins = await query('SELECT COUNT(*) as count FROM admin_users a JOIN users u ON a.id = u.user_id WHERE u.deleted = 0');
         totalCount += parseInt(totalAdmins[0]?.count || 0);
       }
 
@@ -1251,10 +1252,10 @@ class AdminController {
       }
 
       // Build search query for admins
-      let adminSearchQuery = '';
+      let adminSearchQuery = 'WHERE (u.deleted = 0 OR u.deleted IS NULL)';
       let adminSearchParams = [];
       if (searchValue) {
-        adminSearchQuery = 'WHERE (a.full_name LIKE ? OR a.username LIKE ? OR a.email LIKE ?)';
+        adminSearchQuery += ' AND (a.full_name LIKE ? OR a.username LIKE ? OR a.email LIKE ?)';
         adminSearchParams.push(`%${searchValue}%`, `%${searchValue}%`, `%${searchValue}%`);
       }
 
