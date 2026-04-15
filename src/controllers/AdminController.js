@@ -3695,29 +3695,8 @@ class AdminController {
       }
 
       // Decode user ID
-      const decodedUserId = idDecode(user_id);
-      if (!decodedUserId) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'Invalid user ID'
-        });
-      }
-
-      // Check if user exists
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? AND deleted = 0 LIMIT 1', [decodedUserId]);
-      if (!userRows.length) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'User not found'
-        });
-      }
-
-      // Check if user is admin (role_id = 1 or 2)
       const admin = req.admin;
       const user = req.user;
-
 
 
       // Check if keys is provided
@@ -3729,8 +3708,6 @@ class AdminController {
         });
       }
 
-      // Get admin role_id
-      const admin = adminRows[0];
 
       // Soft delete investor (matching PHP exactly)
       await query(
