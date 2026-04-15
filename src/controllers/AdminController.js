@@ -1513,9 +1513,15 @@ class AdminController {
         const decodedTargetId = idDecode(keys);
         
         // Check if target user is an admin or regular user
-        const targetIsAdmin = await query('SELECT id FROM admin_users WHERE id = ? LIMIT 1', [decodedTargetId || keys]);
-        const requiredPerm = targetIsAdmin.length > 0 ? 'admins.edit' : 'users.edit';
+        const adminRowsToCheck = await query('SELECT id FROM admin_users WHERE id = ? LIMIT 1', [decodedTargetId || keys]);
+        const targetIsAdmin = adminRowsToCheck.length > 0;
+        const requiredPerm = targetIsAdmin ? 'admins.edit' : 'users.edit';
+        
+        console.log(`[DEBUG EDIT] SubAdmin: ${admin.id}, Target: ${decodedTargetId} (${keys}), IsAdmin: ${targetIsAdmin}, RequiredPerm: ${requiredPerm}`);
+        
         const allowed = await AdminController.hasPermission(admin.id, requiredPerm);
+        console.log(`[DEBUG EDIT] Permission Result: ${allowed}`);
+        
         if (!allowed) {
           return res.json({ status: false, rcode: 403, message: `Access denied. Required permission: ${requiredPerm}` });
         }
@@ -1765,9 +1771,15 @@ class AdminController {
         const decodedTargetId = idDecode(keys);
 
         // Check if target user is an admin or regular user
-        const targetIsAdmin = await query('SELECT id FROM admin_users WHERE id = ? LIMIT 1', [decodedTargetId || keys]);
-        const requiredPerm = targetIsAdmin.length > 0 ? 'admins.delete' : 'users.delete';
+        const adminRowsToCheck = await query('SELECT id FROM admin_users WHERE id = ? LIMIT 1', [decodedTargetId || keys]);
+        const targetIsAdmin = adminRowsToCheck.length > 0;
+        const requiredPerm = targetIsAdmin ? 'admins.delete' : 'users.delete';
+
+        console.log(`[DEBUG DELETE] SubAdmin: ${admin.id}, Target: ${decodedTargetId} (${keys}), IsAdmin: ${targetIsAdmin}, RequiredPerm: ${requiredPerm}`);
+
         const allowed = await AdminController.hasPermission(admin.id, requiredPerm);
+        console.log(`[DEBUG DELETE] Permission Result: ${allowed}`);
+
         if (!allowed) {
           return res.json({ status: false, rcode: 403, message: `Access denied. Required permission: ${requiredPerm}` });
         }
