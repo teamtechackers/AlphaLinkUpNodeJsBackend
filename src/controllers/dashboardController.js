@@ -443,9 +443,7 @@ const DashboardController = {
         pendingMeetingRequests = 0;
       }
 
-      return res.json({
-        status: true,
-        rcode: 200,
+      return phpResponse(res, 'Dashboard data retrieved successfully', {
         user_id: user_id,
         unique_token: token,
         events_list: eventsList,
@@ -462,6 +460,7 @@ const DashboardController = {
           has_more_jobs: jobsList.length === paginationLength
         }
       });
+
 
     } catch (error) {
       console.error('Dashboard error:', error);
@@ -512,40 +511,32 @@ const DashboardController = {
       const recentJobs = await query('SELECT job_id, job_title, company_name, created_dts FROM user_job_details WHERE deleted = 0 ORDER BY created_dts DESC LIMIT 5');
       const recentEvents = await query('SELECT event_id, event_name, event_date, created_dts FROM user_event_details WHERE deleted = 0 ORDER BY created_dts DESC LIMIT 5');
 
-      return res.json({
-        status: true,
-        message: 'Admin dashboard data retrieved successfully',
-        data: {
-          system_stats: {
-            total_users: String(totalUsers.count || 0),
-            total_jobs: String(totalJobs.count || 0),
-            total_events: String(totalEvents.count || 0),
-            total_services: String(totalServices.count || 0),
-            total_investors: String(totalInvestors.count || 0),
-            total_business_cards: String(totalBusinessCards.count || 0),
-            total_deletion_requests: String(totalDeletionRequests.count || 0)
-          },
-          recent_activities: {
-            recent_users: recentUsers.map(user => ({
-              user_id: String(user.user_id),
-              full_name: user.full_name || '',
-              email: user.email || '',
-              created_dts: user.created_dts || ''
-            })),
-            recent_jobs: recentJobs.map(job => ({
-              job_id: String(job.job_id),
-              job_title: job.job_title || '',
-              company_name: job.company_name || '',
-              created_dts: job.created_dts || ''
-            })),
-            recent_events: recentEvents.map(event => ({
-              event_id: String(event.event_id),
-              event_name: event.event_name || '',
-              event_date: event.event_date || '',
-              created_dts: event.created_dts || ''
-            }))
-          }
-        }
+      return phpResponse(res, 'Admin dashboard data retrieved successfully', {
+        count_users: String(totalUsers.count || 0),
+        count_jobs: String(totalJobs.count || 0),
+        count_events: String(totalEvents.count || 0),
+        count_service: String(totalServices.count || 0),
+        count_investor: String(totalInvestors.count || 0),
+        count_business_cards: String(totalBusinessCards.count || 0),
+        count_deletion_requests: String(totalDeletionRequests.count || 0),
+        list_users: recentUsers.map(user => ({
+          user_id: String(user.user_id),
+          full_name: user.full_name || '',
+          email: user.email || '',
+          created_dts: user.created_dts || ''
+        })),
+        list_jobs: recentJobs.map(job => ({
+          job_id: String(job.job_id),
+          job_title: job.job_title || '',
+          company_name: job.company_name || '',
+          created_dts: job.created_dts || ''
+        })),
+        list_events: recentEvents.map(event => ({
+          event_id: String(event.event_id),
+          event_name: event.event_name || '',
+          event_date: event.event_date || '',
+          created_dts: event.created_dts || ''
+        }))
       });
 
     } catch (error) {
@@ -612,24 +603,21 @@ const DashboardController = {
         ORDER BY date ASC
       `);
 
-      return res.json({
-        status: true,
-        message: 'Admin user overview retrieved successfully',
-        data: {
-          users_by_country: usersByCountry.map(item => ({
-            country_name: item.country_name || 'Unknown',
-            user_count: String(item.user_count || 0)
-          })),
-          users_by_status: usersByStatus.map(item => ({
-            status: String(item.status || 0),
-            count: String(item.count || 0)
-          })),
-          user_registration_trend: userTrend.map(item => ({
-            date: item.date || '',
-            count: String(item.count || 0)
-          }))
-        }
+      return phpResponse(res, 'Admin user overview retrieved successfully', {
+        users_by_country: usersByCountry.map(item => ({
+          country_name: item.country_name || 'Unknown',
+          user_count: String(item.user_count || 0)
+        })),
+        users_by_status: usersByStatus.map(item => ({
+          status: String(item.status || 0),
+          count: String(item.count || 0)
+        })),
+        user_registration_trend: userTrend.map(item => ({
+          date: item.date || '',
+          count: String(item.count || 0)
+        }))
       });
+
 
     } catch (error) {
       console.error('Admin user overview error:', error);
