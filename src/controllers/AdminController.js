@@ -3156,18 +3156,10 @@ class AdminController {
 
       console.log('deleteCities - Parameters:', { user_id, token, keys });
 
-      // Check if user_id and token are provided
-      if (!user_id || !token) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'user_id and token are required'
-        });
-      }
+      const admin = req.admin;
+      const user = req.user;
+      const decodedUserId = admin.id;
 
-      // Decode user ID
-      const decodedUserId = idDecode(user_id);
-      if (!decodedUserId) {
       // Check if keys (city ID) is provided
       if (!keys) {
         return res.json({
@@ -3177,17 +3169,19 @@ class AdminController {
         });
       }
 
+
       // Soft delete the city (matching PHP exactly)
       const deleteData = {
         deleted: 1,
         deleted_at: new Date().toISOString().slice(0, 19).replace('T', ' '),
-        deleted_by: adminRows[0].role_id
+        deleted_by: admin.role_id
       };
 
       await query(
         'UPDATE cities SET deleted = ?, deleted_at = ?, deleted_by = ? WHERE id = ?',
         [deleteData.deleted, deleteData.deleted_at, deleteData.deleted_by, keys]
       );
+
 
       // Return response in PHP format (matching exactly)
       return res.json({
@@ -3217,43 +3211,14 @@ class AdminController {
         ...req.body
       };
 
-      // Check if user_id and token are provided
-      if (!user_id || !token) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'user_id and token are required'
-        });
-      }
-
-      // Decode user ID
-      const decodedUserId = idDecode(user_id);
-      if (!decodedUserId) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'Invalid user ID'
-        });
-      }
-
-      // Check if user exists
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? AND deleted = 0 LIMIT 1', [decodedUserId]);
-      if (!userRows.length) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'User not found'
-        });
-      }
-
-      // Check if user is admin (role_id = 1 or 2)
       const admin = req.admin;
       const user = req.user;
-
+      const decodedUserId = admin.id;
 
 
       // Get users list (matching PHP exactly)
       const users = await query('SELECT * FROM users WHERE deleted = 0 ORDER BY full_name ASC');
+
 
       // Get countries list (matching PHP exactly)
       const countries = await query('SELECT * FROM countries WHERE status = 1 ORDER BY name ASC');
@@ -3299,44 +3264,10 @@ class AdminController {
 
       console.log('submitInvestors - Parameters:', { user_id, token, row_id, user_for_investor, name, country_id, state_id, city_id, fund_size_id, linkedin_url, bio, availability, profile, investment_stage, meeting_city, countries_to_invest, investment_industry, language, approval_status, image });
 
-      // Check if user_id and token are provided
-      if (!user_id || !token) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'user_id and token are required'
-        });
-      }
+      const admin = req.admin;
+      const user = req.user;
+      const decodedUserId = admin.id;
 
-      // Decode admin user ID
-      const decodedUserId = idDecode(user_id);
-      if (!decodedUserId) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'Invalid user ID'
-        });
-      }
-
-      // Check if admin user exists
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? AND deleted = 0 LIMIT 1', [decodedUserId]);
-      if (!userRows.length) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'User not found'
-        });
-      }
-
-      // Check if token is valid
-      const tokenRows = await query('SELECT * FROM users WHERE user_id = ? AND unique_token = ? LIMIT 1', [decodedUserId, token]);
-      if (!tokenRows.length) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'Invalid token'
-        });
-      }
 
       // If row_id is provided and > 0, update existing record
       if (row_id && row_id !== '' && parseInt(row_id) > 0) {
@@ -3934,15 +3865,6 @@ class AdminController {
         });
       }
 
-      const decodedUserId = idDecode(user_id);
-      if (!decodedUserId) {
-        return res.json({
-          status: false,
-          rcode: 400,
-          message: 'Invalid user ID'
-        });
-      }
-
       // Verify admin
       const adminRows = await query(`
         SELECT u.user_id 
@@ -3950,7 +3872,7 @@ class AdminController {
         JOIN admin_users a ON a.id = u.user_id 
         WHERE u.user_id = ? AND u.unique_token = ? AND u.deleted = 0
         LIMIT 1
-      `, [decodedUserId, token]);
+      `, [req.admin.id, token]);
 
       if (adminRows.length === 0) {
         return res.json({
@@ -3998,6 +3920,57 @@ class AdminController {
       });
     }
   }
+  static async getDeletionRequests(req, res) {
+    try {
+      const { token } = { ...req.query, ...req.body };
+
+      const admin = req.admin;
+      const user = req.user;
+      const decodedUserId = admin.id;
+
+      // Verify admin
+      const adminRows = await query(`
+        SELECT u.user_id 
+        FROM users u 
+        JOIN admin_users a ON a.id = u.user_id 
+        WHERE u.user_id = ? AND u.unique_token = ? AND u.deleted = 0
+        LIMIT 1
+      `, [admin.id, token]);
+
+      if (adminRows.length === 0) {
+        return res.json({
+          status: false,
+          rcode: 401,
+          message: 'Invalid admin credentials'
+        });
+      }
+
+      const requests = await query(`
+        SELECT r.*, u.full_name, u.email 
+        FROM account_deletion_requests r
+        JOIN users u ON u.user_id = r.user_id
+        ORDER BY r.created_at DESC
+      `);
+
+      return res.json({
+        status: true,
+        rcode: 200,
+        data: requests.map(r => ({
+          ...r,
+          user_id: r.user_id
+        }))
+      });
+
+    } catch (error) {
+      console.error('Get deletion requests error:', error);
+      return res.json({
+        status: false,
+        rcode: 500,
+        message: 'Failed to fetch deletion requests'
+      });
+    }
+  }
 }
 
 module.exports = AdminController;
+
