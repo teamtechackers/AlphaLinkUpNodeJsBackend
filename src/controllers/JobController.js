@@ -621,32 +621,9 @@ class JobController {
         });
       }
 
-      const decodedUserId = idDecode(user_id);
-      if (!decodedUserId) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'Invalid user ID'
-        });
-      }
+      const admin = req.admin;
+      const user = req.user;
 
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
-      if (!userRows.length) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'User not found'
-        });
-      }
-
-      const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
-      if (!adminRows.length) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'Permission denied'
-        });
-      }
 
       return res.json({
         status: true,
@@ -683,32 +660,9 @@ class JobController {
         });
       }
 
-      const decodedUserId = idDecode(user_id);
-      if (!decodedUserId) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'Invalid user ID'
-        });
-      }
+      const admin = req.admin;
+      const user = req.user;
 
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
-      if (!userRows.length) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'User not found'
-        });
-      }
-
-      const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
-      if (!adminRows.length) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'Permission denied'
-        });
-      }
 
       return res.json({
         status: true,
@@ -749,32 +703,10 @@ class JobController {
         });
       }
 
-      const decodedUserId = idDecode(adminUserId);
-      if (!decodedUserId) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'Invalid user ID'
-        });
-      }
+      const admin = req.admin;
+      const user = req.user;
+      const decodedUserId = admin.id;
 
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
-      if (!userRows.length) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'User not found'
-        });
-      }
-
-      const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
-      if (!adminRows.length) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'Permission denied'
-        });
-      }
 
       if (!jobUserId) {
         return res.json({
@@ -914,40 +846,10 @@ class JobController {
 
       console.log('adminListJobsAjax - Parameters:', { user_id, token, draw, start, length, search, job_id });
 
-      if (!user_id || !token) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'user_id and token are required'
-        });
-      }
+      const admin = req.admin;
+      const user = req.user;
+      const decodedUserId = admin.id;
 
-      const decodedUserId = idDecode(user_id);
-      if (!decodedUserId) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'Invalid user ID'
-        });
-      }
-
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
-      if (!userRows.length) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'User not found'
-        });
-      }
-
-      const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
-      if (!adminRows.length) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'Permission denied'
-        });
-      }
 
       // Pagination parameters
       const startValue = parseInt(start) || 0;
@@ -1081,48 +983,10 @@ class JobController {
 
       console.log('adminDeleteJobs - Parameters:', { user_id, token, row_id });
 
-      if (!user_id || !token) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'user_id and token are required'
-        });
-      }
+      const admin = req.admin;
+      const user = req.user;
+      const decodedUserId = admin.id;
 
-      if (!row_id) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'row_id is required'
-        });
-      }
-
-      const decodedUserId = idDecode(user_id);
-      if (!decodedUserId) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'Invalid user ID'
-        });
-      }
-
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
-      if (!userRows.length) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'User not found'
-        });
-      }
-
-      const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
-      if (!adminRows.length) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'Permission denied'
-        });
-      }
 
       await query(
         'UPDATE user_job_details SET deleted = 1, deleted_by = ?, deleted_at = NOW() WHERE job_id = ?',
@@ -1154,51 +1018,10 @@ class JobController {
       console.log('adminViewJobsDetails - Parameters:', { user_id, token, row_id });
 
       // Check if user_id and token are provided
-      if (!user_id || !token) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'user_id and token are required'
-        });
-      }
+      const admin = req.admin;
+      const user = req.user;
+      const decodedUserId = admin.id;
 
-      if (!row_id) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'row_id is required'
-        });
-      }
-
-      // Decode user ID
-      const decodedUserId = idDecode(user_id);
-      if (!decodedUserId) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'Invalid user ID'
-        });
-      }
-
-      // Check if user exists
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
-      if (!userRows.length) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'User not found'
-        });
-      }
-
-      // Check if user is admin
-      const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
-      if (!adminRows.length) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'Permission denied'
-        });
-      }
 
       // Get job details
       const jobDetails = await query(`

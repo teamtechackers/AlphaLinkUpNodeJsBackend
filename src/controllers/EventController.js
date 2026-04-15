@@ -1221,40 +1221,10 @@ class EventController {
         ...req.body
       };
 
-      if (!user_id || !token) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'user_id and token are required'
-        });
-      }
+      const admin = req.admin;
+      const user = req.user;
+      const decodedUserId = admin.id;
 
-      const decodedUserId = idDecode(user_id);
-      if (!decodedUserId) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'Invalid user ID'
-        });
-      }
-
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
-      if (!userRows.length) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'User not found'
-        });
-      }
-
-      const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
-      if (!adminRows.length) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'Permission denied'
-        });
-      }
 
       const users = await query('SELECT * FROM users WHERE deleted = 0 ORDER BY full_name ASC');
 
@@ -1310,42 +1280,10 @@ class EventController {
       console.log('Resolved IDs:', { eventUserId, adminUserId, token });
 
 
-      if (!adminUserId || !token) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'user_id and token are required'
-        });
-      }
+      const admin = req.admin;
+      const user = req.user;
+      const decodedUserId = admin.id;
 
-      const decodedUserId = idDecode(adminUserId);
-      if (!decodedUserId) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'Invalid user ID'
-        });
-      }
-
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
-      if (!userRows.length) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'User not found'
-        });
-      }
-
-      const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
-      if (!adminRows.length) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'Permission denied'
-        });
-      }
-
-      const admin = adminRows[0];
 
       if (!row_id || row_id === '') {
         // === ADD EVENT ===
@@ -1428,40 +1366,10 @@ class EventController {
         ...req.body
       };
 
-      if (!user_id || !token) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'user_id and token are required'
-        });
-      }
+      const admin = req.admin;
+      const user = req.user;
+      const decodedUserId = admin.id;
 
-      const decodedUserId = idDecode(user_id);
-      if (!decodedUserId) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'Invalid user ID'
-        });
-      }
-
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
-      if (!userRows.length) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'User not found'
-        });
-      }
-
-      const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
-      if (!adminRows.length) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'Permission denied'
-        });
-      }
 
       const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
 
@@ -1587,40 +1495,10 @@ class EventController {
         ...req.body
       };
 
-      if (!user_id || !token) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'user_id and token are required'
-        });
-      }
+      const admin = req.admin;
+      const user = req.user;
+      const decodedUserId = admin.id;
 
-      const decodedUserId = idDecode(user_id);
-      if (!decodedUserId) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'Invalid user ID'
-        });
-      }
-
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
-      if (!userRows.length) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'User not found'
-        });
-      }
-
-      const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
-      if (!adminRows.length) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'Permission denied'
-        });
-      }
 
       if (!keys) {
         return res.json({
@@ -1684,40 +1562,10 @@ class EventController {
         ...req.body
       };
 
-      if (!user_id || !token) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'user_id and token are required'
-        });
-      }
+      const admin = req.admin;
+      const user = req.user;
+      const decodedUserId = admin.id;
 
-      const decodedUserId = idDecode(user_id);
-      if (!decodedUserId) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'Invalid user ID'
-        });
-      }
-
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
-      if (!userRows.length) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'User not found'
-        });
-      }
-
-      const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
-      if (!adminRows.length) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'Permission denied'
-        });
-      }
 
       if (!keys) {
         return res.json({
@@ -1755,40 +1603,10 @@ class EventController {
         ...req.body
       };
 
-      if (!user_id || !token) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'user_id and token are required'
-        });
-      }
+      const admin = req.admin;
+      const user = req.user;
+      const decodedUserId = admin.id;
 
-      const decodedUserId = idDecode(user_id);
-      if (!decodedUserId) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'Invalid user ID'
-        });
-      }
-
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
-      if (!userRows.length) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'User not found'
-        });
-      }
-
-      const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
-      if (!adminRows.length) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'Permission denied'
-        });
-      }
 
       if (!keys) {
         return res.json({

@@ -16,13 +16,11 @@ const checkPermission = (permissionKey) => {
         ...req.body
       };
 
-      // Debug logging
-      logger.debug(`checkPermission called for: ${permissionKey}`);
-      logger.debug(`user_id: ${user_id}, token: ${token ? 'present' : 'missing'}`);
-      logger.debug(`req.body:`, req.body);
-      logger.debug(`req.query:`, req.query);
+      // Debug logging to help identify why access is denied
+      logger.debug(`checkPermission: Checking key "${permissionKey}" for user_id: ${user_id}`);
 
       if (!user_id || !token) {
+        logger.warn(`Permission check failed: Missing user_id or token for ${permissionKey}`);
         return res.json({
           status: false,
           rcode: 403,
@@ -32,6 +30,7 @@ const checkPermission = (permissionKey) => {
 
       const decodedUserId = idDecode(user_id);
       if (!decodedUserId) {
+        logger.warn(`Permission check failed: Invalid user ID format for ${permissionKey}`);
         return res.json({
           status: false,
           rcode: 403,
@@ -46,6 +45,7 @@ const checkPermission = (permissionKey) => {
       );
 
       if (!adminRows.length) {
+        logger.warn(`Permission check failed: User ${decodedUserId} is not in admin_users table`);
         return res.json({
           status: false,
           rcode: 403,
@@ -60,6 +60,7 @@ const checkPermission = (permissionKey) => {
         // Fallback to older mechanism in case token is only in users table for old sessions
         const legacyCheck = await query('SELECT unique_token FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
         if (!legacyCheck.length || legacyCheck[0].unique_token !== token) {
+           logger.warn(`Permission check failed: Token mismatch for admin ${decodedUserId}`);
            return res.json({
              status: false,
              rcode: 403,
@@ -68,14 +69,9 @@ const checkPermission = (permissionKey) => {
         }
       }
 
-      // We still try to grab `users` context for backward compatibility 
-      // but DO NOT fail if it does not exist (sub-admins won't have it).
-      const userRows = await query(
-        'SELECT * FROM users WHERE user_id = ? LIMIT 1',
-        [decodedUserId]
-      );
-      const user = userRows.length > 0 ? userRows[0] : { id: decodedUserId };
-
+      // Grab users context if available, otherwise fallback to admin ID
+      const userRows = await query('SELECT * FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      const user = userRows.length > 0 ? userRows[0] : { user_id: decodedUserId };
 
       // SuperAdmin has all permissions - BYPASS ALL CHECKS
       if (admin.is_super_admin === 1) {
@@ -96,7 +92,7 @@ const checkPermission = (permissionKey) => {
       );
 
       if (permissionCheck.length === 0) {
-        logger.warn(`Permission denied for admin ${decodedUserId}: ${permissionKey}`);
+        logger.warn(`Permission Denied: Admin ${decodedUserId} ("${admin.username}") does not have "${permissionKey}" permission`);
         return res.json({
           status: false,
           rcode: 403,
@@ -104,6 +100,7 @@ const checkPermission = (permissionKey) => {
         });
       }
 
+      logger.info(`Permission Granted: Admin ${decodedUserId} accessing "${permissionKey}"`);
       req.admin = admin;
       req.user = user;
       req.isSuperAdmin = false;
@@ -197,7 +194,85 @@ const requireSuperAdmin = async (req, res, next) => {
   }
 };
 
+/**
+ * Middleware to check if user is ANY admin (super or sub)
+ * Use this for routes that any authenticated admin should access.
+ */
+const requireAdmin = async (req, res, next) => {
+  try {
+    const { user_id, token } = {
+      ...req.query,
+      ...req.body
+    };
+
+    if (!user_id || !token) {
+      return res.json({
+        status: false,
+        rcode: 403,
+        message: 'Authentication required'
+      });
+    }
+
+    const decodedUserId = idDecode(user_id);
+    if (!decodedUserId) {
+      return res.json({
+        status: false,
+        rcode: 403,
+        message: 'Invalid user ID'
+      });
+    }
+
+    // Check if user is ANY admin (super or sub)
+    const adminRows = await query(
+      'SELECT * FROM admin_users WHERE id = ? LIMIT 1',
+      [decodedUserId]
+    );
+
+    if (!adminRows.length) {
+      return res.json({
+        status: false,
+        rcode: 403,
+        message: 'Access denied. Admin only.'
+      });
+    }
+
+    const admin = adminRows[0];
+
+    // Validate Admin Token
+    if (admin.token !== token) {
+      const legacyCheck = await query('SELECT unique_token FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
+      if (!legacyCheck.length || legacyCheck[0].unique_token !== token) {
+        return res.json({
+          status: false,
+          rcode: 403,
+          message: 'Invalid admin token'
+        });
+      }
+    }
+
+    const userRows = await query(
+      'SELECT * FROM users WHERE user_id = ? LIMIT 1',
+      [decodedUserId]
+    );
+    const user = userRows.length > 0 ? userRows[0] : { id: decodedUserId };
+
+    req.admin = admin;
+    req.user = user;
+    req.isSuperAdmin = admin.is_super_admin === 1;
+    next();
+
+  } catch (error) {
+    logger.error('Admin auth check error:', error);
+    return res.json({
+      status: false,
+      rcode: 500,
+      message: 'Authorization check failed'
+    });
+  }
+};
+
 module.exports = {
   checkPermission,
-  requireSuperAdmin
+  requireSuperAdmin,
+  requireAdmin
 };

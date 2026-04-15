@@ -158,46 +158,11 @@ class AdminController {
         });
       }
 
-      // Decode user ID
-      const decodedUserId = idDecode(user_id);
-      if (!decodedUserId) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'Invalid user ID'
-        });
-      }
+      // Injected by checkPermission middleware
+      const admin = req.admin;
+      const user = req.user;
+      const decodedUserId = admin.id;
 
-      // Get user details and validate
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? AND deleted = 0 LIMIT 1', [decodedUserId]);
-      if (!userRows.length) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'Not A Valid User'
-        });
-      }
-
-      const user = userRows[0];
-
-      // Validate token
-      if (user.unique_token !== token) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'Token Mismatch Exception'
-        });
-      }
-
-      // Check if user is admin (role_id = 1 or 2)
-      const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
-      if (!adminRows.length) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'Permission denied'
-        });
-      }
 
       // Get dashboard counts (matching PHP exactly)
       // Count active non-deleted users excluding admin users
@@ -338,15 +303,10 @@ class AdminController {
         });
       }
 
-      // Check if user is admin (role_id = 1 or 2)
-      const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
-      if (!adminRows.length) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'Permission denied'
-        });
-      }
+      const admin = req.admin;
+      const user = req.user;
+      const decodedUserId = admin.id;
+
 
       // Get all industry types ordered by name (matching PHP exactly)
       const industryTypes = await query('SELECT * FROM industry_type WHERE deleted = 0 ORDER BY name ASC');
@@ -422,15 +382,10 @@ class AdminController {
         });
       }
 
-      // Check if user is admin (role_id = 1 or 2)
-      const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
-      if (!adminRows.length) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'Permission denied'
-        });
-      }
+      const admin = req.admin;
+      const user = req.user;
+      const decodedUserId = admin.id;
+
 
       // Check if required fields are provided
       if (!name) {
@@ -442,7 +397,7 @@ class AdminController {
       }
 
       // Get admin role_id
-      const admin = adminRows[0];
+
 
       if (!row_id || row_id === '') {
         // Insert new industry type (matching PHP exactly)
@@ -549,15 +504,10 @@ class AdminController {
         });
       }
 
-      // Check if user is admin (role_id = 1 or 2)
-      const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
-      if (!adminRows.length) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'Permission denied'
-        });
-      }
+      const admin = req.admin;
+      const user = req.user;
+      const decodedUserId = admin.id;
+
 
       // DataTables parameters
       const drawValue = parseInt(req.body.draw || req.query.draw || 1);
@@ -690,15 +640,10 @@ class AdminController {
         });
       }
 
-      // Check if user is admin (role_id = 1 or 2)
-      const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
-      if (!adminRows.length) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'Permission denied'
-        });
-      }
+      const admin = req.admin;
+      const user = req.user;
+      const decodedUserId = admin.id;
+
 
       // Check if required fields are provided
       if (!name) {
@@ -797,15 +742,10 @@ class AdminController {
         });
       }
 
-      // Check if user is admin (role_id = 1 or 2)
-      const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
-      if (!adminRows.length) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'Permission denied'
-        });
-      }
+      const admin = req.admin;
+      const user = req.user;
+      const decodedUserId = admin.id;
+
 
       // Check if keys (industry type ID) is provided
       if (!keys) {
@@ -896,15 +836,10 @@ class AdminController {
         });
       }
 
-      // Check if user is admin (role_id = 1 or 2)
-      const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
-      if (!adminRows.length) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'Permission denied'
-        });
-      }
+      const admin = req.admin;
+      const user = req.user;
+      const decodedUserId = admin.id;
+
 
       // Get all countries ordered by name (matching PHP exactly)
       const countries = await query('SELECT * FROM countries WHERE status = 1 ORDER BY name ASC');
@@ -992,17 +927,13 @@ class AdminController {
         });
       }
 
-      // Check if user is admin (role_id = 1 or 2)
-      const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
-      if (!adminRows.length) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'Permission denied'
-        });
-      }
+      const admin = req.admin;
+      const user = req.user;
+      const decodedUserId = admin.id;
 
-      const admin = adminRows[0];
+
+      // ==================== HANDLE DIFFERENT USER TYPES ====================
+
 
       // ==================== HANDLE DIFFERENT USER TYPES ====================
 
@@ -1346,15 +1277,10 @@ class AdminController {
         });
       }
 
-      // Check if user is admin (role_id = 1 or 2)
-      const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
-      if (!adminRows.length) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'Permission denied'
-        });
-      }
+      const admin = req.admin;
+      const user = req.user;
+      const decodedUserId = admin.id;
+
 
       const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
 
@@ -1666,15 +1592,10 @@ class AdminController {
         });
       }
 
-      // Check if user is admin (role_id = 1 or 2)
-      const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
-      if (!adminRows.length) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'Permission denied'
-        });
-      }
+      const admin = req.admin;
+      const user = req.user;
+      const decodedUserId = admin.id;
+
 
       // Check if user ID is provided
       if (!keys) {
@@ -1816,15 +1737,10 @@ class AdminController {
         });
       }
 
-      // Check if user is admin (role_id = 1 or 2)
-      const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
-      if (!adminRows.length) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'Permission denied'
-        });
-      }
+      const admin = req.admin;
+      const user = req.user;
+      const decodedUserId = admin.id;
+
 
       // Check if required fields are provided
       if (!mobile && !email) {
@@ -1927,15 +1843,10 @@ class AdminController {
         });
       }
 
-      // Check if user is admin (role_id = 1 or 2)
-      const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
-      if (!adminRows.length) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'Permission denied'
-        });
-      }
+      const admin = req.admin;
+      const user = req.user;
+      const decodedUserId = admin.id;
+
 
       // Check if user ID is provided
       if (!keys) {
@@ -1950,7 +1861,8 @@ class AdminController {
       const deleteData = {
         deleted: 1,
         deleted_at: new Date().toISOString().slice(0, 19).replace('T', ' '),
-        deleted_by: adminRows[0].role_id
+        deleted_by: admin.role_id
+
       };
 
       await query(
@@ -2012,15 +1924,10 @@ class AdminController {
         });
       }
 
-      // Check if user is admin (role_id = 1 or 2)
-      const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
-      if (!adminRows.length) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'Permission denied'
-        });
-      }
+      const admin = req.admin;
+      const user = req.user;
+      const decodedUserId = admin.id;
+
 
       // Get all users ordered by full_name (matching PHP exactly)
       const users = await query('SELECT * FROM users WHERE deleted = 0 ORDER BY full_name ASC');
@@ -2089,15 +1996,10 @@ class AdminController {
         });
       }
 
-      // Check if user is admin (role_id = 1 or 2)
-      const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
-      if (!adminRows.length) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'Permission denied'
-        });
-      }
+      const admin = req.admin;
+      const user = req.user;
+      const decodedUserId = admin.id;
+
 
       // Check if required fields are provided
       if (!sp_user_id) {
@@ -2109,7 +2011,7 @@ class AdminController {
       }
 
       // Get admin role_id
-      const admin = adminRows[0];
+
 
       if (!row_id || row_id === '') {
         // Insert new service provider (matching PHP exactly)
@@ -2219,15 +2121,10 @@ class AdminController {
         });
       }
 
-      // Check if user is admin (role_id = 1 or 2)
-      const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
-      if (!adminRows.length) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'Permission denied'
-        });
-      }
+      const admin = req.admin;
+      const user = req.user;
+      const decodedUserId = admin.id;
+
 
       // Get DataTables parameters (matching PHP exactly)
       const drawValue = parseInt(req.body.draw || req.query.draw || 1);
@@ -2366,15 +2263,10 @@ class AdminController {
         });
       }
 
-      // Check if user is admin (role_id = 1 or 2)
-      const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
-      if (!adminRows.length) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'Permission denied'
-        });
-      }
+      const admin = req.admin;
+      const user = req.user;
+      const decodedUserId = admin.id;
+
 
       // Check if service_id is provided
       if (!service_id) {
@@ -2519,14 +2411,10 @@ class AdminController {
       }
 
       // Check if user is admin (role_id = 1 or 2)
-      const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
-      if (!adminRows.length) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'Permission denied'
-        });
-      }
+      const admin = req.admin;
+      const user = req.user;
+      const decodedUserId = admin.id;
+
 
       // Check if service provider ID is provided
       if (!keys) {
@@ -2642,14 +2530,10 @@ class AdminController {
       }
 
       // Check if user is admin (role_id = 1 or 2)
-      const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
-      if (!adminRows.length) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'Permission denied'
-        });
-      }
+      const admin = req.admin;
+      const user = req.user;
+      const decodedUserId = admin.id;
+
 
       // Check if service provider ID is provided
       if (!keys) {
@@ -2728,14 +2612,10 @@ class AdminController {
       }
 
       // Check if user is admin (role_id = 1 or 2)
-      const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
-      if (!adminRows.length) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'Permission denied'
-        });
-      }
+      const admin = req.admin;
+      const user = req.user;
+      const decodedUserId = admin.id;
+
 
       // Check if service provider ID is provided
       if (!keys) {
@@ -2826,14 +2706,10 @@ class AdminController {
       }
 
       // Check if user is admin (role_id = 1 or 2)
-      const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
-      if (!adminRows.length) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'Permission denied'
-        });
-      }
+      const admin = req.admin;
+      const user = req.user;
+      const decodedUserId = admin.id;
+
 
       // Get all users ordered by full_name (matching PHP exactly)
       const users = await query('SELECT * FROM users WHERE deleted = 0 ORDER BY full_name ASC');
@@ -2914,14 +2790,10 @@ class AdminController {
       }
 
       // Check if user is admin (role_id = 1 or 2)
-      const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
-      if (!adminRows.length) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'Permission denied'
-        });
-      }
+      const admin = req.admin;
+      const user = req.user;
+      const decodedUserId = admin.id;
+
 
       // Check if required fields are provided
       if (!sp_user_id) {
@@ -3050,14 +2922,10 @@ class AdminController {
       }
 
       // Check if user is admin (role_id = 1 or 2)
-      const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
-      if (!adminRows.length) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'Permission denied'
-        });
-      }
+      const admin = req.admin;
+      const user = req.user;
+      const decodedUserId = admin.id;
+
 
       // Get DataTables parameters (matching PHP exactly)
       const drawValue = parseInt(req.body.draw || req.query.draw || 1);
@@ -3212,14 +3080,10 @@ class AdminController {
       }
 
       // Check if user is admin (role_id = 1 or 2)
-      const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
-      if (!adminRows.length) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'Permission denied'
-        });
-      }
+      const admin = req.admin;
+      const user = req.user;
+      const decodedUserId = admin.id;
+
 
       // Check if card activation request ID is provided
       if (!keys) {
@@ -3335,14 +3199,10 @@ class AdminController {
       }
 
       // Check if user is admin (role_id = 1 or 2)
-      const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
-      if (!adminRows.length) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'Permission denied'
-        });
-      }
+      const admin = req.admin;
+      const user = req.user;
+      const decodedUserId = admin.id;
+
 
       // Check if card activation request ID is provided
       if (!keys) {
@@ -3421,14 +3281,10 @@ class AdminController {
       }
 
       // Check if user is admin (role_id = 1 or 2)
-      const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
-      if (!adminRows.length) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'Permission denied'
-        });
-      }
+      const admin = req.admin;
+      const user = req.user;
+      const decodedUserId = admin.id;
+
 
       // Check if card activation request ID is provided
       if (!keys) {
@@ -3523,14 +3379,10 @@ class AdminController {
       }
 
       // Check if user is admin (role_id = 1 or 2)
-      const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
-      if (!adminRows.length) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'Permission denied'
-        });
-      }
+      const admin = req.admin;
+      const user = req.user;
+      const decodedUserId = admin.id;
+
 
       // Check if keys (city ID) is provided
       if (!keys) {
@@ -3611,14 +3463,10 @@ class AdminController {
       }
 
       // Check if user is admin (role_id = 1 or 2)
-      const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
-      if (!adminRows.length) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'Permission denied'
-        });
-      }
+      const admin = req.admin;
+      const user = req.user;
+      const decodedUserId = admin.id;
+
 
       // Get users list (matching PHP exactly)
       const users = await query('SELECT * FROM users WHERE deleted = 0 ORDER BY full_name ASC');
@@ -3871,14 +3719,10 @@ class AdminController {
       }
 
       // Check if user is admin (role_id = 1 or 2)
-      const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
-      if (!adminRows.length) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'Permission denied'
-        });
-      }
+      const admin = req.admin;
+      const user = req.user;
+      const decodedUserId = admin.id;
+
 
       // Get DataTables parameters
       const drawValue = parseInt(draw || 1);
@@ -4051,14 +3895,10 @@ class AdminController {
       }
 
       // Check if user is admin (role_id = 1 or 2)
-      const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
-      if (!adminRows.length) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'Permission denied'
-        });
-      }
+      const admin = req.admin;
+      const user = req.user;
+      const decodedUserId = admin.id;
+
 
       // Check if keys is provided
       if (!keys) {
@@ -4160,14 +4000,10 @@ class AdminController {
       }
 
       // Check if user is admin (role_id = 1 or 2)
-      const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
-      if (!adminRows.length) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'Permission denied'
-        });
-      }
+      const admin = req.admin;
+      const user = req.user;
+      const decodedUserId = admin.id;
+
 
       // Check if keys is provided
       if (!keys) {
@@ -4240,14 +4076,10 @@ class AdminController {
       }
 
       // Check if user is admin (role_id = 1 or 2)
-      const adminRows = await query('SELECT * FROM admin_users WHERE id = ? LIMIT 1', [decodedUserId]);
-      if (!adminRows.length) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'Permission denied'
-        });
-      }
+      const admin = req.admin;
+      const user = req.user;
+      const decodedUserId = admin.id;
+
 
       // Check if keys is provided
       if (!keys) {
