@@ -1567,6 +1567,7 @@ class EventController {
       const decodedUserId = admin.id;
 
 
+      // Check if keys is provided
       if (!keys) {
         return res.json({
           status: false,
@@ -1575,7 +1576,6 @@ class EventController {
         });
       }
 
-      const admin = adminRows[0];
 
       await query(
         'UPDATE user_event_details SET deleted = 1, deleted_at = ?, deleted_by = ? WHERE event_id = ?',

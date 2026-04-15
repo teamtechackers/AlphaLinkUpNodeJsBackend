@@ -708,6 +708,7 @@ class JobController {
       const decodedUserId = admin.id;
 
 
+      // Check if job owner user_id is provided
       if (!jobUserId) {
         return res.json({
           status: false,
@@ -716,7 +717,6 @@ class JobController {
         });
       }
 
-      const admin = adminRows[0];
 
       if (!row_id || row_id === '') {
         const insertData = {
