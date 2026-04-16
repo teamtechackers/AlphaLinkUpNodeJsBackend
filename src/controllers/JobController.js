@@ -689,9 +689,10 @@ class JobController {
         ...req.body
       };
       
-      const jobUserId = req.body.user_id;
+      const jobUserId = req.body.user_id || req.query.user_id;
       
-      const adminUserId = req.query.user_id;
+      // Support user_id from both query string and POST body
+      const adminUserId = req.query.user_id || req.body.user_id;
 
       console.log('adminSubmitJobs - Parameters:', { user_id, token, row_id, jobUserId, job_title, company_name, country_id, state_id, city_id, address, job_lat, job_lng, job_type_id, pay_id, job_description, status });
 
