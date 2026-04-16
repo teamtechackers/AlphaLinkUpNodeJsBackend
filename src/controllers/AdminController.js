@@ -844,12 +844,18 @@ class AdminController {
       // ==================== CREATING ADMIN (SubAdmin or SuperAdmin) ====================
       if (actualUserRole === 'subadmin' || actualUserRole === 'superadmin') {
 
-        // Only SuperAdmin can create/modify other admins
+        // Smart permission check: SuperAdmin can always proceed; SubAdmins need admins.create or admins.edit
         if (admin.is_super_admin !== 1) {
-          return res.json({
-            status: 'Error',
-            info: 'Only SuperAdmin can manage admin users'
-          });
+          const isEdit = row_id && row_id !== '';
+          const requiredPerm = isEdit ? 'admins.edit' : 'admins.create';
+          const allowed = await AdminController.hasPermission(admin.id, requiredPerm);
+          console.log(`[DEBUG SUBMIT ADMIN] SubAdmin: ${admin.id}, isEdit: ${isEdit}, RequiredPerm: ${requiredPerm}, Allowed: ${allowed}`);
+          if (!allowed) {
+            return res.json({
+              status: 'Error',
+              info: `Access denied. Required permission: ${requiredPerm}`
+            });
+          }
         }
 
         const bcrypt = require('bcryptjs');
