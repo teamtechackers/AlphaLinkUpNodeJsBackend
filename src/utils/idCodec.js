@@ -13,8 +13,13 @@ function idEncode(id) {
 
 function idDecode(encoded) {
   try {
+    if (!encoded) return '';
     // Replace URL-safe characters back to standard base64
-    const base64 = encoded.replace(/-/g, '+').replace(/_/g, '/');
+    let base64 = String(encoded).replace(/-/g, '+').replace(/_/g, '/');
+    // Auto-fix base64 padding stripped by URL encoding (e.g. NDQ instead of NDQ=)
+    while (base64.length % 4 !== 0) {
+      base64 += '=';
+    }
     // Decode from base64
     const decoded = Buffer.from(base64, 'base64').toString('utf8');
     return decoded;
