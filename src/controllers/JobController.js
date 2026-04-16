@@ -706,27 +706,20 @@ class JobController {
 
       const admin = req.admin;
       const user = req.user;
-      const decodedUserId = admin.id;
+      // Use admin.id as the numeric ID (already decoded by middleware)
+      const decodedAdminId = admin.id;
 
-
-      // Check if job owner user_id is provided
-      if (!jobUserId) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'user_id is required'
-        });
-      }
-
+      // job owner: if explicitly provided use it, otherwise default to the acting admin
+      const resolvedJobUserId = (jobUserId && !isNaN(parseInt(jobUserId))) ? parseInt(jobUserId) : decodedAdminId;
 
       if (!row_id || row_id === '') {
         const insertData = {
-          user_id: parseInt(jobUserId),
+          user_id: resolvedJobUserId,
           job_title: job_title ? job_title.trim() : '',
           company_name: company_name ? company_name.trim() : '',
-          country_id: country_id ? parseInt(country_id) : 166, // Default to Pakistan
-          state_id: state_id ? parseInt(state_id) : 2728, // Default to Punjab
-          city_id: city_id ? parseInt(city_id) : 31439, // Default to Lahore
+          country_id: country_id ? parseInt(country_id) : 166,
+          state_id: state_id ? parseInt(state_id) : 2728,
+          city_id: city_id ? parseInt(city_id) : 31439,
           address: address ? address.trim() : '',
           job_lat: job_lat ? parseFloat(job_lat) : null,
           job_lng: job_lng ? parseFloat(job_lng) : null,
@@ -736,7 +729,7 @@ class JobController {
           status: status !== undefined ? parseInt(status) : 1,
           deleted: 0,
           created_dts: new Date().toISOString().slice(0, 19).replace('T', ' '),
-          created_by: admin.role_id
+          created_by: decodedAdminId
         };
 
         const result = await query(
