@@ -830,14 +830,6 @@ class AdminController {
       const admin = req.admin;
       const user = req.user;
 
-
-
-
-      // ==================== HANDLE DIFFERENT USER TYPES ====================
-
-
-      // ==================== HANDLE DIFFERENT USER TYPES ====================
-
       // Determine user role (default: 'user')
       const actualUserRole = user_role || 'user';
 

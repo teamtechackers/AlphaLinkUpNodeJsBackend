@@ -11,10 +11,8 @@ const { logger } = require('../utils/logger');
 const checkPermission = (permissionKey) => {
   return async (req, res, next) => {
     try {
-      const { user_id, token } = {
-        ...req.query,
-        ...req.body
-      };
+      const user_id = req.query.user_id || req.body.user_id;
+      const token = req.query.token || req.body.token;
 
       // Debug logging to help identify why access is denied
       logger.debug(`checkPermission: Checking key "${permissionKey}" for user_id: ${user_id}`);
@@ -126,10 +124,8 @@ const checkPermission = (permissionKey) => {
 const checkAnyPermission = (permissionKeys) => {
   return async (req, res, next) => {
     try {
-      const { user_id, token } = {
-        ...req.query,
-        ...req.body
-      };
+      const user_id = req.query.user_id || req.body.user_id;
+      const token = req.query.token || req.body.token;
 
       logger.debug(`checkAnyPermission: Checking keys [${permissionKeys.join(', ')}] for user_id: ${user_id}`);
 
@@ -206,10 +202,8 @@ const checkAnyPermission = (permissionKeys) => {
  */
 const requireSuperAdmin = async (req, res, next) => {
   try {
-    const { user_id, token } = {
-      ...req.query,
-      ...req.body
-    };
+    const user_id = req.query.user_id || req.body.user_id;
+    const token = req.query.token || req.body.token;
 
     if (!user_id || !token) {
       return res.json({
@@ -284,10 +278,8 @@ const requireSuperAdmin = async (req, res, next) => {
  */
 const requireAdmin = async (req, res, next) => {
   try {
-    const { user_id, token } = {
-      ...req.query,
-      ...req.body
-    };
+    const user_id = req.query.user_id || req.body.user_id;
+    const token = req.query.token || req.body.token;
 
     if (!user_id || !token) {
       return res.json({
