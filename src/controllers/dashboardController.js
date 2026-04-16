@@ -471,27 +471,7 @@ const DashboardController = {
 
   async getAdminDashboard(req, res) {
     try {
-      const { user_id, token } = { ...req.query, ...req.body };
-
-      if (!user_id || !token) {
-        return errorResponse(res, 'user_id and token are required', 400);
-      }
-
-      const decodedUserId = idDecode(user_id);
-      if (!decodedUserId) {
-        return errorResponse(res, 'Invalid user ID', 400);
-      }
-
-      const adminCheck = await query(`
-        SELECT u.user_id 
-        FROM users u 
-        JOIN admin_users a ON a.id = u.user_id 
-        WHERE u.user_id = ? AND u.unique_token = ? AND u.deleted = 0
-      `, [decodedUserId, token]);
-
-      if (adminCheck.length === 0) {
-        return errorResponse(res, 'Invalid admin token', 401);
-      }
+      const decodedUserId = req.admin.id;
 
       const [totalUsersData] = await query(`
         SELECT SUM(cnt) as count FROM (
@@ -549,27 +529,7 @@ const DashboardController = {
 
   async getAdminUserOverview(req, res) {
     try {
-      const { user_id, token } = { ...req.query, ...req.body };
-
-      if (!user_id || !token) {
-        return errorResponse(res, 'user_id and token are required', 400);
-      }
-
-      const decodedUserId = idDecode(user_id);
-      if (!decodedUserId) {
-        return errorResponse(res, 'Invalid user ID', 400);
-      }
-
-      const adminCheck = await query(`
-        SELECT u.user_id 
-        FROM users u 
-        JOIN admin_users a ON a.id = u.user_id 
-        WHERE u.user_id = ? AND u.unique_token = ? AND u.deleted = 0
-      `, [decodedUserId, token]);
-
-      if (adminCheck.length === 0) {
-        return errorResponse(res, 'Invalid admin token', 401);
-      }
+      const decodedUserId = req.admin.id;
 
       const usersByCountry = await query(`
         SELECT 
