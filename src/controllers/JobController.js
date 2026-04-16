@@ -794,7 +794,7 @@ class JobController {
 
       } else {
         const updateData = {
-          user_id: parseInt(jobUserId),
+          user_id: resolvedJobUserId,
           job_title: job_title ? job_title.trim() : '',
           company_name: company_name ? company_name.trim() : '',
           country_id: country_id ? parseInt(country_id) : 166,
@@ -808,7 +808,7 @@ class JobController {
           job_description: job_description ? job_description.trim() : '',
           status: status !== undefined ? parseInt(status) : 1,
           updated_at: new Date().toISOString().slice(0, 19).replace('T', ' '),
-          updated_by: admin.role_id
+          updated_by: decodedAdminId
         };
 
         await query(
