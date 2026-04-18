@@ -477,7 +477,7 @@ const DashboardController = {
         SELECT SUM(cnt) as count FROM (
           SELECT COUNT(*) as cnt FROM users WHERE status = 1 AND deleted = 0 AND user_id NOT IN (SELECT id FROM admin_users)
           UNION ALL
-          SELECT COUNT(*) as cnt FROM admin_users
+          SELECT COUNT(*) as cnt FROM admin_users a JOIN users u ON a.id = u.user_id WHERE u.deleted = 0
         ) AS t`);
       const totalUsers = { count: totalUsersData.count || 0 };
       const [totalJobs] = await query('SELECT COUNT(*) as count FROM user_job_details WHERE deleted = 0');
