@@ -2255,32 +2255,11 @@ const ApiController = {
   // Admin Meeting Requests API - Simple working version
   async getAdminMeetingRequests(req, res) {
     try {
-      const { user_id, token, status_filter, page = 1, limit = 50 } = {
+      const decodedUserId = req.admin.id;
+      const { status_filter, page = 1, limit = 50 } = {
         ...req.query,
         ...req.body
       };
-
-      console.log('getAdminMeetingRequests - Parameters:', { user_id, token, status_filter, page, limit });
-
-      if (!user_id || !token) {
-        return fail(res, 500, 'user_id and token are required');
-      }
-
-      const decodedUserId = idDecode(user_id);
-      if (!decodedUserId) {
-        return fail(res, 500, 'Invalid user ID');
-      }
-
-      // Check if user is valid
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? AND deleted = 0 LIMIT 1', [decodedUserId]);
-      if (!userRows.length) {
-        return fail(res, 500, 'Not A Valid User');
-      }
-
-      const user = userRows[0];
-      if (user.unique_token !== token) {
-        return fail(res, 500, 'Token Mismatch Exception');
-      }
 
       // Simple query - get all meeting requests (like getInvestorMeets but for all users)
       let baseQuery = `

@@ -2016,32 +2016,13 @@ class AdminController {
   // List service provider ajax - PHP compatible version
   static async listServiceProviderAjax(req, res) {
     try {
-      // Support both query parameters and form data
-      const { user_id, token } = {
+      const decodedUserId = req.admin.id;
+      const { draw, start, length, search, order, columns } = {
         ...req.query,
         ...req.body
       };
 
-      console.log('listServiceProviderAjax - Parameters:', { user_id, token });
-
-      // Check if user_id and token are provided
-      if (!user_id || !token) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'user_id and token are required'
-        });
-      }
-
-      // Decode user ID
-      const decodedUserId = idDecode(user_id);
-      if (!decodedUserId) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'Invalid user ID'
-        });
-      }
+      console.log('listServiceProviderAjax - Parameters:', { decodedUserId });
 
       // Check if user exists
       const userRows = await query('SELECT * FROM users WHERE user_id = ? AND deleted = 0 LIMIT 1', [decodedUserId]);
@@ -2059,10 +2040,10 @@ class AdminController {
 
 
       // Get DataTables parameters (matching PHP exactly)
-      const drawValue = parseInt(req.body.draw || req.query.draw || 1);
-      const startValue = parseInt(req.body.start || req.query.start || 0);
-      const lengthValue = parseInt(req.body.length || req.query.length || 10);
-      const searchValue = req.body.search?.value || req.query.search || '';
+      const drawValue = parseInt(draw || 1);
+      const startValue = parseInt(start || 0);
+      const lengthValue = parseInt(length || 10);
+      const searchValue = search?.value || '';
 
       // Get total count
       const totalCountResult = await query('SELECT COUNT(*) as count FROM user_service_provider WHERE deleted = 0');
@@ -2137,8 +2118,7 @@ class AdminController {
       return res.json({
         status: true,
         rcode: 200,
-        user_id: user_id,
-        unique_token: token,
+        user_id: decodedUserId,
         draw: drawValue,
         recordsTotal: totalCount,
         recordsFiltered: filteredCount,
@@ -2480,7 +2460,7 @@ class AdminController {
       const deleteData = {
         deleted: 1,
         deleted_at: new Date().toISOString().slice(0, 19).replace('T', ' '),
-        deleted_by: adminRows[0].role_id
+        deleted_by: admin.role_id
       };
 
       await query(
@@ -2790,32 +2770,13 @@ class AdminController {
   // List card activation requests ajax - PHP compatible version
   static async listCardActivationRequestsAjax(req, res) {
     try {
-      // Support both query parameters and form data
-      const { user_id, token } = {
+      const decodedUserId = req.admin.id;
+      const { draw, start, length, search, order, columns } = {
         ...req.query,
         ...req.body
       };
 
-      console.log('listCardActivationRequestsAjax - Parameters:', { user_id, token });
-
-      // Check if user_id and token are provided
-      if (!user_id || !token) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'user_id and token are required'
-        });
-      }
-
-      // Decode user ID
-      const decodedUserId = idDecode(user_id);
-      if (!decodedUserId) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'Invalid user ID'
-        });
-      }
+      console.log('listCardActivationRequestsAjax - Parameters:', { decodedUserId });
 
       // Check if user exists
       const userRows = await query('SELECT * FROM users WHERE user_id = ? AND deleted = 0 LIMIT 1', [decodedUserId]);
@@ -2827,17 +2788,16 @@ class AdminController {
         });
       }
 
-      // Check if user is admin (role_id = 1 or 2)
       const admin = req.admin;
       const user = req.user;
 
 
 
       // Get DataTables parameters (matching PHP exactly)
-      const drawValue = parseInt(req.body.draw || req.query.draw || 1);
-      const startValue = parseInt(req.body.start || req.query.start || 0);
-      const lengthValue = parseInt(req.body.length || req.query.length || 10);
-      const searchValue = req.body.search?.value || req.query.search || '';
+      const drawValue = parseInt(draw || 1);
+      const startValue = parseInt(start || 0);
+      const lengthValue = parseInt(length || 10);
+      const searchValue = search?.value || '';
 
       // Get total count
       const totalCountResult = await query('SELECT COUNT(*) as count FROM user_business_cards WHERE deleted = 0');
@@ -2927,8 +2887,7 @@ class AdminController {
       return res.json({
         status: true,
         rcode: 200,
-        user_id: user_id,
-        unique_token: token,
+        user_id: decodedUserId,
         draw: drawValue,
         recordsTotal: totalCount,
         recordsFiltered: filteredCount,
@@ -3486,30 +3445,11 @@ class AdminController {
   // List investors ajax - PHP compatible version
   static async listInvestorsAjax(req, res) {
     try {
-      // Support both query parameters and form data
-      const { user_id, token, draw, start, length, search, order, columns } = {
+      const decodedUserId = req.admin.id;
+      const { draw, start, length, search, order, columns } = {
         ...req.query,
         ...req.body
       };
-
-      // Check if user_id and token are provided
-      if (!user_id || !token) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'user_id and token are required'
-        });
-      }
-
-      // Decode user ID
-      const decodedUserId = idDecode(user_id);
-      if (!decodedUserId) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'Invalid user ID'
-        });
-      }
 
       // Check if user exists
       const userRows = await query('SELECT * FROM users WHERE user_id = ? AND deleted = 0 LIMIT 1', [decodedUserId]);
@@ -3521,11 +3461,8 @@ class AdminController {
         });
       }
 
-      // Check if user is admin (role_id = 1 or 2)
       const admin = req.admin;
       const user = req.user;
-
-
 
       // Get DataTables parameters
       const drawValue = parseInt(draw || 1);
