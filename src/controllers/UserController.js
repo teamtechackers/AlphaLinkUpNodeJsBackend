@@ -848,7 +848,7 @@ class UserController {
             ELSE CONCAT('User_', user_id)
           END as user_name
         FROM users 
-        WHERE deleted = 0 
+        WHERE deleted = 0 AND status = 1 AND user_id NOT IN (SELECT id FROM admin_users)
         ORDER BY 
           CASE 
             WHEN full_name IS NOT NULL AND full_name != '' THEN full_name
