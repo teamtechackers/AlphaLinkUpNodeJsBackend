@@ -2024,16 +2024,6 @@ class AdminController {
 
       console.log('listServiceProviderAjax - Parameters:', { decodedUserId });
 
-      // Check if user exists
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? AND deleted = 0 LIMIT 1', [decodedUserId]);
-      if (!userRows.length) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'User not found'
-        });
-      }
-
       const admin = req.admin;
       const user = req.user;
 
@@ -2778,22 +2768,10 @@ class AdminController {
 
       console.log('listCardActivationRequestsAjax - Parameters:', { decodedUserId });
 
-      // Check if user exists
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? AND deleted = 0 LIMIT 1', [decodedUserId]);
-      if (!userRows.length) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'User not found'
-        });
-      }
-
       const admin = req.admin;
       const user = req.user;
 
-
-
-      // Get DataTables parameters (matching PHP exactly)
+      // Get DataTables parameters
       const drawValue = parseInt(draw || 1);
       const startValue = parseInt(start || 0);
       const lengthValue = parseInt(length || 10);
@@ -3450,16 +3428,6 @@ class AdminController {
         ...req.query,
         ...req.body
       };
-
-      // Check if user exists
-      const userRows = await query('SELECT * FROM users WHERE user_id = ? AND deleted = 0 LIMIT 1', [decodedUserId]);
-      if (!userRows.length) {
-        return res.json({
-          status: false,
-          rcode: 500,
-          message: 'User not found'
-        });
-      }
 
       const admin = req.admin;
       const user = req.user;
