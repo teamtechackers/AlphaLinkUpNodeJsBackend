@@ -3546,8 +3546,7 @@ class AdminController {
       return res.json({
         status: true,
         rcode: 200,
-        user_id: user_id,
-        unique_token: token,
+        user_id: decodedUserId,
         draw: drawValue,
         recordsTotal: totalRecords,
         recordsFiltered: filteredCount,
