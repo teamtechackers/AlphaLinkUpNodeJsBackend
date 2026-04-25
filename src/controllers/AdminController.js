@@ -3824,24 +3824,26 @@ class AdminController {
 
   static async getDeletionRequests(req, res) {
     try {
-      const { user_id, token } = { ...req.query, ...req.body };
+      const { token } = { ...req.query, ...req.body };
 
-      if (!user_id || !token) {
+      if (!token) {
         return res.json({
           status: false,
           rcode: 400,
-          message: 'user_id and token are required'
+          message: 'token is required'
         });
       }
 
-      // Verify admin
+      const admin = req.admin;
+
+      // Verify admin token
       const adminRows = await query(`
         SELECT u.user_id 
         FROM users u
         JOIN admin_users a ON a.id = u.user_id 
         WHERE u.user_id = ? AND u.unique_token = ? AND u.deleted = 0
         LIMIT 1
-      `, [req.admin.id, token]);
+      `, [admin.id, token]);
 
       if (adminRows.length === 0) {
         return res.json({
@@ -3853,7 +3855,7 @@ class AdminController {
 
       let { deleted_request } = { ...req.query, ...req.body };
 
-      // Default to 1 if not provided
+      // Default to 1 (requested) if not provided
       if (deleted_request === undefined || deleted_request === '') {
         deleted_request = 1;
       }
@@ -3865,61 +3867,12 @@ class AdminController {
           email, 
           mobile, 
           created_dts,
+          updated_at,
           deleted_request 
         FROM users 
         WHERE deleted_request = ? AND deleted = 0
         ORDER BY updated_at DESC
       `, [deleted_request]);
-
-      return res.json({
-        status: true,
-        rcode: 200,
-        requests: requests.map(r => ({
-          ...r,
-          user_id: r.user_id
-        }))
-      });
-
-    } catch (error) {
-      console.error('Get deletion requests error:', error);
-      return res.json({
-        status: false,
-        rcode: 500,
-        message: 'Failed to fetch deletion requests'
-      });
-    }
-  }
-  static async getDeletionRequests(req, res) {
-    try {
-      const { token } = { ...req.query, ...req.body };
-
-      const admin = req.admin;
-      const user = req.user;
-      const decodedUserId = admin.id;
-
-      // Verify admin
-      const adminRows = await query(`
-        SELECT u.user_id 
-        FROM users u 
-        JOIN admin_users a ON a.id = u.user_id 
-        WHERE u.user_id = ? AND u.unique_token = ? AND u.deleted = 0
-        LIMIT 1
-      `, [admin.id, token]);
-
-      if (adminRows.length === 0) {
-        return res.json({
-          status: false,
-          rcode: 401,
-          message: 'Invalid admin credentials'
-        });
-      }
-
-      const requests = await query(`
-        SELECT r.*, u.full_name, u.email 
-        FROM account_deletion_requests r
-        JOIN users u ON u.user_id = r.user_id
-        ORDER BY r.created_at DESC
-      `);
 
       return res.json({
         status: true,
