@@ -3877,10 +3877,8 @@ class AdminController {
       return res.json({
         status: true,
         rcode: 200,
-        data: requests.map(r => ({
-          ...r,
-          user_id: r.user_id
-        }))
+        requests: requests, // Compatible with some frontend calls
+        data: requests      // Compatible with standard Admin Ajax patterns
       });
 
     } catch (error) {

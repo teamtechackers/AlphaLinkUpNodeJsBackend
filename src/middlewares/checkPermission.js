@@ -54,7 +54,6 @@ const checkPermission = (permissionKey) => {
       const admin = adminRows[0];
 
       // Validate Admin Token
-      console.log(`DEBUG: Comparing tokens for admin ${decodedUserId}: Received="${token}" DB="${admin.token}"`);
       if (admin.token !== token) {
         // Fallback to older mechanism in case token is only in users table for old sessions
         const legacyCheck = await query('SELECT unique_token FROM users WHERE user_id = ? LIMIT 1', [decodedUserId]);
